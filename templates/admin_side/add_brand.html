@@ -1,0 +1,73 @@
+
+{% extends 'admin_side/base.html' %}
+{% load static  %}
+{% block content %}
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html'%}
+    <section class="content-main">
+        <div class="content-header">
+            <div>
+                <h2 class="content-title card-title">Categories </h2>
+                <p>Add, edit or delete a category</p>
+            </div>
+            <div>
+                <input type="text" placeholder="Search Categories" class="form-control bg-white" style="width: 500px;">
+            </div>
+            <div >
+                <a href="{% url 'brand_management:brand-list' %}" class="btn btn-primary btn-sm rounded">View Brand</a>
+            </div>
+        </div>
+       
+        <div class="card">
+            <div class="card-body ">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                            <!-- message  -->
+                            {% for message in messages %}
+                                {% if message.tags == 'success' %}
+                                    <p class="alert alert-success">{{ message }}</p>
+                                {% elif message.tags == 'error' %}
+                                    <p class="alert alert-danger">{{ message }}</p>
+                                {% elif message.tags == 'warning' %}
+                                    <p class="alert alert-warning">{{ message }}</p>
+                                {% else %}
+                                 <p>{{ message }}</p>
+                                {% endif %}
+                            {% endfor %}
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %} 
+                            <div class="mb-3">
+                                <label for="product_name" class="form-label">Brand Name:</label>
+                                <input type="text" placeholder="Type here" class="form-control" id="product_name" name="brand_name" />
+                            </div>
+                            <div class="mb-3">
+                                <label  for="brand_image">Brand Image:</label>
+                                <input  class="form-control" type="file" name="brand_image" id="brand_image">
+                            </div>
+                            <!-- <div class="mb-3">
+                                <label>Status:</label>
+                                <input type="checkbox" id="is_available" name="status" value="True">
+                            </div> -->
+                            <div class="row mb-4">
+                                <label class="col-lg-3 col-form-label">Status</label>
+                                <div class="col-lg-9">
+                                    <label class="form-check my-2">
+                                        <input type="checkbox" class="form-check-input" name="status" {% if product_data.is_active %}checked{% endif %}>
+                                        <span class="form-check-label">Enable this product</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Add Brand</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                </div> <!-- .row // -->
+            </div> <!-- card body .// -->
+        </div> <!-- card .// -->
+    </section> <!-- content-main end// -->
+</main>
+{% endblock content %}

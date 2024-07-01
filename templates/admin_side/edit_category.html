@@ -1,0 +1,83 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html'%}
+    <section class="content-main">
+        <div class="content-header">
+            <div>
+                <h2 class="content-title card-title">Categories </h2>
+                <p>Add, edit or delete a category</p>
+            </div>
+            <div>
+                <input type="text" placeholder="Search Categories" class="form-control bg-white" style="width: 500px;">
+            </div>
+            <div>
+                <a href="{% url 'category_management:category-list' %}" class="btn btn-primary btn-sm rounded">View category</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div>
+                            <!-- message  -->
+                            {% for message in messages %}
+                                {% if message.tags == 'success' %}
+                                    <p class="alert alert-success">{{ message }}</p>
+                                {% elif message.tags == 'error' %}
+                                    <p class="alert alert-danger">{{ message }}</p>
+                                {% elif message.tags == 'warning' %}
+                                    <p class="alert alert-warning">{{ message }}</p>
+                                {% else %}
+                                 <p>{{ message }}</p>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <label for="product_name" class="form-label">Category Name</label>
+                                <input type="text" placeholder="Type here" class="form-control" id="product_name" name="category_name" value="{{ category.category_name }}"/>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Parent Category:</label>
+                                <select class="form-select" name="parent">
+                                    <option value="0">No Parent</option>
+                                    {% for parent in parentlist %}
+                                        <option value="{{ parent.id }}" {% if parent.id == category.parent_id %}selected{% endif %}>{{ parent.category_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label for="status">Status:</label>
+                                <input type="checkbox" name="status" {% if category.is_available %}checked{% endif %}><br>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label" for="minimum_amount">Minimum Amount:</label>
+                            <input class="form-control" type="text" name="minimum_amount" value="{{ category.minimum_amount }}"><br>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">Discount:</label>
+                                <input class="form-control" type="number" id="discount" name="discount" value="{{ category.discount }}">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label" for="date">Expiry Date:</label>
+                                <input class="form-control" type="date" name="date" value="{{ category.expirydate|date:'Y-m-d' }}" min="{{ today }}"><br>
+                            </div>
+                            <div class="d-grid">
+                                <button class="btn btn-primary" type="submit">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div> <!-- .row // -->
+            </div> <!-- card body .// -->
+        </div> <!-- card .// -->
+    </section> <!-- content-main end// -->
+</main>
+{% endblock content %}

@@ -1,0 +1,105 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html'%}
+    <section class="content-main">
+        <div class="content-header">
+            <div>
+                <h2 class="content-title card-title">Categories </h2>
+                <p>Add, edit or delete a category</p>
+            </div>
+            <div>
+                <input type="text" placeholder="Search Categories" class="form-control bg-white" style="width: 500px;">
+            </div>
+            <div>
+                <a href="{% url 'category_management:category-list' %}" class="btn btn-primary btn-sm rounded">View category</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div>
+                            
+                            {% for message in messages %}
+                                {% if message.tags == 'success' %}
+                                    <p class="alert alert-success">{{ message }}</p>
+                                {% elif message.tags == 'error' %}
+                                    <p class="alert alert-danger">{{ message }}</p>
+                                {% elif message.tags == 'warning' %}
+                                    <p class="alert alert-warning">{{ message }}</p>
+                                {% else %}
+                                 <p>{{ message }}</p>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <label for="product_name" class="form-label">Category Name</label>
+                                <input type="text" placeholder="Type here" class="form-control" id="product_name" name="category_name" />
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Parent Category:</label>
+                                <select class="form-select" name="parent">
+                                    <option value="0">No Parent category</option>
+                                    {% for category in parentlist %}
+                                        <option value="{{ category.id }}">{{ category.category_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Is Available:</label>
+                                <input type="checkbox" id="is_available" name="status" value="True">
+                            </div>
+                            <label>
+                                <input type="checkbox" id="toggleCheckbox" onclick="toggleFields()"> Add category offer
+                            </label>
+                            
+                            <div id="hiddenFields" class="mb-4">
+                                <div class="mb-4">
+                                    <label class="form-label">Minimum Amount:</label>
+                                    <input type="text" class="form-control" id="minimum_amount" name="minimum_amount" placeholder="Type here">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Discount:</label>
+                                    <input class="form-control" type="number" id="discount" name="discount">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Expiry Date:</label>
+                                    <input class="form-control" type="date" id="expirydate" name="date" value="{{ today }}" min="{{ today }}">
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Create category</button>
+                            </div>
+                        </form>
+                    </div>
+                </div> <!-- .row // -->
+            </div> <!-- card body .// -->
+        </div> <!-- card .// -->
+    </section> <!-- content-main end// -->
+</main>
+<script>
+    function toggleFields() {
+        var checkbox = document.getElementById('toggleCheckbox');
+        var hiddenFields = document.getElementById('hiddenFields');
+        if (checkbox.checked) {
+            hiddenFields.style.display = 'block';
+        } else {
+            hiddenFields.style.display = 'none';
+        }
+    }
+
+    // Ensure fields are hidden on page load
+    window.onload = function() {
+        var hiddenFields = document.getElementById('hiddenFields');
+        hiddenFields.style.display = 'none';
+    }
+</script>
+{% endblock content %}

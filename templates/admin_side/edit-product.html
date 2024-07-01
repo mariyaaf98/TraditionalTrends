@@ -1,0 +1,219 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+{% block content %}
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html' %}
+    <section class="content-main">
+        <div class="row">
+            <div class="col-12">
+                <div class="content-header">
+                    <h2 class="content-title">Edit Product</h2>
+                    <div>
+                        <a href="{% url 'product_management:product-list' %}" class="btn btn-primary">Product List</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row gx-5">
+                            <aside class="col-lg-3 border-end">
+                                <nav class="nav nav-pills flex-column mb-4">
+                                    <a class="nav-link active" aria-current="page" href="#" data-section="product_info">Product Info</a>
+                                    <a class="nav-link" href="#" data-section="category_info">Category Info</a>
+                                    <a class="nav-link" href="#" data-section="images">Images</a>
+                                </nav>
+                            </aside>
+                            <div class="col-lg-9">
+                                <section class="content-body p-xl-4">
+                                    {% for message in messages %}
+                                        {% if message.tags == 'success' %}
+                                            <p class="alert alert-success">{{ message }}</p>
+                                        {% elif message.tags == 'error' %}
+                                            <p class="alert alert-danger">{{ message }}</p>
+                                        {% elif message.tags == 'warning' %}
+                                            <p class="alert alert-warning">{{ message }}</p>
+                                        {% else %}
+                                            <p>{{ message }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    <form method="POST" enctype="multipart/form-data" action="{% url 'product_management:edit-product' products.id %}" id="product-form">
+                                        {% csrf_token %}
+
+                                        <!-- Product Info Section -->
+                                        <div id="product_info" class="section">
+                                            <div class="row mb-4">
+                                                <label class="col-lg-3 col-form-label">Product Name <span style="color: red;">*</span></label>
+                                                <div class="col-lg-9">
+                                                    <input type="text" class="form-control" placeholder="Type here" name="product_name" value="{{ products.product_name }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-4">
+                                                <label class="col-lg-3 col-form-label">Description <span style="color: red;">*</span></label>
+                                                <div class="col-lg-9">
+                                                    <textarea class="form-control" placeholder="Type here" rows="4" name="product_description" required>{{ products.product_description }}</textarea>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-4">
+                                                <label class="col-lg-3 col-form-label">Price</label>
+                                                <div class="col-lg-4">
+                                                    <input type="text" class="form-control" name="price" value="{{ products.price }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-4">
+                                                <label class="col-lg-3 col-form-label">Offer Price</label>
+                                                <div class="col-lg-4">
+                                                    <input type="text" class="form-control" name="offer_price" value="{{ products.offer_price }}">
+                                                </div>
+                                            </div>
+                                            <div class="row mb-4">
+                                                <label class="col-lg-3 col-form-label">Status</label>
+                                                <div class="col-lg-9">
+                                                    <label class="form-check my-2">
+                                                        <input type="checkbox" class="form-check-input" name="status" {% if products.is_active %}checked{% endif %}>
+                                                        <span class="form-check-label">Enable this product</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Category Info Section -->
+                                        <div id="category_info" class="section" style="display: none;">
+                                            <div class="row mb-4">
+                                                <label class="col-lg-4 col-form-label">Product Category</label>
+                                                <div class="col-lg-4">
+                                                    <select class="form-control" name="category">
+                                                        {% for category in categorydata %}
+                                                            <option value="{{ category.id }}" {% if products.product_category.id == category.id %}selected{% endif %}>{{ category.category_name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="row mb-4">
+                                                <label class="col-lg-4 col-form-label">Product Brand</label>
+                                                <div class="col-lg-4">
+                                                    <select class="form-control" name="brand">
+                                                        {% for brand in branddata %}
+                                                            <option value="{{ brand.id }}" {% if products.product_brand.id == brand.id %}selected{% endif %}>{{ brand.brand_name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Images Section -->
+                                        <div id="images" class="section" style="display: none;">
+                                            <div class="row mb-4">
+                                                <label for="thumbnail">Thumbnail</label>
+                                                <input type="file" id="thumbnail" name="thumbnail_image" accept="image/*" onchange="showThumbnailPreview(event)">
+                                                <img id="thumbnail-preview" src="{{ products.thumbnail.url }}" style="width: 50%; height: 40%;">
+                                            </div>
+                                            <div class="row mb-4" id="images-row">
+                                                <label class="col-lg-3 col-form-label">Images</label>
+                                                <div class="col-lg-4">
+                                                    <input type="file" class="form-control" id="image-0" name="images" accept="image/*" onchange="showNextImagePreview(event)">
+                                                </div>
+                                            </div>
+                                            <div id="multiple-images-container">
+                                                {% for image in images %}
+                                                    <div class="col-lg-4">
+                                                        <img src="{{ image.image.url }}" style="width: 100%; height: auto;">
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+
+                                        <br>
+
+                                        <button class="btn btn-primary" type="button" id="continue-btn">Continue to next</button>
+                                        <button class="btn btn-primary" type="submit" id="save-btn" style="display: none;">Update</button>
+                                    </form>
+
+                                    <form method="POST" action="{% url 'product_management:delete-product' products.id %}" class="delete-form" style="display: inline-block;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger rounded btn-sm font-sm">Delete</button>
+                                    </form>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const navLinks = Array.from(document.querySelectorAll('.nav-link')).slice(1);
+    const sections = document.querySelectorAll('.section');
+    const continueBtn = document.getElementById('continue-btn');
+    const saveBtn = document.getElementById('save-btn');
+    let currentSectionIndex = 0;
+
+    function showSection(index) {
+        sections.forEach((section, i) => {
+            section.style.display = i === index ? 'block' : 'none';
+        });
+        navLinks.forEach((link, i) => {
+            link.classList.toggle('active', i === index);
+        });
+        continueBtn.style.display = index < sections.length - 1 ? 'block' : 'none';
+        saveBtn.style.display = index === sections.length - 1 ? 'block' : 'none';
+    }
+
+    navLinks.forEach((link, index) => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            showSection(index);
+            currentSectionIndex = index;
+        });
+    });
+
+    continueBtn.addEventListener('click', function () {
+        currentSectionIndex += 1;
+        if (currentSectionIndex >= sections.length) {
+            currentSectionIndex = sections.length - 1;
+        }
+        showSection(currentSectionIndex);
+    });
+
+    showSection(currentSectionIndex);
+});
+
+function showThumbnailPreview(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const imgElement = document.getElementById('thumbnail-preview');
+            imgElement.src = e.target.result;
+            imgElement.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function showNextImagePreview(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const container = document.getElementById('multiple-images-container');
+            const imgWrapper = document.createElement('div');
+            const imgElement = document.createElement('img');
+            imgElement.src = e.target.result;
+            imgElement.style.width = '100%';
+            imgElement.style.height = 'auto';
+            imgWrapper.appendChild(imgElement);
+            container.appendChild(imgWrapper);
+            addNewImageInput();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+</script>
+{% endblock %}

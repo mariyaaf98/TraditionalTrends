@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Category</title>
+</head>
+<body>
+    <h2>Edit Category</h2>
+    <form method="post">
+        {% csrf_token %}
+        <label for="category_name">Category Name:</label>
+        <input type="text" name="category_name" value="{{ category.category_name }}" required><br>
+        
+        <label for="parent">Parent Category:</label>
+        <select name="parent">
+            <option value="0">No Parent</option>
+            {% for parent in parentlist %}
+                <option value="{{ parent.id }}" {% if parent.id == category.parent_id %}selected{% endif %}>{{ parent.category_name }}</option>
+            {% endfor %}
+        </select><br>
+        
+        <label for="status">Status:</label>
+        <input type="checkbox" name="status" {% if category.is_available %}checked{% endif %}><br>
+        
+        <label for="minimum_amount">Minimum Amount:</label>
+        <input type="text" name="minimum_amount" value="{{ category.minimum_amount }}"><br>
+        
+        <label for="discount">Discount:</label>
+        <input type="text" name="discount" value="{{ category.discount }}"><br>
+        
+        <label for="date">Expiry Date:</label>
+        <input type="date" name="date" value="{{ category.expirydate|date:'Y-m-d' }}" min="{{ today }}"><br>
+        
+        <button type="submit">Update</button>
+    </form>
+    <a href="{% url 'category_management:category-list' %}">Back to Category List</a>
+</body>
+</html>

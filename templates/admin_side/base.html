@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {% include 'admin_side/head.html' %}
+
+    {% block content %}
+
+    <!-- message  -->
+    {% for message in messages %}
+        {% if message.tags == 'success' %}
+            <p class="alert alert-success">{{ message }}</p>
+        {% elif message.tags == 'error' %}
+            <p class="alert alert-danger">{{ message }}</p>
+        {% elif message.tags == 'warning' %}
+            <p class="alert alert-warning">{{ message }}</p>
+        {% else %}
+        <p>{{ message }}</p>
+        {% endif %}
+    {% endfor %}
+
+    
+    {% endblock content %}
+
+    {% include 'admin_side/script.html' %}
+</body>
+</html>

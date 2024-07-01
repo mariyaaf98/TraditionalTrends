@@ -1,0 +1,72 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html' %}
+    <section class="content-main">
+        <div class="content-header">
+            <div>
+                <h2 class="content-title card-title">Edit Brand</h2>
+                <p>Edit brand details</p>
+            </div>
+            <div>
+                <input type="text" placeholder="Search Brands" class="form-control bg-white" style="width: 500px;">
+            </div>
+            <div>
+                <a href="{% url 'brand_management:brand-list' %}" class="btn btn-primary btn-sm rounded">View Brand</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <!-- Message display -->
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="brand_name" class="form-label">Brand Name:</label>
+                                <input type="text" class="form-control" id="brand_name" name="brand_name" value="{{ brand.brand_name }}" required>
+                            </div>
+                            <<div class="mb-3">
+                              <label for="brand_image">Current Brand Image:</label><br>
+                              {% if brand.brand_image %}
+                                  <img src="{{ brand.brand_image.url }}" alt="Current Brand Image" style="max-width: 200px;"><br>
+                                  <span>{{ brand.brand_image.name }}</span><br><br>
+                              {% else %}
+                                  <span>No current image uploaded</span><br><br>
+                              {% endif %}
+                              <label for="new_brand_image">Upload New Brand Image:</label>
+                              <input class="form-control" type="file" id="new_brand_image" name="brand_image">
+                          </div>
+                            <div class="row mb-4">
+                                <label class="col-lg-3 col-form-label">Status</label>
+                                <div class="col-lg-9">
+                                    <label class="form-check my-2">
+                                        <input type="checkbox" class="form-check-input" id="status" name="status" {% if brand.status %}checked{% endif %}>
+                                        <span class="form-check-label">Enable this brand</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Update Brand</button>
+                            </div>
+                        </form>
+                    </div>
+                </div> <!-- .row // -->
+            </div> <!-- card body .// -->
+        </div> <!-- card .// -->
+    </section> <!-- content-main end// -->
+</main>
+{% endblock content %}

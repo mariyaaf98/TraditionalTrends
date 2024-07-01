@@ -1,0 +1,22 @@
+{% extends "admin_side/base.html" %}
+
+{% block content %}
+  <h1>Add Brand</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div>
+      <label for="brand_name">Brand Name:</label>
+      <input type="text" name="brand_name" id="brand_name" required>
+    </div>
+    <div>
+      <label for="brand_image">Brand Image:</label>
+      <input type="file" name="brand_image" id="brand_image" required>
+    </div>
+    <div>
+      <label for="status">Status:</label>
+      <input type="checkbox" name="status" id="status">
+    </div>
+    <button type="submit">Add Brand</button>
+  </form>
+  <a href="{% url 'brand_management:brand-list' %}">Back to Brand List</a>
+{% endblock %}

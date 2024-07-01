@@ -1,0 +1,141 @@
+
+{% extends 'admin_side/base.html' %}
+{% load static  %}
+{% block content %}
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html'%}
+    <section class="content-main">
+        <div class="content-header">
+            <div>
+                <h2 class="content-title card-title">Categories </h2>
+                <p>Add, edit or delete a category</p>
+            </div>
+            <div>
+                <input type="text" placeholder="Search Categories" class="form-control bg-white" style="width: 500px;">
+            </div>
+            <div >
+                <a href="{% url 'category_management:add-category' %}" class="btn btn-primary btn-sm rounded">Add category</a>
+
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    
+                    <div class="col-md-11">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        
+                                        <th>ID</th>
+                                        <th>Category Name</th>
+                                        <th>Parent Category</th>
+                                        <th>Is Available</th>
+                                        <th>Minimum Amount</th>
+                                        <th>Discount</th>
+                                        <th>Expiry Date</th>
+                                        <th class="text-end text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for category in categories %}
+                                    <tr>
+                                        
+                                        <td>{{ category.id }}</td>
+                                        <td><b>{{ category.category_name }}</b></td>
+                                        <td>
+                                            {% if category.parent %}
+                                                {{ category.parent.category_name }}
+                                            {% else %}
+                                                None
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ category.is_available }}</td>
+                                        <td>{{ category.minimum_amount }}</td>
+                                        <td>{{ category.discount }}</td>
+                                        <td>{{ category.expirydate }}</td>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <a class="btn btn-light rounded btn-sm font-sm me-3" href="{% url 'category_management:edit-category' category.id %}">Edit</a>
+                                                <button class="btn btn-danger rounded btn-sm font-sm" onclick="confirmDelete('{{ category.id }}')">Delete</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div> <!-- .col// -->
+                </div> <!-- .row // -->
+            </div> <!-- card body .// -->
+        </div> <!-- card .// -->
+    </section> <!-- content-main end// -->
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+<!-- CSRF Token Meta Tag -->
+<meta name="csrf-token" content="{{ csrf_token }}">
+
+<!-- JavaScript for delete confirmation with SweetAlert -->
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrftoken = getCookie('csrftoken') || document.querySelector('meta[name="csrf-token"]').content;
+
+    function confirmDelete(categoryId) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/admin-category/delete/${categoryId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json'
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        Swal.fire(
+                            'Deleted!',
+                            'Your category has been deleted.',
+                            'success'
+                        ).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            'There was a problem deleting the category.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        });
+    }
+</script>
+{% endblock content %}

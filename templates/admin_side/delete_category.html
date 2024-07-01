@@ -1,0 +1,12 @@
+{% extends 'admin_side/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Delete Category</h2>
+    <p>Are you sure you want to delete the category "{{ category.category_name }}"?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, delete</button>
+        <a href="{% url 'category_management:category-list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
