@@ -1,0 +1,73 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container">
+        <h1>{{ products.product_name }}</h1>
+        <p>{{ products.product_description }}</p>
+        {% if products.thumbnail %}
+            <img src="{{ products.thumbnail.url }}" alt="{{ products.product_name }}">
+        {% endif %}
+
+        <h2>Variants</h2>
+        <ul>
+            {% for variant in variants %}
+            <li>
+                Colour: {{ variant.colour_name }}<br>
+                Stock: {{ variant.variant_stock }}<br>
+                Status: {{ variant.variant_status|yesno:"Active,Inactive" }}<br>
+                Colour Code: {{ variant.colour_code }}<br>
+                <span class="color-box" style="background-color: {{ variant.colour_code }};">{{ variant.colour_code }}</span><br>
+
+                <!-- Display variant images -->
+                {% if variant.images.all %}
+                    <strong>Images:</strong><br>
+                    <div class="row">
+                        {% for image in variant.images.all %}
+                            <div class="col-md-3">
+                                <img src="{{ image.image.url }}" alt="Image for {{ variant.colour_name }}" class="img-thumbnail">
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <em>No images found for this variant.</em><br>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+
+        <h1>Add Variant for {{ product.product_name }}</h1>
+
+        <!-- Form to add a new variant -->
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="colour_name" class="form-label">Colour Name:</label>
+                <input type="text" id="colour_name" name="colour_name" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="variant_stock" class="form-label">Stock:</label>
+                <input type="number" id="variant_stock" name="variant_stock" class="form-control" min="0" required>
+            </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" id="variant_status" name="variant_status" class="form-check-input">
+                <label for="variant_status" class="form-check-label">Active</label>
+            </div><br><br>
+
+            <div class="form-group">
+                <label for="colour_code" class="form-label">Colour Code:</label>
+                <input type="color" id="colour_code" name="colour_code" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="images" class="form-label">Images:</label>
+                <input type="file" id="images" name="images" class="form-control-file" accept="image/*" multiple>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Variant</button>
+        </form>
+    </div>
+{% endblock %}

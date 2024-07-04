@@ -84,13 +84,16 @@
                                     <td style="width: 10%;">{{ product.price }}</td>
                                     <td style="width: 10%;">{{ product.offer_price }}</td>
                                     <td style="width: 30%;" class="text-end">
-                                        <a href="{% url 'product_management:product-details' product.id %}" class="btn btn-sm btn-brand rounded font-sm mt-15">View details</a>
+                                        <a href="{% url 'product_management:product-details' product.id %}" class="btn btn-success rounded btn-sm font-sm me-2">View details</a>
+                                    </td>
+                                    <td style="width: 30%;" class="text-end">
+                                        <a href="{% url 'product_management:variant-list' product.id %}" class="btn btn-warning rounded btn-sm font-sm me-2">View Variants</a>
                                     </td>
                                     <td class="text-end">
                                         <div class="btn-group" role="group">
                                             <form method="POST" action="{% url 'product_management:edit-product'  product.id %}" >
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-light rounded btn-sm font-sm me-3">Edit</button>
+                                                <button type="submit" class="btn btn-light rounded btn-sm font-sm me-2">Edit</button>
                                             </form>
                                             
                                             <form method="POST" action="{% url 'product_management:delete-product' product.id %}" class="delete-form">

@@ -1,14 +1,8 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from .models import Products, Product_images
-from .models import Category, Brand
-from django.core.exceptions import ValidationError
+from .models import Products, Product_images, Product_Variant, VariantImage, Category, Brand
 from decimal import Decimal
-from PIL import Image
-import io
-from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.shortcuts import get_object_or_404
 from django.db import transaction
 
 def add_product(request):
@@ -24,7 +18,6 @@ def add_product(request):
         images = request.FILES.getlist('images')
 
         try:
-            # Validate that product_name and price are provided
             if not product_name:
                 raise ValidationError("Product name is required.")
             if not price:
@@ -32,7 +25,6 @@ def add_product(request):
             if len(images) < 3:
                 raise ValidationError("At least 3 images are required.")
 
-            # Convert price and offer_price to Decimal
             price = Decimal(price)
             if offer_price:
                 offer_price = Decimal(offer_price)
@@ -68,16 +60,15 @@ def add_product(request):
 
     return render(request, 'admin_side/add_product.html', {'categories': categories, 'brands': brands})
 
-
 def product_list(request):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
     
-    images=Product_images.objects.all()
+    images = Product_images.objects.all()
     products = Products.objects.filter(is_deleted=False)
     categories = Products.objects.filter().order_by("id").reverse()
 
-    return render(request, "admin_side/product_list.html", {"categories": categories,'products': products,'images':images})
+    return render(request, "admin_side/product_list.html", {"categories": categories, 'products': products, 'images': images})
 
 def product_details(request, product_id):
     product = get_object_or_404(Products, pk=product_id)
@@ -88,7 +79,6 @@ def product_details(request, product_id):
         'product_images': product_images,
     }
     return render(request, 'admin_side/product_details.html', context)
-
 
 def delete_product(request, product_id):
     if not request.user.is_superuser:
@@ -102,7 +92,6 @@ def delete_product(request, product_id):
         messages.success(request, "Product deleted successfully")
         return redirect("product_management:product-list")
 
-    
     return redirect("product_management:product-list")
 
 def edit_product(request, product_id):
@@ -192,3 +181,101 @@ def edit_product(request, product_id):
     }
 
     return render(request, "admin_side/edit-product.html", content)
+
+def add_variant(request, product_id):
+    product = get_object_or_404(Products, id=product_id)
+    variants = Product_Variant.objects.filter(product=product)
+    
+    if request.method == 'POST':
+        colour_name = request.POST.get('colour_name')
+        variant_stock = request.POST.get('variant_stock')
+        variant_status = request.POST.get('variant_status') == 'on'
+        colour_code = request.POST.get('colour_code')
+
+        # Check if a variant with the same colour_name already exists for the product
+        if Product_Variant.objects.filter(product=product, colour_name=colour_name).exists():
+            messages.error(request, f"A variant with the colour name '{colour_name}' already exists for this product.")
+            return redirect('product_management:add-variant', product_id=product_id)
+        
+        new_variant = Product_Variant.objects.create(
+            product=product,
+            colour_name=colour_name,
+            variant_stock=variant_stock,
+            variant_status=variant_status,
+            colour_code=colour_code
+        )
+
+        images = request.FILES.getlist('images')
+        for image in images:
+            VariantImage.objects.create(variant=new_variant, image=image)
+
+        messages.success(request, 'Variant added successfully.')
+        return redirect('product_management:variant-list', product_id=product_id)
+
+    return render(request, "admin_side/add_variant.html", {"product": product, 'variants': variants})
+
+def view_variant(request, product_id):
+    product = get_object_or_404(Products, id=product_id)
+    filter_status = request.GET.get('status', 'all')
+
+    if filter_status == 'active':
+        variants = Product_Variant.objects.filter(product=product, is_deleted=False)
+    elif filter_status == 'deleted':
+        variants = Product_Variant.objects.filter(product=product, is_deleted=True)
+    else:
+        variants = Product_Variant.objects.filter(product=product)
+
+
+
+    return render(request, "admin_side/variant_list.html", {"product": product, 'variants': variants, 'filter_status': filter_status})
+
+
+def edit_variant(request, variant_id):
+    variant = get_object_or_404(Product_Variant, id=variant_id)
+    if request.method == 'POST':
+        variant.colour_name = request.POST.get('colour_name')
+        variant.variant_stock = request.POST.get('variant_stock')
+        variant.variant_status = request.POST.get('variant_status') == 'on'
+        variant.colour_code = request.POST.get('colour_code')
+        
+        if 'images' in request.FILES:
+            variant.images.all().delete()
+            images = request.FILES.getlist('images')
+            for image in images:
+                VariantImage.objects.create(variant=variant, image=image)
+        
+        variant.save()
+        messages.success(request, 'Variant updated successfully.')
+        return redirect('product_management:variant-list', product_id=variant.product.id)
+    
+    return render(request, 'admin_side/edit-variant.html', {'variant': variant})
+
+def delete_variant(request, variant_id):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+
+    variant = get_object_or_404(Product_Variant, id=variant_id)
+
+    if request.method == "POST":
+        variant.is_deleted = True
+        variant.save()
+        messages.success(request, "Product variant deleted successfully")
+        return redirect("product_management:variant-list", product_id=variant.product.id)
+
+    return redirect("product_management:variant-list", product_id=variant.product.id)
+
+
+
+def restore_variant(request, variant_id):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+
+    variant = get_object_or_404(Product_Variant, id=variant_id)
+
+    if request.method == "POST":
+        variant.is_deleted = False
+        variant.save()
+        messages.success(request, "Product variant restored successfully")
+        return redirect("product_management:variant-list", product_id=variant.product.id)
+
+    return redirect("product_management:variant-list", variant_id=variant_id)

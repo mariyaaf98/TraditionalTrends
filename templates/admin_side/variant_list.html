@@ -1,0 +1,96 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+{% block content %}
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html' %}
+    <section class="content-main">
+        <div class="row align-items-center mb-4">
+            <div class="col">
+                <div class="content-header">
+                    <h2 class="content-title">{{ product.product_name }}</h2>
+                </div>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'product_management:add-variant' product.id %}" class="btn btn-primary"><i class="material-icons md-plus"></i> Create Color Variant</a>
+            </div>
+        </div>
+        <div class="card mb-4">
+            <header class="card-header">
+                <div class="row gx-3">
+                    <div class="col-lg-4 col-md-6 me-auto">
+                        <input type="text" placeholder="Search..." class="form-control">
+                    </div>
+                    <div class="col-lg-2 col-6 col-md-3">
+                        <select class="form-select">
+                            <option>Show 20</option>
+                            <option>Show 30</option>
+                            <option>Show 40</option>
+                            <option>Show all</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-6 col-md-3">
+                        <select class="form-select" onchange="location = this.value;">
+                            <option value="{% url 'product_management:variant-list' product.id %}?status=all" {% if filter_status == 'all' %}selected{% endif %}>Status: all</option>
+                            <option value="{% url 'product_management:variant-list' product.id %}?status=active" {% if filter_status == 'active' %}selected{% endif %}>Active only</option>
+                            <option value="{% url 'product_management:variant-list' product.id %}?status=deleted" {% if filter_status == 'deleted' %}selected{% endif %}>Disabled</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+            {% for message in messages %}
+            {% if message.tags == 'success' %}
+                <p class="alert alert-success">{{ message }}</p>
+            {% elif message.tags == 'error' %}
+                <p class="alert alert-danger">{{ message }}</p>
+            {% elif message.tags == 'warning' %}
+                <p class="alert alert-warning">{{ message }}</p>
+            {% else %}
+             <p>{{ message }}</p>
+            {% endif %}
+        {% endfor %}
+            <div class="card-body">
+                <div class="row gx-3 gy-4">
+                    {% for variant in variants %}
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                        <div class="card h-100">
+                            <figure class="card border-1 h-100">
+                                {% if variant.images.all %}
+                                <div class="card-header bg-white text-center">
+                                    <img height="76" src="{{ variant.images.first.image.url }}" class="img-fluid" alt="Image for {{ variant.colour_name }}">
+                                </div>
+                                {% else %}
+                                <em>No images found for this variant.</em>
+                                {% endif %}
+                                <figcaption class="card-body text-center">
+                                    <h6 class="card-title m-0">{{ variant.colour_name }}</h6>
+                                    <a href="#"> {{ variant.variant_stock }} items </a>
+                                    <p>Status: {{ variant.variant_status|yesno:"Active,Inactive" }}</p>
+                                    <p>Colour Code: {{ variant.colour_code }}</p>
+                                    <span class="color-box" style="background-color: {{ variant.colour_code }}; display: inline-block; width: 40px; height: 20px;"></span>
+                                    <div class="d-flex  justify-content-center mt-15">
+                                        {% if variant.is_deleted %}
+                                        <form method="post" action="{% url 'product_management:restore-variant' variant.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-warning rounded btn-sm font-sm me-2">Restore</button>
+                                        </form>
+                                    {% else %}
+                                        <a href="{% url 'product_management:edit-variant' variant.id %}" class="btn btn-sm btn-brand rounded font-sm me-2">Edit Variant</a>
+                                        <form method="POST" action="{% url 'product_management:delete-variant' variant.id %}">
+                                            {% csrf_token %}
+                                            <button class="btn btn-danger" type="submit">Delete</button>
+                                        </form>
+                                    {% endif %}
+                                    </div>
+                                </figcaption>
+                            </figure>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock content %}

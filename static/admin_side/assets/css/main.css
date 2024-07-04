@@ -4598,31 +4598,4 @@ body.dark .dropdown-menu .dropdown-item.text-danger {
     display: none;
   }
 }
-
-
-
-.success {
-  color: green;
-}
-
-.error {
-  color: red;
-}
-
-.warning{
-  color: #fff3cd;
-}
-
-.custom-table tbody tr {
-    margin-bottom: 20px; /* Adjust this value to increase or decrease the space between rows */
-}
-
-#multiple-images-container img {
-  max-width: 100%;
-  display: block;
-  margin-bottom: 10px;
-}
-
-#hiddenFields {
-  display: none;
-}
+/*# sourceMappingURL=main.css.map */

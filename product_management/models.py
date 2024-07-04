@@ -3,6 +3,7 @@ from category_management.models import Category
 from brand_management.models import Brand
 from accounts.models import User
 
+
 class Products(models.Model):
     product_name = models.CharField(max_length=100, null=False)
     product_description = models.TextField(max_length=5000, null=False)
@@ -30,4 +31,25 @@ class Product_images(models.Model):
 
     def __str__(self):
         return f"Image for {self.product.product_name}"
+    
+class Product_Variant(models.Model):
+    product = models.ForeignKey(Products, on_delete=models.CASCADE)
+    colour_name = models.CharField(max_length=100, null=False)  
+    variant_stock = models.PositiveIntegerField(null=False, default=0)
+    variant_status = models.BooleanField(default=True)
+    colour_code = models.CharField(max_length=10, null=False)  
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.product.product_name} - {self.colour_name}"
+    
+    
+    
+class VariantImage(models.Model):
+    variant = models.ForeignKey(Product_Variant, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to="variant_images")
+
+    def __str__(self):
+        return f"Image for {self.variant.colour_name} - {self.variant.product.product_name}"
+
     
