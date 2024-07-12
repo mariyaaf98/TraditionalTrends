@@ -1,0 +1,27 @@
+<!-- product_list.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product List</title>
+</head>
+<body>
+    <h1>Product List</h1>
+    <div class="product-list">
+        {% for product in products %}
+            <div class="product-item">
+                <h2>{{ product.product_name }}</h2>
+                <p>{{ product.product_description }}</p>
+                <p>Category: {{ product.product_category.name }}</p>
+                <p>Brand: {{ product.product_brand.brand_name }}</p>
+                <p>Price: ${{ product.price }}</p>
+                <p>Offer Price: ${{ product.offer_price }}</p>
+                <p>Discount: {{ product.percentage_discount }}%</p>
+                <img src="{{ product.thumbnail.url }}" alt="{{ product.product_name }}">
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

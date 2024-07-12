@@ -4222,7 +4222,7 @@ table .product-thumbnail img {
 }
 
 .slider-nav-thumbnails .slick-slide.slick-current {
-  opacity: 1;
+  opacity: 0.5;
 }
 
 .slider-nav-thumbnails .slick-slide.slick-current::before {
@@ -9922,3 +9922,7 @@ span.fi-rs-apps {
 .zoomContainer{ z-index: 9999;}
 .zoomWindow{ z-index: 9999;}
 /*# sourceMappingURL=main.css.map */
+
+
+
+

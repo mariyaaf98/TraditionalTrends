@@ -3,11 +3,16 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib import messages
 import random
+from product_management.models import Products,Product_images
+from category_management.models import Category
+from brand_management.models import Brand
 from .forms import RegisterForm, LoginForm
 from .models import User
 from django.contrib.auth import authenticate, login
 from django.utils import timezone
 from dateutil.parser import parse
+from django.contrib.auth.decorators import login_required
+
 
 # Generate a random OTP
 def generate_otp():
@@ -137,5 +142,18 @@ def resend_otp(request):
     messages.success(request, 'A new OTP has been sent to your email.')
     return redirect('accounts:verify_otp')
 
+@login_required
 def home(request):
-    return render(request,'user_side/index.html')    
+    
+    products = Products.objects.filter(is_active=True, is_deleted=False)
+    category = Category.objects.filter(is_deleted=False)
+    
+    context = {
+        'products': products,
+        'category': category,
+    }
+    
+    return render(request, 'user_side/index.html', context)
+    
+    
+  

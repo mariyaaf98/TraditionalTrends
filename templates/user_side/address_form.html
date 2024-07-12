@@ -1,0 +1,26 @@
+{% extends "user_side/base.html" %}
+{% load static %}
+{% block content %}
+<h2>{% if address %}Edit Address{% else %}Add Address{% endif %}</h2>
+<form method="post">
+    {% csrf_token %}
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" value="{% if address %}{{ address.name }}{% endif %}" required>
+    <label for="house_name">House Name:</label>
+    <input type="text" id="house_name" name="house_name" value="{% if address %}{{ address.house_name }}{% endif %}" required>
+    <label for="street_name">Street Name:</label>
+    <input type="text" id="street_name" name="street_name" value="{% if address %}{{ address.street_name }}{% endif %}" required>
+    <label for="pin_number">Pin Number:</label>
+    <input type="text" id="pin_number" name="pin_number" value="{% if address %}{{ address.pin_number }}{% endif %}" required>
+    <label for="district">District:</label>
+    <input type="text" id="district" name="district" value="{% if address %}{{ address.district }}{% endif %}" required>
+    <label for="state">State:</label>
+    <input type="text" id="state" name="state" value="{% if address %}{{ address.state }}{% endif %}" required>
+    <label for="country">Country:</label>
+    <input type="text" id="country" name="country" value="{% if address %}{{ address.country }}{% endif %}" required>
+    <label for="phone_number">Phone Number:</label>
+    <input type="text" id="phone_number" name="phone_number" value="{% if address %}{{ address.phone_number }}{% endif %}" required>
+    <button type="submit">Save</button>
+</form>
+<a href="{% url 'user_panel:address_list' %}">Cancel</a>
+{% endblock %}

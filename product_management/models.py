@@ -2,7 +2,7 @@ from django.db import models
 from category_management.models import Category
 from brand_management.models import Brand
 from accounts.models import User
-
+from django.utils import timezone
 
 class Products(models.Model):
     product_name = models.CharField(max_length=100, null=False)
@@ -23,6 +23,12 @@ class Products(models.Model):
 
     def __str__(self):
         return f"{self.product_brand.brand_name}-{self.product_name}"
+    
+    def related_products(self):
+        """
+        Return related products based on the same category.
+        """
+        return Products.objects.filter(product_category=self.product_category).exclude(id=self.id)[:4]
 
 
 class Product_images(models.Model):
@@ -39,6 +45,7 @@ class Product_Variant(models.Model):
     variant_status = models.BooleanField(default=True)
     colour_code = models.CharField(max_length=10, null=False)  
     is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"{self.product.product_name} - {self.colour_name}"

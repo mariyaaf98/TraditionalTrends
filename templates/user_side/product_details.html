@@ -1,0 +1,585 @@
+{% extends 'user_side/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    .star-rating {
+        direction: rtl;
+        font-size: 2rem;
+        display: flex;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .star {
+        color: #ccc;
+    }
+
+    .star.selected,
+    .star:hover,
+    .star:hover~.star {
+        color: #f39c12;
+    }
+
+    .star-rating-display {
+        display: flex;
+    }
+
+    .star {
+        font-size: 2rem;
+        color: #ccc;
+        /* Default star color */
+    }
+
+    .star.filled {
+        color: gold;
+        /* Filled star color */
+    }
+</style>
+{%include 'user_side/header.html'%}
+<main class="main">
+    <div class="page-header breadcrumb-wrap">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="index.html" rel="nofollow">Home</a>
+                <span></span> Fashion
+                <span></span> Abstract Print Patchwork Dress
+            </div>
+        </div>
+    </div>
+    <section class="mt-50 mb-50">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="product-detail accordion-detail">
+                        <div class="row mb-50">
+                            <div class="col-md-6 col-sm-12 col-xs-12">
+                                <div class="detail-gallery">
+                                    <span class="zoom-icon"><i class="fi-rs-search"></i></span>
+                                    <!-- MAIN SLIDES -->
+                                    <div class="product-image-slider" id="product-image-slider">
+                                        {% if variant_images %}
+                                        {% for image in variant_images %}
+                                        <img src="{{ image.image.url }}" alt="{{ product.product_name }}"
+                                            class="main-image img-fluid">
+                                        {% endfor %}
+                                        {% elif product.thumbnail %}
+                                        <img src="{{ product.thumbnail.url }}" alt="{{ product.product_name }}"
+                                            class="main-image img-fluid">
+                                        {% else %}
+                                        <img src="{% static 'images/No_Image-1024.webp' %}"
+                                            alt="{{ product.product_name }}" class="main-image img-fluid">
+                                        {% endif %}
+                                    </div>
+                                    <!-- THUMBNAILS -->
+                                    <div class="slider-nav-thumbnails pl-15 pr-15" id="thumbnails-slider"
+                                        style="max-width: 400px; margin: auto;">
+                                        {% if variant_images %}
+                                        {% for image in variant_images %}
+                                        <div class="thumbnail-item"><img src="{{ image.image.url }}"
+                                                alt="{{ product.product_name }}" class="thumbnail-image img-thumbnail">
+                                        </div>
+                                        {% endfor %}
+                                        {% elif product.thumbnail %}
+                                        <div class="thumbnail-item"><img src="{{ product.thumbnail.url }}"
+                                                alt="{{ product.product_name }}" class="thumbnail-image img-thumbnail">
+                                        </div>
+                                        {% else %}
+                                        <div class="thumbnail-item"><img src="{% static 'images/No_Image-1024.webp' %}"
+                                                alt="{{ product.product_name }}" class="thumbnail-image img-thumbnail">
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <!-- End Gallery -->
+                            </div>
+                            <div class="col-md-6 col-sm-12 col-xs-12">
+                                <div class="detail-info">
+                                    <h2 class="title-detail">{{ product.product_name }}</h2>
+                                    <div class="product-detail-rating">
+                                        <div class="pro-details-brand">
+                                            <span> Brands: <a
+                                                    href="shop-grid-right.html">{{ product.product_brand}}</a></span>
+                                        </div>
+                                        <div class="product-rate-cover text-end">
+                                            <div class="product-rate d-inline-block">
+                                                <div class="product-rating" style="width:90%"></div>
+                                            </div>
+                                            <span class="font-small ml-5 text-muted"> (25 reviews)</span>
+                                        </div>
+                                    </div>
+                                    <div class="clearfix product-price-cover">
+                                        <div class="product-price primary-color float-left">
+                                            <ins><span class="text-brand">₹{{ product.offer_price }}</span></ins>
+                                            <ins><span class="old-price font-md ml-15">
+                                                    ₹{{ product.price }}</span></ins>
+                                            <span
+                                                class="save-price font-md color3 ml-15">{{ product.percentage_discount }}%
+                                                Off</span>
+                                        </div>
+                                    </div>
+                                    <div class="bt-1 border-color-1 mt-15 mb-15"></div>
+                                    <div class="short-desc mb-30">
+                                        <p>{{ product.product_description }}</p>
+                                    </div>
+                                    <div class="product_sort_info font-xs mb-30">
+                                        <ul>
+                                            <li class="mb-10"><i class="fi-rs-crown mr-5"></i> 1 Year AL Jazeera Brand
+                                                Warranty</li>
+                                            <li class="mb-10"><i class="fi-rs-refresh mr-5"></i> 30 Day Return Policy
+                                            </li>
+                                            <li><i class="fi-rs-credit-card mr-5"></i> Cash on Delivery available</li>
+                                        </ul>
+                                    </div>
+                                    <div class="attr-detail attr-color mb-15">
+                                        <strong class="mr-10">Color</strong>
+                                        <ul class="list-inline">
+                                            {% for variant in variants %}
+                                            <li class="list-inline-item">
+                                                <a href="#" class="color-selector" data-variant-id="{{ variant.id }}"
+                                                    data-image-urls="{% for image in variant.images.all %}{{ image.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                                                    <span
+                                                        class="d-inline-block rounded-circle border border-dark position-relative"
+                                                        style="background-color: {{ variant.colour_code }}; width: 20px; height: 20px;">
+                                                        {% if variant.id == selected_variant.id %}
+                                                        <i class="fi-rs-check position-absolute top-0 start-100 translate-middle text-white"
+                                                            style="font-size: 12px; right: 0; top: 0;"></i>
+                                                        {% endif %}
+                                                    </span>
+                                                </a>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+
+                                    <div class="bt-1 border-color-1 mt-30 mb-30"></div>
+                                    <form id="add-to-cart-form" method="post" action="{% url 'cart_management:add-to-cart' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        <input type="hidden" name="variant_id" id="selected-variant-id" value="{{ selected_variant.id }}">
+                                    
+                                        <div class="detail-extralink">
+                                            <div class="detail-qty border radius">
+                                                <a href="#" class="qty-down"><i class="fi-rs-angle-small-down"></i></a>
+                                                <span class="qty-val">1</span>
+                                                <a href="#" class="qty-up"><i class="fi-rs-angle-small-up"></i></a>
+                                            </div>
+                                            <div class="product-extra-link2">
+                                                <button type="submit" class="button button-add-to-cart">Add to cart</button>
+                                                <a aria-label="Add To Wishlist" class="action-btn hover-up" href="shop-wishlist.html">
+                                                    <i class="fi-rs-heart"></i>
+                                                </a>
+                                                <a aria-label="Compare" class="action-btn hover-up" href="shop-compare.html">
+                                                    <i class="fi-rs-shuffle"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    <ul class="product-meta font-xs color-grey mt-50">
+                                        <li class="mb-5">SKU: <a href="#">FWM15VKT</a></li>
+                                        <li class="mb-5">Tags: <a href="#" rel="tag">Cloth</a>, <a href="#"
+                                                rel="tag">Women</a>, <a href="#" rel="tag">Dress</a> </li>
+                                        <li>Availability:<span class="in-stock text-success ml-5">8 Items In
+                                                Stock</span></li>
+                                    </ul>
+                                </div>
+                                <!-- Detail Info -->
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-lg-10 m-auto entry-main-content">
+                                <h2 class="section-title style-1 mb-30">Description</h2>
+                                <div class="description mb-50">
+                                    <p>{{ products.product_description }}</p>
+                                    <ul class="product-more-infor mt-30">
+                                        <li><span>Type Of Packing</span> Custom-designed, fashion-forward packaging to
+                                            complement the style and sophistication of your purchase.</li>
+                                        <li><span>Color Options</span> Available in elegant Green, chic Pink, stylish
+                                            Powder Blue, and classic Purple.</li>
+                                        <li><span>Quantity Per Case</span>100 ml bottles, ideal for personal or gift
+                                            use.l</li>
+                                        <li><span>Ethyl Alcohol Content: </span>70% - ensuring high quality and
+                                            durability.</li>
+                                        <li><span>Carton Details</span>Each carton contains multiple pieces, ensuring
+                                            secure and organized shipping.</li>
+                                    </ul>
+                                    <hr class="wp-block-separator is-style-dots">
+
+                                    <h4 class="mt-30">Packaging & Delivery</h4>
+                                    <p>We take pride in ensuring that your purchase arrives in perfect condition. Each
+                                        item is meticulously packaged using premium materials to protect it during
+                                        transit. Our products are carefully wrapped and secured in a sturdy box,
+                                        complete with branded tissue paper and a signature seal for an elegant touch,
+                                        making the unboxing experience as delightful as the product itself.
+
+                                        Our fast and reliable delivery services ensure your order reaches you as quickly
+                                        as possible. We partner with efficient and dependable shipping providers and
+                                        offer real-time tracking information so you can monitor your package's journey
+                                        from our warehouse to your doorstep. Depending on your location, various
+                                        shipping options are available to suit your needs, including expedited delivery
+                                        for those times when you just can’t wait. Enjoy hassle-free delivery and
+                                        exceptional service with every order.
+                                    </p>
+                                </div>
+                                <div class="social-icons single-share">
+                                    <ul class="text-grey-5 d-inline-block">
+                                        <li><strong class="mr-10">Share this:</strong></li>
+                                        <li class="social-facebook"><a href="#"><img
+                                                    src="assets/imgs/theme/icons/icon-facebook.svg" alt=""></a></li>
+                                        <li class="social-twitter"> <a href="#"><img
+                                                    src="assets/imgs/theme/icons/icon-twitter.svg" alt=""></a></li>
+                                        <li class="social-instagram"><a href="#"><img
+                                                    src="assets/imgs/theme/icons/icon-instagram.svg" alt=""></a></li>
+                                        <li class="social-linkedin"><a href="#"><img
+                                                    src="assets/imgs/theme/icons/icon-pinterest.svg" alt=""></a></li>
+                                    </ul>
+                                </div>
+                                <h3 class="section-title style-1 mb-30 mt-30">Reviews (3)</h3>
+                                <!--Comments-->
+                                <div class="comments-area style-2">
+                                    <div class="row">
+                                        <div class="col-lg-8">
+                                            <h4 class="mb-30">Customer questions & answers</h4>
+                                            {% for review in reviews %}
+                                            {% if review %}
+                                            <div class="comment-list">
+                                                <div class="single-comment justify-content-between d-flex">
+                                                    <div class="user justify-content-between d-flex">
+                                                        <div class="thumb text-center">
+                                                            <img src="{% static 'user_side/assets/imgs/page/avatar-6.jpg' %}"
+                                                                alt="">
+                                                            <h6><a href="#">{{ review.user }}</a></h6>
+                                                            <p class="font-xxs">Since 2012</p>
+                                                        </div>
+                                                        <div class="desc">
+
+                                                            <div class="star-rating-display"
+                                                                data-rating="{{ review.rating }}">
+                                                                <span class="star">&#9733;</span>
+                                                                <span class="star">&#9733;</span>
+                                                                <span class="star">&#9733;</span>
+                                                                <span class="star">&#9733;</span>
+                                                                <span class="star">&#9733;</span>
+                                                            </div>
+
+                                                            <p>{{ review.comment }}</p>
+                                                            <div class="d-flex justify-content-between">
+                                                                <div class="d-flex align-items-center">
+                                                                    <p class="font-xs mr-30">{{ review.created_at }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div style="margin-left:100px; width:50px;">
+                                                                <form
+                                                                    action="{% url 'product:review_delete' review.id %}"
+                                                                    method="post">
+                                                                    {% csrf_token %}
+                                                                    <button class="btn btn-danger "
+                                                                        type="submit">Delete</button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-lg-4">
+                                                <h4 class="mb-30">Customer reviews</h4>
+                                                <div class="d-flex mb-30">
+                                                    <div class="star-rating-display"
+                                                        data-rating="{{ products.get_average_rating }}">
+                                                        <span class="star">&#9733;</span>
+                                                        <span class="star">&#9733;</span>
+                                                        <span class="star">&#9733;</span>
+                                                        <span class="star">&#9733;</span>
+                                                        <span class="star">&#9733;</span>
+                                                    </div>
+
+                                                    <h6></h6>
+                                                </div>
+                                                <div class="progress">
+                                                    <span>5 star</span>
+                                                    <div class="progress-bar" role="progressbar" style="width: 50%;"
+                                                        aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">50%
+                                                    </div>
+                                                </div>
+                                                <div class="progress">
+                                                    <span>4 star</span>
+                                                    <div class="progress-bar" role="progressbar" style="width: 25%;"
+                                                        aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%
+                                                    </div>
+                                                </div>
+                                                <div class="progress">
+                                                    <span>3 star</span>
+                                                    <div class="progress-bar" role="progressbar" style="width: 45%;"
+                                                        aria-valuenow="45" aria-valuemin="0" aria-valuemax="100">45%
+                                                    </div>
+                                                </div>
+                                                <div class="progress">
+                                                    <span>2 star</span>
+                                                    <div class="progress-bar" role="progressbar" style="width: 65%;"
+                                                        aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65%
+                                                    </div>
+                                                </div>
+                                                <div class="progress mb-30">
+                                                    <span>1 star</span>
+                                                    <div class="progress-bar" role="progressbar" style="width: 85%;"
+                                                        aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">85%
+                                                    </div>
+                                                </div>
+                                                <a href="#" class="font-xs text-muted">How are ratings calculated?</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!--comment form-->
+                                    <div class="comment-form">
+                                        <h4 class="mb-15">Add a review</h4>
+                                        <div class="d-flex mb-30">
+                                            <div class="star-rating-display"
+                                                data-rating="{{ products.get_average_rating }}">
+                                                <span class="star">&#9733;</span>
+                                                <span class="star">&#9733;</span>
+                                                <span class="star">&#9733;</span>
+                                                <span class="star">&#9733;</span>
+                                                <span class="star">&#9733;</span>
+                                            </div>
+
+                                            <h6></h6>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-lg-8 col-md-12">
+                                                <form method="post" class="form-contact comment_form" action=""
+                                                    id="commentForm">
+                                                    {% csrf_token %}
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <div class="form-group">
+                                                                <textarea class="form-control w-100" name="comment"
+                                                                    id="comment" cols="30" rows="9"
+                                                                    placeholder="Write Comment"></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div class="star-rating" id="star-rating">
+                                                                <span class="star" data-value="1">&#9733;</span>
+                                                                <span class="star" data-value="2">&#9733;</span>
+                                                                <span class="star" data-value="3">&#9733;</span>
+                                                                <span class="star" data-value="4">&#9733;</span>
+                                                                <span class="star" data-value="5">&#9733;</span>
+                                                            </div>
+                                                            <input type="hidden" id="rating" name="rating" value="0">
+
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <button type="submit" class="button button-contactForm">Submit
+                                                            Review</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Related Products -->
+                            <div class="col-12">
+                                <div class="row related-products">
+                                    <h2 class="section-title style-1 mb-30">Related-products</h2>
+                                    {% if related_products %}
+                                    {% for related_product in related_products %}
+                                    <div class="col-lg-3 col-md-4 col-12 col-sm-6">
+                                        <div class="product-cart-wrap small hover-up">
+                                            <div class="product-img-action-wrap">
+                                                <div class="product-img product-img-zoom">
+                                                    <a href="{% url 'user_panel:product-details' related_product.id %}"
+                                                        tabindex="0">
+                                                        <img class="default-img"
+                                                            src="{{ related_product.thumbnail.url }}" alt="">
+                                                        <img class="hover-img" src="{{ related_product.thumbnail.url }}"
+                                                            alt="">
+                                                    </a>
+                                                </div>
+                                                <div class="product-action-1">
+                                                    <a aria-label="Quick view" class="action-btn small hover-up"
+                                                        data-bs-toggle="modal" data-bs-target="#quickViewModal"><i
+                                                            class="fi-rs-search"></i></a>
+                                                    <a aria-label="Add To Wishlist" class="action-btn small hover-up"
+                                                        href="" tabindex="0"><i class="fi-rs-heart"></i></a>
+                                                    <a aria-label="Compare" class="action-btn small hover-up" href=""
+                                                        tabindex="0"><i class="fi-rs-shuffle"></i></a>
+                                                </div>
+                                                <div class="product-badges product-badges-position product-badges-mrg">
+                                                    <span class="hot">Hot</span>
+                                                    <!-- You can customize badges based on product status -->
+                                                </div>
+                                            </div>
+                                            <div class="product-content-wrap">
+                                                <h2><a href="{% url 'user_panel:product-details' related_product.id %}"
+                                                        tabindex="0">{{ related_product.product_name }}</a></h2>
+                                                <div class="rating-result" title="90%">
+                                                    <span>
+                                                        <!-- You can display product ratings here --></span>
+                                                </div>
+                                                <div class="product-price">
+                                                    <span>$ {{ related_product.offer_price }} </span>
+                                                    <span class="old-price">$ {{ related_product.price }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <p>No related products found.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <!-- End Related Products -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </section>
+</main>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+{% comment %} images show {% endcomment %}
+<script>
+    $('.color-selector').on('click', function(e) {
+        e.preventDefault();
+        var imageUrls = $(this).data('image-urls').split(',');
+        // Update main image slider
+        $('#product-image-slider .main-image').each(function(index, img) {
+            // Adjust the index to start from 0 and go backwards
+            var adjustedIndex = index - 1;
+            if (adjustedIndex >= 0 && adjustedIndex < imageUrls.length && imageUrls[adjustedIndex]) {
+                $(img).attr('src', imageUrls[adjustedIndex]);
+            }
+        });
+        // Update thumbnails
+        $('#thumbnails-slider .thumbnail-item img').each(function(index, img) {
+            // Adjust the index to start from 0 and go backwards
+            var adjustedIndex = index;
+            if (adjustedIndex >= 0 && adjustedIndex < imageUrls.length && imageUrls[adjustedIndex]) {
+                $(img).attr('src', imageUrls[adjustedIndex]);
+            } else {
+                $(img).attr('src', ''); // Clear if no image is available
+            }
+        });
+    });
+</script>
+
+
+ {% comment %} review {% endcomment %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const stars = document.querySelectorAll('.star-rating .star');
+        const ratingInput = document.getElementById('rating');
+
+        function fillStars(upToIndex, className) {
+            stars.forEach((star, index) => {
+                if (index <= upToIndex) {
+                    star.classList.add(className);
+                } else {
+                    star.classList.remove(className);
+                }
+            });
+        }
+
+        function clearHoverStars() {
+            stars.forEach(star => star.classList.remove('hovered'));
+        }
+        stars.forEach((star, index) => {
+            // Handle click event
+            star.addEventListener('click', function() {
+                ratingInput.value = index + 1;
+                fillStars(index, 'selected');
+            });
+            // Handle mouseover event
+            star.addEventListener('mouseover', function() {
+                clearHoverStars();
+                fillStars(index, 'hovered');
+            });
+            // Handle mouseout event
+            star.addEventListener('mouseout', function() {
+                clearHoverStars();
+            });
+        });
+        // Initial rendering based on data-rating attribute for static star displays
+        const starContainers = document.querySelectorAll('.star-rating-display');
+        starContainers.forEach(container => {
+            const rating = parseInt(container.getAttribute('data-rating'));
+            const stars = container.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('filled');
+                }
+            });
+        });
+    });
+</script>
+<script>
+$(document).ready(function() {
+    // Event handler for color selector click
+    $('.color-selector').on('click', function(e) {
+        e.preventDefault();
+
+        // Get the selected variant ID from the clicked color selector
+        var selectedVariantId = $(this).data('variant-id');
+
+        // Update the hidden input field in the form with the selected variant ID
+        $('#selected-variant-id').val(selectedVariantId);
+
+        // Update the selected state of the color options (for UI purposes)
+        $('.color-selector span i').remove();
+        $(this).find('span').append('<i class="fi-rs-check position-absolute top-0 start-100 translate-middle text-white" style="font-size: 12px; right: 0; top: 0;"></i>');
+    });
+});
+</script>
+{% comment %} add to cart {% endcomment %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Quantity control
+        $('.qty-up').on('click', function(e) {
+            e.preventDefault();
+            var qtyVal = parseInt($('.qty-val').text());
+            $('.qty-val').text(qtyVal + 1);
+            $('input[name="quantity"]').val(qtyVal + 1);
+        });
+
+        $('.qty-down').on('click', function(e) {
+            e.preventDefault();
+            var qtyVal = parseInt($('.qty-val').text());
+            if (qtyVal > 1) {
+                $('.qty-val').text(qtyVal - 1);
+                $('input[name="quantity"]').val(qtyVal - 1);
+            }
+        });
+
+        // Add hidden input for quantity
+        $('form#add-to-cart-form').append('<input type="hidden" name="quantity" value="1">');
+
+        // AJAX form submission (optional)
+        $('#add-to-cart-form').on('submit', function(event) {
+            event.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: $(this).attr('action'),
+                data: $(this).serialize(),
+                success: function(response) {
+                    alert(response.message);
+                    // Optionally update cart UI here
+                },
+                error: function(response) {
+                    alert(response.responseJSON.error);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

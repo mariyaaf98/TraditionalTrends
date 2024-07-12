@@ -54,10 +54,16 @@
                                 <label for="colour_code" class="form-label">Colour Code:</label>
                                 <input type="color" id="colour_code" name="colour_code" class="form-control" required>
                             </div>
-                            <div class="mb-3">
+                            <!-- Multiple Images Upload and Cropper Section -->
+                            <div class="row mb-4">
+                                <label for="product-images">Product Images</label>
+                                <input type="file" id="product-images" name="product_images" accept="image/*" multiple onchange="handleMultipleImages(event)">
+                                <div id="image-previews"></div>
+                            </div>
+                            {% comment %} <div class="mb-3">
                                 <label for="images" class="form-label">Images:</label>
                                 <input type="file" id="images" name="images" class="form-control-file" accept="image/*" multiple>
-                            </div>
+                            </div> {% endcomment %}
                             <!-- <div class="mb-3">
                                 <label  for="brand_image">Brand Image:</label>
                                 <input  class="form-control" type="file" name="brand_image" id="brand_image">
@@ -78,4 +84,99 @@
         </div> <!-- card .// -->
     </section> <!-- content-main end// -->
 </main>
+
+<script>
+let imageCroppers = {};
+let imageCounter = 0;
+
+function handleMultipleImages(event) {
+    const files = event.target.files;
+    const previewsContainer = document.getElementById('image-previews');
+    previewsContainer.innerHTML = '';
+
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const imgElement = document.createElement('img');
+            imgElement.src = e.target.result;
+            imgElement.style.display = 'block';
+            imgElement.id = `image-preview-${index}`;
+            previewsContainer.appendChild(imgElement);
+
+            const cropperContainer = document.createElement('div');
+            cropperContainer.id = `cropper-container-${index}`;
+            cropperContainer.style.display = 'block';
+            previewsContainer.appendChild(cropperContainer);
+
+            const cropButton = document.createElement('button');
+            cropButton.innerText = 'Crop';
+            cropButton.className = 'btn btn-secondary';
+            cropButton.onclick = (event) => {
+                event.preventDefault(); // Prevent the form from submitting
+                cropImage(index);
+            };
+            cropperContainer.appendChild(cropButton);
+
+            const cancelButton = document.createElement('button');
+            cancelButton.innerText = 'Cancel';
+            cancelButton.className = 'btn btn-secondary';
+            cancelButton.onclick = (event) => {
+                event.preventDefault(); // Prevent the form from submitting
+                cancelImageCrop(index);
+            };
+            cropperContainer.appendChild(cancelButton);
+
+            const cropper = new Cropper(imgElement, {
+                viewMode: 1,
+                autoCropArea: 1,
+                responsive: true,
+                background: false,
+                zoomable: true,
+                scalable: true,
+                movable: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+            });
+
+            imageCroppers[index] = cropper;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function cropImage(index) {
+    const cropper = imageCroppers[index];
+    if (cropper) {
+        cropper.getCroppedCanvas().toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const imgElement = document.getElementById(`image-preview-${index}`);
+            imgElement.src = url;
+
+            const fileInput = document.getElementById('product-images');
+            const dataTransfer = new DataTransfer();
+            Array.from(fileInput.files).forEach((file, fileIndex) => {
+                if (fileIndex === index) {
+                    dataTransfer.items.add(new File([blob], `cropped_image_${fileIndex}.jpg`, { type: 'image/jpeg' }));
+                } else {
+                    dataTransfer.items.add(file);
+                }
+            });
+            fileInput.files = dataTransfer.files;
+
+            cropper.destroy();
+            document.getElementById(`cropper-container-${index}`).style.display = 'none';
+        });
+    }
+}
+
+function cancelImageCrop(index) {
+    const cropper = imageCroppers[index];
+    if (cropper) {
+        cropper.destroy();
+        document.getElementById(`image-preview-${index}`).style.display = 'none';
+        document.getElementById(`cropper-container-${index}`).style.display = 'none';
+    }
+}
+</script>
+
 {% endblock content %}

@@ -33,15 +33,17 @@
                         <label for="existing_images" class="form-label">Existing Images</label>
                         <div class="row">
                             {% for image in variant.images.all %}
-                                <div class="col-md-3">
+                                <div class="col-md-3 mb-3">
                                     <img src="{{ image.image.url }}" class="img-thumbnail" alt="Image for {{ variant.colour_name }}">
+                                    <a href="{% url 'product_management:delete-variant-image' image.id %}" class="btn btn-sm btn-danger mt-2">Delete</a>
                                 </div>
                             {% endfor %}
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="images" class="form-label">Add Images</label>
-                        <input type="file" class="form-control" id="images" name="images" multiple>
+                        <input type="file" class="form-control" id="images" name="images" accept="image/*" multiple>
+                        <div id="image-previews" class="row mt-3"></div>
                     </div>
                     <button type="submit" class="btn btn-primary">Save Changes</button>
                 </form>
@@ -49,4 +51,102 @@
         </div>
     </section>
 </main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+<script>
+    let imageCroppers = {};
+    let imageCounter = 0;
+
+    function handleMultipleImages(event) {
+        const files = event.target.files;
+        const previewsContainer = document.getElementById('image-previews');
+        previewsContainer.innerHTML = '';
+
+        Array.from(files).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const imgElement = document.createElement('img');
+                imgElement.src = e.target.result;
+                imgElement.style.display = 'block';
+                imgElement.className = 'img-thumbnail col-md-3';
+                imgElement.id = `image-preview-${index}`;
+                previewsContainer.appendChild(imgElement);
+
+                const cropperContainer = document.createElement('div');
+                cropperContainer.id = `cropper-container-${index}`;
+                cropperContainer.className = 'col-md-3 mt-2';
+                previewsContainer.appendChild(cropperContainer);
+
+                const cropButton = document.createElement('button');
+                cropButton.innerText = 'Crop';
+                cropButton.className = 'btn btn-secondary btn-sm mt-2';
+                cropButton.onclick = (event) => {
+                    event.preventDefault(); // Prevent the form from submitting
+                    cropImage(index);
+                };
+                cropperContainer.appendChild(cropButton);
+
+                const cancelButton = document.createElement('button');
+                cancelButton.innerText = 'Cancel';
+                cancelButton.className = 'btn btn-secondary btn-sm mt-2 ms-2';
+                cancelButton.onclick = (event) => {
+                    event.preventDefault(); // Prevent the form from submitting
+                    cancelImageCrop(index);
+                };
+                cropperContainer.appendChild(cancelButton);
+
+                const cropper = new Cropper(imgElement, {
+                    viewMode: 1,
+                    autoCropArea: 1,
+                    responsive: true,
+                    background: false,
+                    zoomable: true,
+                    scalable: true,
+                    movable: true,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                });
+
+                imageCroppers[index] = cropper;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function cropImage(index) {
+        const cropper = imageCroppers[index];
+        if (cropper) {
+            cropper.getCroppedCanvas().toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const imgElement = document.getElementById(`image-preview-${index}`);
+                imgElement.src = url;
+
+                const fileInput = document.getElementById('images');
+                const dataTransfer = new DataTransfer();
+                Array.from(fileInput.files).forEach((file, fileIndex) => {
+                    if (fileIndex === index) {
+                        dataTransfer.items.add(new File([blob], `cropped_image_${fileIndex}.jpg`, { type: 'image/jpeg' }));
+                    } else {
+                        dataTransfer.items.add(file);
+                    }
+                });
+                fileInput.files = dataTransfer.files;
+
+                cropper.destroy();
+                document.getElementById(`cropper-container-${index}`).style.display = 'none';
+            });
+        }
+    }
+
+    function cancelImageCrop(index) {
+        const cropper = imageCroppers[index];
+        if (cropper) {
+            cropper.destroy();
+            document.getElementById(`image-preview-${index}`).style.display = 'none';
+            document.getElementById(`cropper-container-${index}`).style.display = 'none';
+        }
+    }
+
+    document.getElementById('images').addEventListener('change', handleMultipleImages);
+</script>
 {% endblock content %}

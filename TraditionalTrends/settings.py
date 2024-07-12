@@ -44,6 +44,9 @@ INSTALLED_APPS = [
     'category_management',
     'brand_management',
     'product_management',
+    'user_panel',
+    'cart_management',
+    
 ]
 
 MIDDLEWARE = [

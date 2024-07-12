@@ -21,9 +21,9 @@
                         <div class="row gx-5">
                             <aside class="col-lg-3 border-end">
                                 <nav class="nav nav-pills flex-column mb-4">
-                                    <a class="nav-link active"    aria-current="page" href="#" data-section="product_info">Product Info</a>
-                                    <a class="nav-link" href="#"  data-section="category_info">Category Info</a>
-                                    <a class="nav-link" href="#"  data-section="images">Images</a>
+                                    <a class="nav-link active" aria-current="page" href="#" data-section="product_info">Product Info</a>
+                                    <a class="nav-link" href="#" data-section="category_info">Category Info</a>
+                                    <a class="nav-link" href="#" data-section="images">Images</a>
                                 </nav>
                             </aside>
                             <div class="col-lg-9">
@@ -36,7 +36,7 @@
                                         {% elif message.tags == 'warning' %}
                                             <p class="alert alert-warning">{{ message }}</p>
                                         {% else %}
-                                        <p>{{ message }}</p>
+                                            <p>{{ message }}</p>
                                         {% endif %}
                                     {% endfor %}
 
@@ -81,13 +81,15 @@
                                         </div>
 
                                         <!-- Category Info Section -->
-                                        <div id="category_info" class="section" style="display: none;">
+                                        <div id="category_info" class="section">
                                             <div class="row mb-4">
                                                 <label class="col-lg-4 col-form-label">Product Category</label>
                                                 <div class="col-lg-4">
-                                                    <select multiple size="4" class="form-control select-multiple">
+                                                    <select name="product_category" class="form-control select-multiple">
                                                         {% for category in categories %}
-                                                            <option value="{{ category.id }}" {% if product_data.product_category_id == category.id %}selected{% endif %}>{{ category.category_name }}</option>
+                                                            <option value="{{ category.id }}" {% if product_data.product_category_id == category.id %}selected{% endif %}>
+                                                                {{ category.category_name }}
+                                                            </option>
                                                         {% endfor %}
                                                     </select>
                                                 </div>
@@ -95,18 +97,20 @@
                                             <div class="row mb-4">
                                                 <label class="col-lg-4 col-form-label">Product Brand</label>
                                                 <div class="col-lg-4">
-                                                    <select multiple size="4" class="form-control select-multiple">
+                                                    <select name="product_brand" class="form-control select-multiple">
                                                         {% for brand in brands %}
-                                                            <option value="{{ brand.id }}" {% if product_data.product_brand_id == brand.id %}selected{% endif %}>{{ brand.brand_name }}</option>
+                                                            <option value="{{ brand.id }}" {% if product_data.product_brand_id == brand.id %}selected{% endif %}>
+                                                                {{ brand.brand_name }}
+                                                            </option>
                                                         {% endfor %}
                                                     </select>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        
+
                                         <!-- Images Section -->
-                                        <div id="images" class="section">
+                                        <div id="images" class="section" style="display: none;">
                                             <!-- Thumbnail Image Preview and Cropper Section -->
                                             <div class="row mb-4">
                                                 <label for="thumbnail">Thumbnail</label>
@@ -114,21 +118,19 @@
                                                 <img id="thumbnail-preview" style="width: 50%; height: 40%; display: none;">
                                             </div>
                                             <div id="thumbnail-cropper-container" style="display: none;">
-                                                <button type="button" onclick="cropThumbnail()">Crop</button>
-                                                <button type="button" onclick="cancelThumbnailCrop()">Cancel</button>
+                                                <button type="button" class="btn btn-secondary" onclick="cropThumbnail()">Crop</button>
+                                                <button type="button" class="btn btn-secondary" onclick="cancelThumbnailCrop()">Cancel</button>
                                             </div>
 
-                                            <div class="row mb-4" id="images-row">
-                                                <label class="col-lg-3 col-form-label">Images</label>
-                                                <div class="col-lg-4">
-                                                    <input type="file" class="form-control" id="image-0" name="images" accept="image/*" onchange="showNextImagePreview(event)">
-                                                </div>
+                                            <!-- Multiple Images Upload and Cropper Section -->
+                                            <div class="row mb-4">
+                                                <label for="product-images">Product Images</label>
+                                                <input type="file" id="product-images" name="product_images" accept="image/*" multiple onchange="handleMultipleImages(event)">
+                                                <div id="image-previews"></div>
                                             </div>
-                                            <div id="multiple-images-container"></div>
                                         </div>
 
                                         <br>
-
 
                                         <button class="btn btn-primary" type="button" id="continue-btn">Continue to next</button>
                                         <button class="btn btn-primary" type="button" id="save-btn" style="display: none;">Save</button>
@@ -186,171 +188,144 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 <script>
-    let thumbnailCropper;
-    let imageCroppers = {};
-    let imageCounter = 0;
+let thumbnailCropper;
+let imageCroppers = {};
+let imageCounter = 0;
 
-    function showThumbnailPreview(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const imgElement = document.getElementById('thumbnail-preview');
-                imgElement.src = e.target.result;
-                imgElement.style.display = 'block';
+function showThumbnailPreview(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const imgElement = document.getElementById('thumbnail-preview');
+            imgElement.src = e.target.result;
+            imgElement.style.display = 'block';
 
-                thumbnailCropper = new Cropper(imgElement, {
-                    viewMode: 1,
-                    autoCropArea: 1,
-                    responsive: true,
-                    background: false,
-                    zoomable: true,
-                    scalable: true,
-                    movable: true,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                });
-
-                document.getElementById('thumbnail-cropper-container').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    function cropThumbnail() {
-        if (thumbnailCropper) {
-            thumbnailCropper.getCroppedCanvas().toBlob((blob) => {
-                const url = URL.createObjectURL(blob);
-                const imgElement = document.getElementById('thumbnail-preview');
-                imgElement.src = url;
-
-                const fileInput = document.getElementById('thumbnail');
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(new File([blob], 'cropped_thumbnail.jpg', { type: 'image/jpeg' }));
-                fileInput.files = dataTransfer.files;
-
-                thumbnailCropper.destroy();
-                document.getElementById('thumbnail-cropper-container').style.display = 'none';
+            thumbnailCropper = new Cropper(imgElement, {
+                viewMode: 1,
+                autoCropArea: 1,
+                responsive: true,
+                background: false,
+                zoomable: true,
+                scalable: true,
+                movable: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
             });
-        }
-    }
 
-    function cancelThumbnailCrop() {
-        if (thumbnailCropper) {
+            document.getElementById('thumbnail-cropper-container').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function cropThumbnail() {
+    if (thumbnailCropper) {
+        thumbnailCropper.getCroppedCanvas().toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const imgElement = document.getElementById('thumbnail-preview');
+            imgElement.src = url;
+
+            const fileInput = document.getElementById('thumbnail');
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(new File([blob], 'cropped_thumbnail.jpg', { type: 'image/jpeg' }));
+            fileInput.files = dataTransfer.files;
+
             thumbnailCropper.destroy();
-            document.getElementById('thumbnail-preview').style.display = 'none';
             document.getElementById('thumbnail-cropper-container').style.display = 'none';
-        }
+        });
     }
+}
 
-    function showNextImagePreview(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const container = document.getElementById('multiple-images-container');
-                const imgWrapper = document.createElement('div');
-                imgWrapper.id = `image-wrapper-${imageCounter}`;
-
-                const imgElement = document.createElement('img');
-                imgElement.src = e.target.result;
-                imgElement.id = `image-preview-${imageCounter}`;
-                imgWrapper.appendChild(imgElement);
-
-                const cropperContainer = document.createElement('div');
-                cropperContainer.id = `cropper-container-${imageCounter}`;
-                cropperContainer.style.display = 'block';
-
-                const cropButton = document.createElement('button');
-                cropButton.type = 'button';
-                cropButton.innerText = 'Crop';
-                cropButton.onclick = function() { cropImage(imageCounter); };
-                cropperContainer.appendChild(cropButton);
-
-                const cancelButton = document.createElement('button');
-                cancelButton.type = 'button';
-                cancelButton.innerText = 'Cancel';
-                cancelButton.onclick = function() { cancelImageCrop(imageCounter); };
-                cropperContainer.appendChild(cancelButton);
-
-                imgWrapper.appendChild(cropperContainer);
-                container.appendChild(imgWrapper);
-
-                imgElement.onload = function() {
-                    const cropper = new Cropper(imgElement, {
-                        viewMode: 1,
-                    autoCropArea: 1,
-                    responsive: true,
-                    background: false,
-                    zoomable: true,
-                    scalable: true,
-                    movable: true,
-                    cropBoxMovable: true,
-                    cropBoxResizable: true,
-                    });
-
-                    imageCroppers[imageCounter] = cropper;
-                };
-
-                imageCounter++;
-                addNewImageInput();
-            };
-            reader.readAsDataURL(file);
-        }
+function cancelThumbnailCrop() {
+    if (thumbnailCropper) {
+        thumbnailCropper.destroy();
+        document.getElementById('thumbnail-preview').style.display = 'none';
+        document.getElementById('thumbnail-cropper-container').style.display = 'none';
     }
+}
 
-    function addNewImageInput() {
-        const newImageInput = document.createElement('input');
-        newImageInput.type = 'file';
-        newImageInput.className = 'form-control';
-        newImageInput.name = 'images';
-        newImageInput.id = `image-${imageCounter}`;
-        newImageInput.accept = 'image/*';
-        newImageInput.onchange = showNextImagePreview;
+function handleMultipleImages(event) {
+    const files = event.target.files;
+    const previewsContainer = document.getElementById('image-previews');
+    previewsContainer.innerHTML = '';
 
-        const imagesRow = document.getElementById('images-row');
-        const div = document.createElement('div');
-        div.className = 'col-lg-3';
-        div.appendChild(newImageInput);
-        imagesRow.appendChild(div);
-    }
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const imgElement = document.createElement('img');
+            imgElement.src = e.target.result;
+            imgElement.style.display = 'block';
+            imgElement.id = `image-preview-${index}`;
+            previewsContainer.appendChild(imgElement);
 
-    function cropImage(index) {
-        const cropper = imageCroppers[index];
-        if (cropper) {
-            cropper.getCroppedCanvas().toBlob((blob) => {
-                const url = URL.createObjectURL(blob);
-                const imgElement = document.getElementById(`image-preview-${index}`);
-                imgElement.src = url;
+            const cropperContainer = document.createElement('div');
+            cropperContainer.id = `cropper-container-${index}`;
+            cropperContainer.style.display = 'block';
+            previewsContainer.appendChild(cropperContainer);
 
-                const fileInput = document.getElementById(`image-${index}`);
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(new File([blob], `cropped_image_${index}.jpg`, { type: 'image/jpeg' }));
-                fileInput.files = dataTransfer.files;
+            const cropButton = document.createElement('button');
+            cropButton.innerText = 'Crop';
+            cropButton.className = 'btn btn-secondary';
+            cropButton.onclick = () => cropImage(index);
+            cropperContainer.appendChild(cropButton);
 
-                cropper.destroy();
-                delete imageCroppers[index];
-                document.getElementById(`cropper-container-${index}`).style.display = 'none';
+            const cancelButton = document.createElement('button');
+            cancelButton.innerText = 'Cancel';
+            cancelButton.className = 'btn btn-secondary';
+            cancelButton.onclick = () => cancelImageCrop(index);
+            cropperContainer.appendChild(cancelButton);
+
+            const cropper = new Cropper(imgElement, {
+                viewMode: 0.5,
+                autoCropArea: 1,
+                responsive: true,
+                background: false,
+                zoomable: true,
+                scalable: true,
+                movable: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
             });
-        }
-    }
 
-    function cancelImageCrop(index) {
-        if (imageCroppers[index]) {
-            imageCroppers[index].destroy();
-            delete imageCroppers[index];
-            document.getElementById(`image-preview-${index}`).style.display = 'none';
+            imageCroppers[index] = cropper;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function cropImage(index) {
+    const cropper = imageCroppers[index];
+    if (cropper) {
+        cropper.getCroppedCanvas().toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const imgElement = document.getElementById(`image-preview-${index}`);
+            imgElement.src = url;
+
+            const fileInput = document.getElementById('product-images');
+            const dataTransfer = new DataTransfer();
+            Array.from(fileInput.files).forEach((file, fileIndex) => {
+                if (fileIndex === index) {
+                    dataTransfer.items.add(new File([blob], `cropped_image_${fileIndex}.jpg`, { type: 'image/jpeg' }));
+                } else {
+                    dataTransfer.items.add(file);
+                }
+            });
+            fileInput.files = dataTransfer.files;
+
+            cropper.destroy();
             document.getElementById(`cropper-container-${index}`).style.display = 'none';
-        }
+        });
     }
+}
 
-    function validateForm() {
-        const imagesInput = document.querySelector('input[name="images"]');
-        if (imagesInput.files.length < 3) {
-            alert('Please select at least 3 images.');
-            return false;
-        }
-        return true;
+function cancelImageCrop(index) {
+    const cropper = imageCroppers[index];
+    if (cropper) {
+        cropper.destroy();
+        document.getElementById(`image-preview-${index}`).style.display = 'none';
+        document.getElementById(`cropper-container-${index}`).style.display = 'none';
     }
+}
 </script>
 {% endblock content %}

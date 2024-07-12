@@ -1,34 +1,20 @@
+<!-- user_side/accounts/login.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Login</title>
 </head>
 <body>
     <h2>Login</h2>
-    {% for message in messages %}
-        {% if message.tags == 'success' %}
-            <p class="alert alert-success">{{ message }}</p>
-        {% elif message.tags == 'error' %}
-            <p class="alert alert-danger">{{ message }}</p>
-        {% elif message.tags == 'warning' %}
-            <p class="alert alert-warning">{{ message }}</p>
-        {% else %}
-        <p>{{ message }}</p>
-        {% endif %}
-    {% endfor %}
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Login</button>
     </form>
     {% if messages %}
-        <ul>
-            {% for message in messages %}
-                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-            {% endfor %}
-        </ul>
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
     {% endif %}
-
 </body>
 </html>
