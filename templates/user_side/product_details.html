@@ -35,7 +35,6 @@
         /* Filled star color */
     }
 </style>
-{%include 'user_side/header.html'%}
 <main class="main">
     <div class="page-header breadcrumb-wrap">
         <div class="container">
@@ -46,6 +45,17 @@
             </div>
         </div>
     </div>
+    {% for message in messages %}
+                                {% if message.tags == 'success' %}
+                                    <p class="alert alert-success">{{ message }}</p>
+                                {% elif message.tags == 'error' %}
+                                    <p class="alert alert-danger">{{ message }}</p>
+                                {% elif message.tags == 'warning' %}
+                                    <p class="alert alert-warning">{{ message }}</p>
+                                {% else %}
+                                 <p>{{ message }}</p>
+                                {% endif %}
+                            {% endfor %}
     <section class="mt-50 mb-50">
         <div class="container">
             <div class="row">

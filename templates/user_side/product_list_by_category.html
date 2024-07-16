@@ -1,0 +1,22 @@
+<!-- product_list_by_category.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products in {{ category.category_name }}</title>
+</head>
+<body>
+    <h1>Products in {{ category.category_name }}</h1>
+    <ul>
+        {% for product in products %}
+        <li>{{ product.name }} - ${{ product.price }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Related Categories</h2>
+    <ul>
+        {% for related_category in related_categories %}
+        <li><a href="{% url 'product_list_by_category' related_category.slug %}">{{ related_category.category_name }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

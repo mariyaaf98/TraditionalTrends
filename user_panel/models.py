@@ -12,3 +12,11 @@ class Address(models.Model):
     country = models.CharField(max_length=200, null=False, default="null")
     phone_number = models.CharField(max_length=40, null=False)
     status = models.BooleanField(default=True)
+    default = models.BooleanField(default=False)
+
+
+    #this function ensure one adress set as default one. and other adress not set deafults.
+    def save(self, *args, **kwargs):
+        if self.default:
+            Address.objects.filter(user=self.user, default=True).update(default=False)
+        super().save(*args, **kwargs)

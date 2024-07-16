@@ -1,9 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from accounts.models import User
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
-from django.http import JsonResponse
-from cart_management.models import Cart ,CartItem
+from django.http import HttpResponse, JsonResponse
+from cart_management.models import Cart, CartItem
 from product_management.models import Product_Variant, Products
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
@@ -57,12 +56,12 @@ def add_to_cart(request):
 
     return JsonResponse(response_data, status=200)
 
-
+@login_required
 def cart_view(request):
     cart_items = CartItem.objects.filter(cart__user=request.user).select_related('variant__product')
-    
+
     cart_total = sum(item.quantity * (item.variant.product.offer_price if item.variant else item.product.offer_price) for item in cart_items)
-    
+
     context = {
         'cart_items': [
             {
@@ -77,8 +76,6 @@ def cart_view(request):
         'cart_total': cart_total,
     }
     return render(request, 'user_side/shop-cart.html', context)
-
-
 
 @login_required
 @require_POST
@@ -116,21 +113,17 @@ def update_cart_item(request, item_id):
 
     return JsonResponse(response)
 
-
-
+@login_required
+@require_POST
 def delete_cart_item(request, item_id):
-    if request.method == 'POST':
-        cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
-        cart_item.delete()
-        
-        # Calculate the new cart total after item removal
-        cart_items = CartItem.objects.filter(cart__user=request.user)
-        cart_total = sum(item.quantity * item.variant.product.offer_price for item in cart_items)
+    cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
+    cart_item.delete()
 
-        return JsonResponse({'success': True, 'cart_total': cart_total})
-    
-    return JsonResponse({'error': 'Invalid request method'}, status=400)
+    # Calculate the new cart total after item removal
+    cart_items = CartItem.objects.filter(cart__user=request.user)
+    cart_total = sum(item.quantity * item.variant.product.offer_price for item in cart_items)
 
+    return JsonResponse({'success': True, 'cart_total': cart_total})
 
 @login_required
 def clear_cart(request):
@@ -139,6 +132,8 @@ def clear_cart(request):
         cart.items.all().delete()
     return redirect('cart_management:cart')
 
+@login_required
+@require_POST
 def quantity_update(request, id):
     quantity = request.POST.get("qty")
     print(quantity)
@@ -147,3 +142,9 @@ def quantity_update(request, id):
     data.save()
 
     return redirect("cart:product-cart")
+
+
+
+    # if not request.user.is_authenticated:
+    #     return JsonResponse({'error': 'User is not logged in'}, status=403)
+   

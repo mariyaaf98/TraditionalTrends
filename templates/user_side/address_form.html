@@ -1,26 +1,92 @@
-{% extends "user_side/base.html" %}
+{% extends 'user_side/base.html' %}
 {% load static %}
+
 {% block content %}
-<h2>{% if address %}Edit Address{% else %}Add Address{% endif %}</h2>
-<form method="post">
-    {% csrf_token %}
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" value="{% if address %}{{ address.name }}{% endif %}" required>
-    <label for="house_name">House Name:</label>
-    <input type="text" id="house_name" name="house_name" value="{% if address %}{{ address.house_name }}{% endif %}" required>
-    <label for="street_name">Street Name:</label>
-    <input type="text" id="street_name" name="street_name" value="{% if address %}{{ address.street_name }}{% endif %}" required>
-    <label for="pin_number">Pin Number:</label>
-    <input type="text" id="pin_number" name="pin_number" value="{% if address %}{{ address.pin_number }}{% endif %}" required>
-    <label for="district">District:</label>
-    <input type="text" id="district" name="district" value="{% if address %}{{ address.district }}{% endif %}" required>
-    <label for="state">State:</label>
-    <input type="text" id="state" name="state" value="{% if address %}{{ address.state }}{% endif %}" required>
-    <label for="country">Country:</label>
-    <input type="text" id="country" name="country" value="{% if address %}{{ address.country }}{% endif %}" required>
-    <label for="phone_number">Phone Number:</label>
-    <input type="text" id="phone_number" name="phone_number" value="{% if address %}{{ address.phone_number }}{% endif %}" required>
-    <button type="submit">Save</button>
-</form>
-<a href="{% url 'user_panel:address_list' %}">Cancel</a>
+<main class="container my-5">
+    <div class="row g-5">
+         {% include 'user_side/user_dashboard.html'%}
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="card-title mb-0">Address Information</h4>
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addAddressForm">Add an address</button>
+                    </div>
+                    
+                    <div id="addAddressForm" class="collapse">
+                        <form method="post" action="{% url 'user_panel:add-address' %}">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" class="form-control" name="name" id="name" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="house_name" class="form-label">House Name</label>
+                                    <input type="text" class="form-control" name="house_name" id="house_name" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="street_name" class="form-label">Street Name</label>
+                                    <input type="text" class="form-control" name="street_name" id="street_name" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="pin_number" class="form-label">Pin Number</label>
+                                    <input type="number" class="form-control" name="pin_number" id="pin_number" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="district" class="form-label">District</label>
+                                    <input type="text" class="form-control" name="district" id="district" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="state" class="form-label">State</label>
+                                    <input type="text" class="form-control" name="state" id="state" required>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="country" class="form-label">Country</label>
+                                    <input type="text" class="form-control" name="country" id="country" value="null">
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="phone_number" class="form-label">Phone Number</label>
+                                    <input type="text" class="form-control" name="phone_number" id="phone_number" required>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="default" id="default">
+                                        <label for="default" class="form-check-label">Set as default</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary">Add Address</button>
+                            </div>
+                        </form>
+                        <hr>
+                    </div>
+                    
+                    {% for address in addresses %}
+                    <div class="card mb-3 {% if address.default %}border-primary{% endif %}">
+                        <div class="card-body">
+                            {% if address.default %}
+                                <span class="badge bg-success text-white m-2">Default</span>
+                            {% endif %}
+                            <h4 class="card-title">{{ address.name }}</h4>
+                            <p class="card-text">{{ address.house_name }}, {{ address.street_name }}</p>
+                            <p class="card-text">{{ address.district }}, {{ address.state }} - {{ address.pin_number }}</p>
+                            <p class="card-text">{{ address.country }}</p>
+                            <p class="card-text">Phone: {{ address.phone_number }}</p>
+                            <a href="{% url 'user_panel:edit-address' address.id %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+                            <a href="{% url 'user_panel:delete-address' address.id %}" class="btn btn-danger btn-sm">Delete</a>
+                        </div>
+                    </div>
+                    {% if not forloop.last %}<hr>{% endif %}
+                    {% empty %}
+                    <p>No addresses found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- You can add more sections here, such as order history, etc. -->
+        </div>
+    </div>
+</main>
 {% endblock %}

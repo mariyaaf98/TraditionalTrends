@@ -83,9 +83,9 @@
                                       </td>
                                     <td style="width: 10%;">{{ product.price }}</td>
                                     <td style="width: 10%;">{{ product.offer_price }}</td>
-                                    <td style="width: 30%;" class="text-end">
+                                    {% comment %} <td style="width: 30%;" class="text-end">
                                         <a href="{% url 'product_management:product-details' product.id %}" class="btn btn-success rounded btn-sm font-sm me-2">View details</a>
-                                    </td>
+                                    </td> {% endcomment %}
                                     <td style="width: 30%;" class="text-end">
                                         <a href="{% url 'product_management:variant-list' product.id %}" class="btn btn-warning rounded btn-sm font-sm me-2">View Variants</a>
                                     </td>

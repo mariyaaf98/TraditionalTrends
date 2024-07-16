@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm
 from django.core.exceptions import ValidationError
 
 User = get_user_model()
@@ -75,7 +75,33 @@ class LoginForm(AuthenticationForm):
     )
 
 
+User = get_user_model()
 
-class LoginForm(AuthenticationForm):
-    username = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'}))
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}))
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'full_name', 'email', 'phone']
+        
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if not email:
+            raise forms.ValidationError("This field is required.")
+        return email
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if not username:
+            raise forms.ValidationError("This field is required.")
+        return username
+
+    def clean_full_name(self):
+        full_name = self.cleaned_data.get('full_name')
+        if not full_name:
+            raise forms.ValidationError("This field is required.")
+        return full_name
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+        if not phone:
+            raise forms.ValidationError("This field is required.")
+        return phone

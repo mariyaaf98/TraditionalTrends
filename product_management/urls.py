@@ -16,6 +16,4 @@ urlpatterns = [
     path('variant/<int:image_id>/delete-image/', views.delete_variant_image, name='delete-variant-image'),
     
 
-
-
 ]
