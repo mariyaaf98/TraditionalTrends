@@ -12,6 +12,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.utils import timezone
 from dateutil.parser import parse
 from django.contrib.auth.decorators import login_required
+from cart_management.models import Cart, CartItem
+
+
 
 
 # Generate a random OTP
@@ -144,13 +147,25 @@ def resend_otp(request):
 
 
 def home(request):
-    
     products = Products.objects.filter(is_active=True, is_deleted=False)
     category = Category.objects.filter(is_deleted=False)
+
     
+    cart = None
+    cart_items = []
+    total_price = 0
+
+    # Check if the user is authenticated
+    if request.user.is_authenticated:
+        cart, created = Cart.objects.get_or_create(user=request.user, is_active=True)
+        cart_items = CartItem.objects.filter(cart=cart)
+        total_price = sum(item.variant.product.offer_price * item.quantity for item in cart_items)
+
     context = {
         'products': products,
         'category': category,
+        'total_price': total_price,
+        'cart_items': cart_items,
     }
     
     return render(request, 'user_side/index.html', context)

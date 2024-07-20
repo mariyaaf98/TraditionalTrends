@@ -374,29 +374,30 @@
                                     </ul>
                                 </div>
                             </div>
-                            <div class="sort-by-cover">
-                                <div class="sort-by-product-wrap">
+                            <div class="sort-by-cover mb-4">
+                                <div class="sort-by-product-wrap d-flex justify-content-between align-items-center">
                                     <div class="sort-by">
                                         <span><i class="fi-rs-apps-sort"></i>Sort by:</span>
                                     </div>
                                     <div class="sort-by-dropdown-wrap">
-                                        <span> Featured <i class="fi-rs-angle-small-down"></i></span>
+                                        <span>{{ sort_by|title }} <i class="fi-rs-angle-small-down"></i></span>
                                     </div>
                                 </div>
                                 <div class="sort-by-dropdown">
-                                    <ul>
-                                        <li><a class="active" href="#">Featured</a></li>
-                                        <li><a href="#">Price: Low to High</a></li>
-                                        <li><a href="#">Price: High to Low</a></li>
-                                        <li><a href="#">Release Date</a></li>
-                                        <li><a href="#">Avg. Rating</a></li>
+                                    <ul class="list-unstyled">
+                                        <li><a class="dropdown-item {% if sort_by == 'price_low_to_high' %}active{% endif %}" href="?sort_by=price_low_to_high">Price: Low to High</a></li>
+                                        <li><a class="dropdown-item {% if sort_by == 'price_high_to_low' %}active{% endif %}"href="?sort_by=price_high_to_low">Price: High to Low</a></li> 
+                                        <li><a class="dropdown-item" href="?sort_by=a_to_z">A - Z</a></li>
+                                        <li><a class="dropdown-item" href="?sort_by=z_to_a">Z - A</a></li>
+                                        {% comment %} <li><a
+                                                class="dropdown-item {% if sort_by == 'avg_rating' %}active{% endif %}"
+                                                href="?sort_by=avg_rating">Avg. Rating</a></li> {% endcomment %}
                                     </ul>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="row product-grid-3">
-
                         {% for product in products %}
                         <div class="col-lg-4 col-md-4 col-12 col-sm-6">
                             <div class="product-cart-wrap mb-30">
@@ -410,7 +411,7 @@
                                             {% elif product.thumbnail %}
                                             <img class="default-img" src="{{ product.thumbnail.url }}"
                                                 alt="{{ product.product_name }}">
-                                            
+
                                             {% endif %}
                                             {% endwith %}
                                         </a>
@@ -446,6 +447,8 @@
                                 </div>
                             </div>
                         </div>
+                        {% empty %}
+                        <p>No results found.</p>
                         {% endfor %}
 
                     </div>
@@ -466,12 +469,14 @@
                     </div>
                 </div>
                 <div class="col-lg-3 primary-sidebar sticky-sidebar">
-                   <div class="widget-category mb-30">
+                    <div class="widget-category mb-30">
                         <h5 class="section-title style-1 mb-30 wow fadeIn animated">Category</h5>
                         <ul class="categories">
                             <li><a href="{% url 'user_panel:shop-list' %}">All</a></li>
                             {% for category in categories %}
-                            <li><a href="{% url 'user_panel:product-list-by-category' category.id %}">{{ category.category_name }}</a></li>
+                            <li><a
+                                    href="{% url 'user_panel:product-list-by-category' category.id %}">{{ category.category_name }}</a>
+                            </li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -481,7 +486,7 @@
                             <h5 class="widget-title mb-10">Fill by price</h5>
                             <div class="bt-1 border-color-1"></div>
                         </div>
-                       <div class="price-filter mb-5">
+                        <div class="price-filter mb-5">
                             <!-- Slider container -->
                             <div id="price-slider"></div><br>
                             <!-- Values to be submitted -->
@@ -490,7 +495,7 @@
                             <!-- Button to submit the form -->
                             <button class="btn btn-secondar" id="filter-button" type="button">Filter</button><br><br>
                         </div>
-                        
+
                     </div>
                     <!-- Product sidebar Widget -->
                     <div class="sidebar-widget product-sidebar  mb-30 p-30 bg-grey border-radius-10">
@@ -672,46 +677,44 @@
     </div>
 </footer>
 
- <!-- Include jQuery and noUiSlider libraries -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.js"></script>
+<!-- Include jQuery and noUiSlider libraries -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.js"></script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var priceSlider = document.getElementById('price-slider');
-            var initialMinPrice = parseFloat("{{ min_price }}") || 0;
-            var initialMaxPrice = parseFloat("{{ max_product_price }}") || {{ max_price }};
-
-            noUiSlider.create(priceSlider, {
-                start: [initialMinPrice, initialMaxPrice],
-                connect: true,
-                range: {
-                    'min': 0,
-                    'max': initialMaxPrice
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var priceSlider = document.getElementById('price-slider');
+        var initialMinPrice = parseFloat("{{ min_price }}") || 0;
+        var initialMaxPrice = parseFloat("{{ max_product_price }}") || parseFloat("{{ max_price }}") || 0;
+        noUiSlider.create(priceSlider, {
+            start: [initialMinPrice, initialMaxPrice],
+            connect: true,
+            range: {
+                'min': 0,
+                'max': initialMaxPrice
+            },
+            tooltips: true,
+            format: {
+                to: function(value) {
+                    return '₹' + value.toFixed(2);
                 },
-                tooltips: true,
-                format: {
-                    to: function(value) {
-                        return '₹' + value.toFixed(2);
-                    },
-                    from: function(value) {
-                        return Number(value.replace('₹', ''));
-                    }
+                from: function(value) {
+                    return Number(value.replace('₹', ''));
                 }
-            });
-
-            // Update hidden inputs and form submission on slider update
-            priceSlider.noUiSlider.on('update', function(values, handle) {
-                document.getElementById('min_price').value = values[0];
-                document.getElementById('max_price').value = values[1];
-            });
-
-            // Handle form submission
-            document.getElementById('filter-button').addEventListener('click', function() {
-                var minPrice = document.getElementById('min_price').value;
-                var maxPrice = document.getElementById('max_price').value;
-                window.location.href = `?min_price=${minPrice}&max_price=${maxPrice}`;
-            });
+            }
         });
-    </script>
+        // Update hidden inputs and form submission on slider update
+        priceSlider.noUiSlider.on('update', function(values, handle) {
+            document.getElementById('min_price').value = values[0];
+            document.getElementById('max_price').value = values[1];
+        });
+        // Handle form submission
+        document.getElementById('filter-button').addEventListener('click', function() {
+            var minPrice = document.getElementById('min_price').value;
+            var maxPrice = document.getElementById('max_price').value;
+            window.location.href = `?min_price=${minPrice}&max_price=${maxPrice}`;
+        });
+    });
+</script>
+
 {% endblock content %}

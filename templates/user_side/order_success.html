@@ -1,0 +1,55 @@
+{% extends 'user_side/base.html' %}
+{% load static %}
+{% load cart_filters %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div id="message-container">
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                    <p class="alert alert-success">{{ message }}</p>
+                {% elif message.tags == 'error' %}
+                    <p class="alert alert-danger">{{ message }}</p>
+                {% elif message.tags == 'warning' %}
+                    <p class="alert alert-warning">{{ message }}</p>
+                {% else %}
+                    <p>{{ message }}</p>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <br>
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 mb-5">
+                <div class="card-body">
+                    <h4 class="card-title font-weight-bold">Order Completed</h4>
+                    <div class="text-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor"
+                             class="bi bi-check-circle-fill text-success" viewBox="0 0 16 16">
+                            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                        </svg>
+                    </div>
+
+                    <h5 class="mb-5" >Order ID: {{ order.order_id }}</h5>
+                    <p class="mb-5">Arriving By : <span class="text-danger" > {{ arrival_date|date:"D, M j, Y" }}</span></p><br>
+
+                    <h4 class="mb-5">Order Items:</h4>
+                    <ul class="list-group mb-4">
+                        {% for item in order_items %}
+                            <li class="list-group-item">
+                                <p><strong>Product:</strong> {{ item.variant.product.product_name }}</p>
+                                <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+                                <p><strong>Price:</strong> {{ item.variant.product.offer_price }}</p>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    <div class="d-grid">
+                        <a href="{% url 'user_panel:shop-list' %}" class="btn btn-danger">Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

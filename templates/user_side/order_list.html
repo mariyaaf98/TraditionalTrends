@@ -1,0 +1,122 @@
+{% extends 'user_side/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="container my-5">
+    <div class="row g-5">
+        {% include 'user_side/user_dashboard.html' %}
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Orders</h4>
+                    {% for order in orders %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small>Order Date: {{ order.date }}</small>
+                                </div>
+                                <div class="col-md-6 text-md-end">
+                                    <small class="text-muted">Order Number: {{ order.order_id }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {% for item in order.items.all %}
+                            <div class="row mb-3" id="order-item-{{ item.id }}">
+                                <div class="col-md-3">
+                                    {% if item.variant.images.exists %}
+                                        <img src="{{ item.variant.images.first.image.url }}" alt="{{ item.variant.product.product_name }}" class="img-fluid rounded">
+                                    {% else %}
+                                        <img src="{{ item.variant.product.thumbnail.url }}" alt="{{ item.variant.product.product_name }}" class="img-fluid rounded">
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-9">
+                                    <h5 class="mb-2">{{ item.variant.product.product_name }}</h5>
+                                    <p class="mb-1">Category: {{ item.variant.product.product_category.category_name }}</p>
+                                    <p class="mb-1">Price: ₹{{ item.variant.product.offer_price }}</p>
+                                    <p class="mb-0">
+                                        Status:
+                                        <span class="badge {% if item.is_active %}{% if order.order_status == 'Order Placed' %}bg-warning{% else %}bg-success{% endif %}{% else %}bg-danger{% endif %}">
+                                            {{ item.is_active|yesno:"Order Placed,Canceled" }}
+                                        </span>
+                                    </p>
+                                    {% if item.is_active %}
+                                    <p class="mb-0">
+                                        Expected Delivery: 
+                                        <span class="text-danger fs-6">{{ arrival_date|date:"jS F Y" }}</span>
+                                    </p>
+                                    <button class="btn btn-danger btn-sm mt-2 cancel-order-item" data-item-id="{{ item.id }}">Cancel</button>
+                                    {% else %}
+                                    <p class="text-danger mt-2">Canceled</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if not forloop.last %}<hr>{% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="card-footer text-end">
+                            <strong>Total: ₹{{ order.total_amount }}</strong>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center">No orders found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+       
+        </div>
+    </div>
+</main>
+
+
+
+{% comment %} order cancelation {% endcomment %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.cancel-order-item').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var itemId = this.getAttribute('data-item-id');
+                var csrftoken = '{{ csrf_token }}';
+                var url = '{% url "order_management:cancel-order-item" 0 %}'.replace('0', itemId);
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken,
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        var itemElement = document.getElementById('order-item-' + itemId);
+                        var statusBadge = itemElement.querySelector('.badge');
+                        statusBadge.classList.remove('bg-warning', 'bg-success');
+                        statusBadge.classList.add('bg-danger');
+                        statusBadge.textContent = 'Canceled';
+                        
+                        var expectedDelivery = itemElement.querySelector('.text-danger.fs-6').parentElement;
+                        if (expectedDelivery) {
+                            expectedDelivery.remove();
+                        }
+
+                        var cancelButton = itemElement.querySelector('.cancel-order-item');
+                        if (cancelButton) {
+                            cancelButton.remove();
+                        }
+
+                        var canceledText = document.createElement('p');
+                        canceledText.className = 'text-danger mt-2';
+                        canceledText.textContent = 'Canceled';
+                        itemElement.querySelector('.col-md-9').appendChild(canceledText);
+                    } else {
+                        alert('Failed to cancel the item.');
+                    }
+                });
+            });
+        });
+    });
+</script>
+
+{% endblock %}

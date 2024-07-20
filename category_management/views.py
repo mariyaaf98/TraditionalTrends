@@ -68,6 +68,9 @@ def add_category(request):
     today = date.today().isoformat()
     return render(request,"admin_side/add_category.html",{"parentlist": parentlist,"today": today})
 
+
+
+
 def category_list(request):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")

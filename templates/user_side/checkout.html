@@ -1,0 +1,182 @@
+{% extends 'user_side/base.html' %}
+{% load static %}
+{% load cart_filters %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="h3 mb-4">CHECKOUT</h1>
+
+    <div id="message-container">
+        {% for message in messages %}
+        {% if message.tags == 'success' %}
+        <p class="alert alert-success">{{ message }}</p>
+        {% elif message.tags == 'error' %}
+        <p class="alert alert-danger">{{ message }}</p>
+        {% elif message.tags == 'warning' %}
+        <p class="alert alert-warning">{{ message }}</p>
+        {% else %}
+        <p>{{ message }}</p>
+        {% endif %}
+        {% endfor %}
+    </div><br>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Cart Items -->
+            <div class="mb-4">
+                {% for item in cart_items %}
+                <div class="d-flex mb-3 align-items-center justify-content-between">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <img src="{{ item.variant.images.first.image.url }}"
+                                alt="{{ item.variant.product.product_name }}" class="img-thumbnail"
+                                style="width: 100px; height: 100px; object-fit: cover;">
+                        </div>
+                        <div>
+                            <h6 class="card-title">{{ item.variant.product.product_name }}</h6>
+                            <p class="card-text">Colour: {{ item.variant.colour_name }}</p>
+                            <p class="card-text">Quantity: {{item.quantity }}</p>
+                            <p class="card-text">Price: ₹{{ item.variant.product.offer_price }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-danger mb-0">Arrives By {{ arrival_date|date:"D, M j, Y" }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Delivery Address -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Delivery Address</h5>
+                    <p class="card-text" id="selected-address">
+                        {{ selected_address.name }}<br>
+                        {{ selected_address.house_name }}, {{ selected_address.street_name }}<br>
+                        {{ selected_address.district }}, {{ selected_address.state }},
+                        {{ selected_address.pin_number }}<br>
+                        Mobile: {{ selected_address.phone_number }}
+                    </p>
+                    <div class="d-flex justify-content-between">
+                        <a href="#" class="outline-secondary btn-sm" data-bs-toggle="collapse"
+                            data-bs-target="#addressList" aria-expanded="false" aria-controls="addressList">Choose
+                            Address</a>
+                    </div>
+                    <div class="collapse mt-3" id="addressList">
+                        <form id="address-form" method="post">
+                            {% csrf_token %}
+                            {% for addr in address_list %}
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="address_id"
+                                    id="address_{{ addr.id }}" value="{{ addr.id }}"
+                                    {% if addr.id == selected_address.id %}checked{% endif %}>
+                                <label class="form-check-label" for="address_{{ addr.id }}">
+                                    <p class="mb-0">{{ addr.name }}</p>
+                                    <p class="mb-0">{{ addr.house_name }}, {{ addr.street_name }}</p>
+                                    <p class="mb-0">{{ addr.district }}, {{ addr.state }}, {{ addr.country }}</p>
+                                    <p class="mb-0">Pin: {{ addr.pin_number }}</p>
+                                    <p class="mb-0">Phone: {{ addr.phone_number }}</p>
+                                </label>
+                            </div>
+                            {% endfor %}
+                            <button type="button" class="btn btn-primary btn-sm" onclick="updateDefaultAddress()">Change
+                                Address</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Order Summary -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">ORDER SUMMARY</h5>
+                    <p class="card-text">{{ cart_items|length }} ITEMS</p>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Order Total</span>
+                        <span>₹{{ total_price }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Charges</span>
+                        <span class="text-success">FREE</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>GST Amount</span>
+                        <span>₹{{ gst_amount }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Coupon Applied</span>
+                        <span>₹{{ coupon_discount }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Discount 15%</span>
+                        <span>-₹{{ discount_amount }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>TOTAL</strong>
+                        <strong>₹{{ total_price }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Payment Method</h5>
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for method in payment_methods %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="{{ method }}"
+                                value="{{ method }}">
+                            <label class="form-check-label" for="{{ method }}">
+                                {{ method }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                        <button type="submit" name="place_order" class="btn btn-danger btn-lg w-100 mt-4">Place
+                            Order</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to handle address change -->
+<script>
+    function updateDefaultAddress() {
+        const form = document.getElementById('address-form');
+        const formData = new FormData(form);
+        fetch("{% url 'cart_management:update_default_address' %}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                const messageContainer = document.getElementById('message-container');
+                if (data.status === 'success') {
+                    // Update the displayed address
+                    const selectedAddress = document.querySelector('input[name="address_id"]:checked').closest(
+                        '.form-check').querySelector('.form-check-label').innerHTML;
+                    document.getElementById('selected-address').innerHTML = selectedAddress;
+                    messageContainer.innerHTML =
+                        '<div class="alert alert-success alert-dismissible fade show" role="alert">Default address updated successfully.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+                } else {
+                    messageContainer.innerHTML =
+                        '<div class="alert alert-danger alert-dismissible fade show" role="alert">' + data.message +
+                        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+</script>
+{% endblock %}

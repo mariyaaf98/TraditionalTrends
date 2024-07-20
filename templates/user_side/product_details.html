@@ -45,17 +45,6 @@
             </div>
         </div>
     </div>
-    {% for message in messages %}
-                                {% if message.tags == 'success' %}
-                                    <p class="alert alert-success">{{ message }}</p>
-                                {% elif message.tags == 'error' %}
-                                    <p class="alert alert-danger">{{ message }}</p>
-                                {% elif message.tags == 'warning' %}
-                                    <p class="alert alert-warning">{{ message }}</p>
-                                {% else %}
-                                 <p>{{ message }}</p>
-                                {% endif %}
-                            {% endfor %}
     <section class="mt-50 mb-50">
         <div class="container">
             <div class="row">
@@ -140,33 +129,34 @@
                                             <li><i class="fi-rs-credit-card mr-5"></i> Cash on Delivery available</li>
                                         </ul>
                                     </div>
-                                    <div class="attr-detail attr-color mb-15">
-                                        <strong class="mr-10">Color</strong>
-                                        <ul class="list-inline">
+                                    <div class="attr-detail attr-color mb-3">
+                                        <strong class="me-2">Color</strong>
+                                        <ul class="list-inline mb-0">
                                             {% for variant in variants %}
                                             <li class="list-inline-item">
-                                                <a href="#" class="color-selector" data-variant-id="{{ variant.id }}"
-                                                    data-image-urls="{% for image in variant.images.all %}{{ image.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                                                <button type="button"
+                                                    class="color-selector btn p-0 position-relative rounded-circle border border-dark"
+                                                    data-variant-id="{{ variant.id }}"
+                                                    data-image-urls="{% for image in variant.images.all %}{{ image.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                                                    style="width: 30px; height: 30px; background-color: {{ variant.colour_code }};">
                                                     <span
-                                                        class="d-inline-block rounded-circle border border-dark position-relative"
-                                                        style="background-color: {{ variant.colour_code }}; width: 20px; height: 20px;">
-                                                        {% if variant.id == selected_variant.id %}
-                                                        <i class="fi-rs-check position-absolute top-0 start-100 translate-middle text-white"
-                                                            style="font-size: 12px; right: 0; top: 0;"></i>
-                                                        {% endif %}
+                                                        class="active-indicator position-absolute top-0 start-100 translate-middle p-2 bg-success border border-light rounded-circle d-none">
+                                                        <span class="visually-hidden">Selected color</span>
                                                     </span>
-                                                </a>
+                                                </button>
                                             </li>
                                             {% endfor %}
                                         </ul>
                                     </div>
 
                                     <div class="bt-1 border-color-1 mt-30 mb-30"></div>
-                                    <form id="add-to-cart-form" method="post" action="{% url 'cart_management:add-to-cart' %}">
+                                    <form id="add-to-cart-form" method="post"
+                                        action="{% url 'cart_management:add-to-cart' %}">
                                         {% csrf_token %}
                                         <input type="hidden" name="product_id" value="{{ product.id }}">
-                                        <input type="hidden" name="variant_id" id="selected-variant-id" value="{{ selected_variant.id }}">
-                                    
+                                        <input type="hidden" name="variant_id" id="selected-variant-id"
+                                            value="{{ selected_variant.id }}">
+
                                         <div class="detail-extralink">
                                             <div class="detail-qty border radius">
                                                 <a href="#" class="qty-down"><i class="fi-rs-angle-small-down"></i></a>
@@ -174,11 +164,14 @@
                                                 <a href="#" class="qty-up"><i class="fi-rs-angle-small-up"></i></a>
                                             </div>
                                             <div class="product-extra-link2">
-                                                <button type="submit" class="button button-add-to-cart">Add to cart</button>
-                                                <a aria-label="Add To Wishlist" class="action-btn hover-up" href="shop-wishlist.html">
+                                                <button type="submit" class="button button-add-to-cart">Add to
+                                                    cart</button>
+                                                <a aria-label="Add To Wishlist" class="action-btn hover-up"
+                                                    href="shop-wishlist.html">
                                                     <i class="fi-rs-heart"></i>
                                                 </a>
-                                                <a aria-label="Compare" class="action-btn hover-up" href="shop-compare.html">
+                                                <a aria-label="Compare" class="action-btn hover-up"
+                                                    href="shop-compare.html">
                                                     <i class="fi-rs-shuffle"></i>
                                                 </a>
                                             </div>
@@ -483,8 +476,7 @@
     });
 </script>
 
-
- {% comment %} review {% endcomment %}
+{% comment %} review {% endcomment %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const stars = document.querySelectorAll('.star-rating .star');
@@ -533,22 +525,21 @@
     });
 </script>
 <script>
-$(document).ready(function() {
-    // Event handler for color selector click
-    $('.color-selector').on('click', function(e) {
-        e.preventDefault();
-
-        // Get the selected variant ID from the clicked color selector
-        var selectedVariantId = $(this).data('variant-id');
-
-        // Update the hidden input field in the form with the selected variant ID
-        $('#selected-variant-id').val(selectedVariantId);
-
-        // Update the selected state of the color options (for UI purposes)
-        $('.color-selector span i').remove();
-        $(this).find('span').append('<i class="fi-rs-check position-absolute top-0 start-100 translate-middle text-white" style="font-size: 12px; right: 0; top: 0;"></i>');
+    $(document).ready(function() {
+        // Event handler for color selector click
+        $('.color-selector').on('click', function(e) {
+            e.preventDefault();
+            // Get the selected variant ID from the clicked color selector
+            var selectedVariantId = $(this).data('variant-id');
+            // Update the hidden input field in the form with the selected variant ID
+            $('#selected-variant-id').val(selectedVariantId);
+            // Update the selected state of the color options (for UI purposes)
+            $('.color-selector span i').remove();
+            $(this).find('span').append(
+                '<i class="fi-rs-check position-absolute top-0 start-100 translate-middle text-white" style="font-size: 12px; right: 0; top: 0;"></i>'
+            );
+        });
     });
-});
 </script>
 {% comment %} add to cart {% endcomment %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -561,7 +552,6 @@ $(document).ready(function() {
             $('.qty-val').text(qtyVal + 1);
             $('input[name="quantity"]').val(qtyVal + 1);
         });
-
         $('.qty-down').on('click', function(e) {
             e.preventDefault();
             var qtyVal = parseInt($('.qty-val').text());
@@ -570,10 +560,8 @@ $(document).ready(function() {
                 $('input[name="quantity"]').val(qtyVal - 1);
             }
         });
-
         // Add hidden input for quantity
         $('form#add-to-cart-form').append('<input type="hidden" name="quantity" value="1">');
-
         // AJAX form submission (optional)
         $('#add-to-cart-form').on('submit', function(event) {
             event.preventDefault();
@@ -588,6 +576,35 @@ $(document).ready(function() {
                 error: function(response) {
                     alert(response.responseJSON.error);
                 }
+            });
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const colorSelectors = document.querySelectorAll('.color-selector');
+
+        function updateActiveColor(clickedSelector) {
+            colorSelectors.forEach(selector => {
+                const indicator = selector.querySelector('.active-indicator');
+                if (selector === clickedSelector) {
+                    selector.classList.remove('border-secondary');
+                    selector.classList.add('border-primary', 'shadow-sm');
+                    indicator.classList.remove('d-none');
+                } else {
+                    selector.classList.remove('border-primary', 'shadow-sm');
+                    selector.classList.add('border-secondary');
+                    indicator.classList.add('d-none');
+                }
+            });
+        }
+        colorSelectors.forEach(selector => {
+            selector.addEventListener('click', function(event) {
+                event.preventDefault();
+                updateActiveColor(this);
+                const imageUrls = this.dataset.imageUrls.split(',');
+                // Update the images using the `imageUrls` array
+                console.log(imageUrls); // Replace with your image update logic
             });
         });
     });

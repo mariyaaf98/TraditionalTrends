@@ -9926,3 +9926,6 @@ span.fi-rs-apps {
 
 
 
+.color-circle.active {
+  border: 2px solid #000; /* Example of making the border thicker */
+}

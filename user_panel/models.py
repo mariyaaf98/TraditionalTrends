@@ -1,6 +1,7 @@
 from django.db import models
 from accounts.models import User
 
+
 class Address(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, null=False, default="sarath")

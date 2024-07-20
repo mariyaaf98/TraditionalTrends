@@ -9,6 +9,10 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 from django.contrib import messages
 from django.db.models import Q
+from product_management .models import Products
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+
 
 
 
@@ -144,13 +148,15 @@ def product_details(request, product_id):
     # Get related products
     related_products = product.related_products()
 
-    return render(request, 'user_side/product_details.html', {
+
+    context={
         'product': product,
         'variants': variants,
         'selected_variant': selected_variant,
         'variant_images': variant_images,
         'related_products': related_products,
-    })
+    }
+    return render(request, 'user_side/product_details.html', context)
 
 
 
@@ -160,25 +166,45 @@ def shop_list(request):
     products = Products.objects.filter(Q(is_deleted=False) & Q(is_active=True))
     categories = Category.objects.filter(Q(is_deleted=False) & Q(is_available=True))
 
+    sort_by = request.GET.get('sort_by', 'featured')
+    query = request.GET.get('query')
+    category_id = request.GET.get('category')
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
 
-    # highest offer price in the database
     max_product_price = Products.objects.aggregate(Max('offer_price'))['offer_price__max'] or Decimal('0.00')
 
+    # Search filter
+    if query:
+        products = products.filter(product_name__icontains=query)
+
+    # Category filter
+    if category_id:
+        products = products.filter(product_category_id=category_id)
+
+    # Price filter
     try:
         if min_price:
             min_price = Decimal(min_price.replace('₹', '').replace(',', ''))
             products = products.filter(offer_price__gte=min_price)
         
         if max_price:
-            max_price = Decimal(max_price.replace('₹', '').replace(',', ''))  
+            max_price = Decimal(max_price.replace('₹', '').replace(',', ''))
             products = products.filter(offer_price__lte=max_price)
     except (TypeError, ValueError, ValidationError):
-        # Handle invalid price format gracefully
         min_price = None
         max_price = None
-        products = Products.objects.none()  # Return empty queryset or handle as appropriate
+        products = Products.objects.none()
+
+    # Sorting
+    if sort_by == 'price_low_to_high':
+        products = products.order_by('offer_price')
+    elif sort_by == 'price_high_to_low':
+        products = products.order_by('-offer_price')
+    elif sort_by == 'a_to_z':
+        products = products.order_by('product_name')
+    elif sort_by == 'z_to_a':
+        products = products.order_by('-product_name')
 
     context = {
         'products': products,
@@ -186,6 +212,10 @@ def shop_list(request):
         'min_price': min_price,
         'max_price': max_price if max_price else max_product_price,
         'max_product_price': max_product_price,
+        'sort_by': sort_by,
+        'query': query,  
+        'category_id': category_id, 
+        
     }
 
     return render(request, 'user_side/shop_list.html', context)
@@ -197,7 +227,9 @@ def shop_list(request):
 
 @login_required
 def product_list_by_category(request, category_id=None):
-    categories = Category.objects.filter(is_deleted=False)
+    categories = Category.objects.filter(Q(is_deleted=False) & Q(is_available=True))
+
+    sort_by = request.GET.get('sort_by', 'featured')
     
     if category_id:
         selected_category = get_object_or_404(Category, id=category_id, is_deleted=False)
@@ -224,6 +256,9 @@ def product_list_by_category(request, category_id=None):
         max_price = None
         products = Products.objects.none()
 
+
+    
+
     context = {
         'categories': categories,
         'products': products,
@@ -231,6 +266,7 @@ def product_list_by_category(request, category_id=None):
         'min_price': min_price,
         'max_price': max_price if max_price else max_product_price,
         'max_product_price': max_product_price,
+        'sort_by': sort_by,
     }
 
     return render(request, 'user_side/shop_list.html', context)
@@ -241,26 +277,67 @@ def user_profile(request):
     return render(request, 'user_side/user_profile.html')
 
 
+@login_required
 def edit_user_profile(request):
+    # Initialize password_form to ensure it's always available
+    password_form = PasswordChangeForm(user=request.user)
+    
     if request.method == 'POST':
-        username = request.POST.get('username')
-        full_name = request.POST.get('full_name')
-        email = request.POST.get('email')
-        phone = request.POST.get('phone')
+        form_type = request.POST.get('form_type')
+        
+        if form_type == 'profile_form':
+            # Handle profile update (unchanged)
+            user = request.user
+            user.username = request.POST.get('username', user.username)
+            user.full_name = request.POST.get('full_name', user.full_name)
+            user.email = request.POST.get('email', user.email)
+            user.phone = request.POST.get('phone', user.phone)
+            user.save()
+            messages.success(request, 'Your profile has been updated successfully.')
+            return redirect('user_panel:edit-user-profile')
+        
+        elif form_type == 'password_form':
+            # Handle password change
+            password_form = PasswordChangeForm(user=request.user, data=request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)  # Keep the user logged in
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('user_panel:edit-user-profile')
+            else:
+                messages.error(request, 'Please correct the error below.')
+    
+    return render(request, 'user_side/edit_user_profile.html', {'password_form': password_form})
+    
 
-        user = request.user
-        user.username = username
-        user.full_name = full_name
-        user.email = email
-        user.phone = phone
 
-        user.save()
-        messages.success(request, 'Profile updated successfully')
-        return redirect('user_panel:edit-user-profile')
 
-    return render(request,'user_side/edit_user_profile.html',{'user': request.user})
 
-def password_change(request):
 
-    return render(request,'user_side/edit_user_profile.html')
+
+
+    # if request.method == 'POST':
+    #     username = request.POST.get('username')
+    #     full_name = request.POST.get('full_name')
+    #     email = request.POST.get('email')
+    #     phone = request.POST.get('phone')
+
+    #     user = request.user
+    #     user.username = username
+    #     user.full_name = full_name
+    #     user.email = email
+    #     user.phone = phone
+
+    #     user.save()
+    #     messages.success(request, 'Profile updated successfully')
+    #     return redirect('user_panel:edit-user-profile')
+
+    # return render(request,'user_side/edit_user_profile.html',{'user': request.user})
+
+
+
+
+# def password_change(request):
+
+#     return render(request,'user_side/edit_user_profile.html')
 
