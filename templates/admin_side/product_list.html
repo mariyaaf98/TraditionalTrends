@@ -75,7 +75,7 @@
                                     <td style="width: 16%;"><h6 class="mb-0 title">{{ product.product_name }}</h6></td>
                                     <td style="width: 30%;">{{ product.product_description }}</td>
                                     <td style="width: 15%;">
-                                        {% if product.is_active %}
+                                        {% if not product.is_deleted %}
                                           <span class="badge rounded-pill alert-success">Avilable</span>
                                         {% else %}
                                           <span class="badge rounded-pill alert-danger">Not Avilable</span>
@@ -96,10 +96,20 @@
                                                 <button type="submit" class="btn btn-light rounded btn-sm font-sm me-2">Edit</button>
                                             </form>
                                             
-                                            <form method="POST" action="{% url 'product_management:delete-product' product.id %}" class="delete-form">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-danger rounded btn-sm font-sm delete-btn">Delete</button>
-                                            </form>
+                                           {% if product.is_deleted %}
+                                                <!-- Restore Product Form -->
+                                                <form method="POST" action="{% url 'product_management:restore-product' product.id %}" class="restore-form">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-success rounded btn-sm font-sm restore-btn">Restore</button>
+                                                </form>
+                                            {% else %}
+                                                <!-- Delete Product Form -->
+                                                <form method="POST" action="{% url 'product_management:delete-product' product.id %}" class="delete-form">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger rounded btn-sm font-sm delete-btn">Delete</button>
+                                                </form>
+                                            {% endif %}
+
                                         </div>
                                        </td>
                                 </tr>

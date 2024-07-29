@@ -1,0 +1,126 @@
+﻿{% extends 'user_side/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main">
+    <div class="page-header breadcrumb-wrap">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="{% url 'accounts:home' %}" rel="nofollow">Home</a>
+                <span></span> Shop
+                <span></span> Wishlist
+            </div>
+        </div>
+    </div>
+
+    <section class="mt-50 mb-50">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="table-responsive">
+                        <table class="table shopping-summery text-center">
+                            <thead>
+                                <tr class="main-heading">
+                                    <th scope="col" colspan="2">Product</th>
+                                    <th scope="col">Price</th>
+                                    <th scope="col">Stock Status</th>
+                                    <th scope="col">Action</th>
+                                    <th scope="col">Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in wishlist_items %}
+                                <tr>
+                                    <td class="image product-thumbnail">
+                                         <img src="{% if item.variant and item.variant.images.first %}{{ item.variant.images.first.image.url }}{% else %}{{ item.product.thumbnail.url }}{% endif %}" alt="{{ item.variant.product.product_name }}" class="img-fluid rounded-start">
+                                    </td>
+                                    <td class="product-des product-name">
+                                        <h5 class="product-name">
+                                            <a href="{% url 'user_panel:product-details' item.variant.product.id %}">
+                                                {{ item.variant.product.product_name }} - {{ item.variant.colour_name }}
+                                            </a>
+                                        </h5>
+                                        <p class="font-xs">
+                                            {{ item.variant.product.product_description|truncatewords:20 }}</p>
+                                    </td>
+                                    <td class="price" data-title="Price">
+                                        <span>₹{{ item.variant.product.offer_price }}</span>
+                                    </td>
+                                    <td class="text-center" data-title="Stock">
+                                        <span
+                                            class="{% if item.variant.variant_stock > 0 %}color3{% else %}text-danger{% endif %} font-weight-bold">
+                                            {% if item.variant.variant_stock > 0 %}In Stock{% else %}Out of
+                                            Stock{% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="text-right" data-title="Cart">
+                                        <button
+                                            onclick="addToCartFromWishlist({{ item.variant.product.id }}, {{ item.variant.id }})"
+                                            class="btn btn-sm">
+                                            <i class="fi-rs-shopping-bag mr-5"></i>Add to cart
+                                        </button>
+                                    </td>
+                                    <td class="action" data-title="Remove">
+                                        <a href="{% url 'wishlist:remove-from-wishlist' item.id %}" class="text-muted">
+                                            <i class="fi-rs-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">Your wishlist is empty.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+{% comment %} add to cart {% endcomment %}
+<script>
+function addToCartFromWishlist(productId, variantId) {
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch('{% url 'cart_management:add-to-cart' %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
+        },
+        body: `product_id=${productId}&variant_id=${variantId}&quantity=1`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            alert(data.message);
+            // Optionally update the cart UI here
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the item to the cart.');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock content %}

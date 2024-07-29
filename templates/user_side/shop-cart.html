@@ -77,6 +77,8 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
+        const MAX_QUANTITY = 5; // Maximum quantity allowed per product
+
         // Handle quantity update
         $(document).on('click', '.qty-btn', function(event) {
             event.preventDefault();
@@ -84,9 +86,15 @@
             const qtyInput = $(this).siblings('.qty-input');
             let quantity = parseInt(qtyInput.val());
             const availableStock = parseInt($(this).closest('.card').data('available-stock'));
+            
             if (isIncrease) {
                 if (quantity < availableStock) {
-                    quantity += 1;
+                    if (quantity < MAX_QUANTITY) {
+                        quantity += 1;
+                    } else {
+                        showMaxQuantityAlert();
+                        return;
+                    }
                 } else {
                     Swal.fire({
                         title: 'Stock Limit Exceeded',
@@ -94,130 +102,16 @@
                         icon: 'warning',
                         confirmButtonText: 'Okay'
                     });
+                    return;
                 }
             } else {
                 quantity = Math.max(1, quantity - 1);
             }
+            
             qtyInput.val(quantity);
             const cartItemId = $(this).closest('.card').data('cart-item-id');
-            // Send AJAX request to update quantity
-            $.ajax({
-                url: `{% url 'cart_management:update_cart_item' 0 %}`.replace('0', cartItemId),
-                method: 'POST',
-                data: {
-                    'quantity': quantity,
-                    'csrfmiddlewaretoken': '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        const itemTotalPrice = response.item_total_price;
-                        const itemTotalPriceElem = $(`.card[data-cart-item-id="${cartItemId}"] .item-total-price`);
-                        itemTotalPriceElem.text(`₹${itemTotalPrice}`);
-                        const cartTotalPrice = response.cart_total_price;
-                        $('#cart-total').text(`₹${cartTotalPrice}`);
-                    } else if (response.error) {
-                        Swal.fire({
-                            title: 'Error',
-                            text: response.error,
-                            icon: 'error',
-                            confirmButtonText: 'Okay'
-                        });
-                    }
-                },
-                error: function(response) {
-                    console.error('Error updating quantity:', response);
-                }
-            });
+            updateCartItem(cartItemId, quantity);
         });
-
-
-
-
-
-
-
-
-        $(document).ready(function() {
-    const MAX_QUANTITY = 5; // Maximum quantity allowed per product
-
-    // Handle quantity update
-    $(document).on('click', '.qty-btn', function(event) {
-        event.preventDefault();
-        const isIncrease = $(this).data('action') === 'increase';
-        const qtyInput = $(this).siblings('.qty-input');
-        let quantity = parseInt(qtyInput.val());
-        const availableStock = parseInt($(this).closest('.card').data('available-stock'));
-        
-        if (isIncrease) {
-            if (quantity < availableStock) {
-                if (quantity < MAX_QUANTITY) {
-                    quantity += 1;
-                } else {
-                    showMaxQuantityAlert();
-                    return;
-                }
-            } else {
-                Swal.fire({
-                    title: 'Stock Limit Exceeded',
-                    text: `Only ${availableStock} items are available in stock.`,
-                    icon: 'warning',
-                    confirmButtonText: 'Okay'
-                });
-                return;
-            }
-        } else {
-            quantity = Math.max(1, quantity - 1);
-        }
-        
-        qtyInput.val(quantity);
-        const cartItemId = $(this).closest('.card').data('cart-item-id');
-        updateCartItem(cartItemId, quantity);
-    });
-
-    // Handle item removal (unchanged)
-    $(document).on('click', '.remove-item', function(event) {
-        // ... (keep the existing code for item removal)
-    });
-
-    function updateCartItem(cartItemId, quantity) {
-        $.ajax({
-            url: `{% url 'cart_management:update_cart_item' 0 %}`.replace('0', cartItemId),
-            method: 'POST',
-            data: {
-                'quantity': quantity,
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    const itemTotalPrice = response.item_total_price;
-                    const itemTotalPriceElem = $(`.card[data-cart-item-id="${cartItemId}"] .item-total-price`);
-                    itemTotalPriceElem.text(`₹${itemTotalPrice}`);
-                    const cartTotalPrice = response.cart_total_price;
-                    $('#cart-total').text(`₹${cartTotalPrice}`);
-                } else if (response.error) {
-                    Swal.fire({
-                        title: 'Error',
-                        text: response.error,
-                        icon: 'error',
-                        confirmButtonText: 'Okay'
-                    });
-                }
-            },
-            error: function(response) {
-                console.error('Error updating quantity:', response);
-            }
-        });
-    }
-
-    function showMaxQuantityAlert() {
-        Swal.fire({
-            title: 'Maximum Quantity Reached',
-            text: `You can only add up to ${MAX_QUANTITY} items of this product to your cart.`,
-            icon: 'warning',
-            confirmButtonText: 'Okay'
-        });
-    }
-});
 
         // Handle item removal
         $(document).on('click', '.remove-item', function(event) {
@@ -252,6 +146,45 @@
                 }
             });
         });
+
+        function updateCartItem(cartItemId, quantity) {
+            $.ajax({
+                url: `{% url 'cart_management:update_cart_item' 0 %}`.replace('0', cartItemId),
+                method: 'POST',
+                data: {
+                    'quantity': quantity,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const itemTotalPrice = response.item_total_price;
+                        const itemTotalPriceElem = $(`.card[data-cart-item-id="${cartItemId}"] .item-total-price`);
+                        itemTotalPriceElem.text(`₹${itemTotalPrice}`);
+                        const cartTotalPrice = response.cart_total_price;
+                        $('#cart-total').text(`₹${cartTotalPrice}`);
+                    } else if (response.error) {
+                        Swal.fire({
+                            title: 'Error',
+                            text: response.error,
+                            icon: 'error',
+                            confirmButtonText: 'Okay'
+                        });
+                    }
+                },
+                error: function(response) {
+                    console.error('Error updating quantity:', response);
+                }
+            });
+        }
+
+        function showMaxQuantityAlert() {
+            Swal.fire({
+                title: 'Maximum Quantity Reached',
+                text: `You can only add up to ${MAX_QUANTITY} items of this product to your cart.`,
+                icon: 'warning',
+                confirmButtonText: 'Okay'
+            });
+        }
     });
 </script>
 

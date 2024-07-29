@@ -352,7 +352,7 @@
                 <div class="col-lg-9">
                     <div class="shop-product-fillter">
                         <div class="totall-product">
-                            <p> We found <strong class="text-brand">688</strong> items for you!</p>
+                            <p>We found <strong class="text-brand">{{ product_count }}</strong> items for you!</p>
                         </div>
                         <div class="sort-by-product-area">
                             <div class="sort-by-cover mr-10">
@@ -682,39 +682,32 @@
 <script src="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.js"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var priceSlider = document.getElementById('price-slider');
-        var initialMinPrice = parseFloat("{{ min_price }}") || 0;
-        var initialMaxPrice = parseFloat("{{ max_product_price }}") || parseFloat("{{ max_price }}") || 0;
-        noUiSlider.create(priceSlider, {
-            start: [initialMinPrice, initialMaxPrice],
-            connect: true,
-            range: {
-                'min': 0,
-                'max': initialMaxPrice
+$(document).ready(function() {
+    $('.add-to-wishlist').on('click', function(e) {
+        e.preventDefault();
+        var url = $(this).attr('href');
+        var variantId = $('#selected-variant-id').val(); // Get the selected variant ID from the hidden input
+        
+        $.ajax({
+            url: url,
+            type: 'POST', // Change to POST method
+            data: {
+                'variant_id': variantId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}' // Include CSRF token
             },
-            tooltips: true,
-            format: {
-                to: function(value) {
-                    return '₹' + value.toFixed(2);
-                },
-                from: function(value) {
-                    return Number(value.replace('₹', ''));
+            success: function(response) {
+                if(response.status === 'success') {
+                    alert(response.message);
+                } else {
+                    alert('Error: ' + response.message);
                 }
+            },
+            error: function(xhr, status, error) {
+                alert('Error adding item to wishlist. Please try again.');
+                console.log(xhr.responseText); // Log the error for debugging
             }
         });
-        // Update hidden inputs and form submission on slider update
-        priceSlider.noUiSlider.on('update', function(values, handle) {
-            document.getElementById('min_price').value = values[0];
-            document.getElementById('max_price').value = values[1];
-        });
-        // Handle form submission
-        document.getElementById('filter-button').addEventListener('click', function() {
-            var minPrice = document.getElementById('min_price').value;
-            var maxPrice = document.getElementById('max_price').value;
-            window.location.href = `?min_price=${minPrice}&max_price=${maxPrice}`;
-        });
     });
+});
 </script>
-
 {% endblock content %}

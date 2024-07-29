@@ -33,7 +33,6 @@ def add_product(request):
             category = Category.objects.get(id=product_category_id) if product_category_id else None
             brand = Brand.objects.get(id=product_brand_id) if product_brand_id else None
 
-            # Create the product instance
             product = Products.objects.create(
                 product_name=product_name,
                 product_description=product_description,
@@ -45,7 +44,6 @@ def add_product(request):
                 is_active=is_active,
             )
 
-            # Save images associated with the product
             for image in images:
                 Product_images.objects.create(product=product, images=image)
 
@@ -71,7 +69,7 @@ def product_list(request):
         return redirect("admin_panel:admin_login")
     
     images = Product_images.objects.all()
-    products = Products.objects.filter(is_deleted=False)
+    products = Products.objects.all()
     categories = Products.objects.filter().order_by("id").reverse()
 
     return render(request, "admin_side/product_list.html", {"categories": categories, 'products': products, 'images': images})
@@ -91,6 +89,22 @@ def delete_product(request, product_id):
         return redirect("product_management:product-list")
 
     return redirect("product_management:product-list")
+
+
+def restore_product(request, product_id):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+
+    product = get_object_or_404(Products, id=product_id)
+
+    if request.method == "POST":
+        product.is_deleted = False
+        product.save()
+        messages.success(request, "Product restored successfully")
+        return redirect("product_management:product-list")
+
+    return redirect("product_management:product-list")
+
 
 def edit_product(request, product_id):
     products = get_object_or_404(Products, id=product_id)
@@ -195,7 +209,6 @@ def add_variant(request, product_id):
             messages.error(request, f"A variant with the colour name '{colour_name}' already exists for this product.")
             return redirect('product_management:add-variant', product_id=product_id)
         
-        # Create new variant
         new_variant = Product_Variant.objects.create(
             product=product,
             colour_name=colour_name,

@@ -3,36 +3,61 @@
 {% block content %}
 <style>
     .star-rating {
-        direction: rtl;
-        font-size: 2rem;
-        display: flex;
-        justify-content: center;
-        cursor: pointer;
+        font-size: 0;
+        white-space: nowrap;
+        display: inline-block;
+        width: 250px;
+        height: 50px;
+        overflow: hidden;
+        position: relative;
+        background: url('data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMjBweCIgaGVpZ2h0PSIyMHB4IiB2aWV3Qm94PSIwIDAgMjAgMjAiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDIwIDIwIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cG9seWdvbiBmaWxsPSIjREREREREIiBwb2ludHM9IjEwLDAgMTMuMDksNi41ODMgMjAsNy42MzkgMTUsMTIuNzY0IDE2LjE4LDIwIDEwLDE2LjU4MyAzLjgyLDIwIDUsMTIuNzY0IDAsNy42MzkgNi45MSw2LjU4MyAiLz48L3N2Zz4=');
+        background-size: contain;
     }
 
-    .star {
-        color: #ccc;
+    .star-rating i {
+        opacity: 0;
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 20%;
+        z-index: 1;
+        background: url('data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMjBweCIgaGVpZ2h0PSIyMHB4IiB2aWV3Qm94PSIwIDAgMjAgMjAiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDIwIDIwIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cG9seWdvbiBmaWxsPSIjRkZERjg4IiBwb2ludHM9IjEwLDAgMTMuMDksNi41ODMgMjAsNy42MzkgMTUsMTIuNzY0IDE2LjE4LDIwIDEwLDE2LjU4MyAzLjgyLDIwIDUsMTIuNzY0IDAsNy42MzkgNi45MSw2LjU4MyAiLz48L3N2Zz4=');
+        background-size: contain;
     }
 
-    .star.selected,
-    .star:hover,
-    .star:hover~.star {
-        color: #f39c12;
+    .star-rating input {
+        -moz-appearance: none;
+        -webkit-appearance: none;
+        opacity: 0;
+        display: inline-block;
+        width: 20%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        z-index: 2;
+        position: relative;
     }
 
-    .star-rating-display {
-        display: flex;
+    .star-rating input:hover+i,
+    .star-rating input:checked+i {
+        opacity: 1;
     }
 
-    .star {
-        font-size: 2rem;
-        color: #ccc;
-        /* Default star color */
+    .star-rating i~i {
+        width: 40%;
     }
 
-    .star.filled {
-        color: gold;
-        /* Filled star color */
+    .star-rating i~i~i {
+        width: 60%;
+    }
+
+    .star-rating i~i~i~i {
+        width: 80%;
+    }
+
+    .star-rating i~i~i~i~i {
+        width: 100%;
     }
 </style>
 <main class="main">
@@ -166,8 +191,10 @@
                                             <div class="product-extra-link2">
                                                 <button type="submit" class="button button-add-to-cart">Add to
                                                     cart</button>
-                                                <a aria-label="Add To Wishlist" class="action-btn hover-up"
-                                                    href="shop-wishlist.html">
+                                                <a aria-label="Add To Wishlist"
+                                                    class="action-btn hover-up add-to-wishlist"
+                                                    href="{% url 'wishlist:add-to-wishlist' product.id %}"
+                                                    data-variant-id="{{ selected_variant.id }}">
                                                     <i class="fi-rs-heart"></i>
                                                 </a>
                                                 <a aria-label="Compare" class="action-btn hover-up"
@@ -177,14 +204,6 @@
                                             </div>
                                         </div>
                                     </form>
-
-                                    <ul class="product-meta font-xs color-grey mt-50">
-                                        <li class="mb-5">SKU: <a href="#">FWM15VKT</a></li>
-                                        <li class="mb-5">Tags: <a href="#" rel="tag">Cloth</a>, <a href="#"
-                                                rel="tag">Women</a>, <a href="#" rel="tag">Dress</a> </li>
-                                        <li>Availability:<span class="in-stock text-success ml-5">8 Items In
-                                                Stock</span></li>
-                                    </ul>
                                 </div>
                                 <!-- Detail Info -->
                             </div>
@@ -225,167 +244,46 @@
                                         exceptional service with every order.
                                     </p>
                                 </div>
-                                <div class="social-icons single-share">
-                                    <ul class="text-grey-5 d-inline-block">
-                                        <li><strong class="mr-10">Share this:</strong></li>
-                                        <li class="social-facebook"><a href="#"><img
-                                                    src="assets/imgs/theme/icons/icon-facebook.svg" alt=""></a></li>
-                                        <li class="social-twitter"> <a href="#"><img
-                                                    src="assets/imgs/theme/icons/icon-twitter.svg" alt=""></a></li>
-                                        <li class="social-instagram"><a href="#"><img
-                                                    src="assets/imgs/theme/icons/icon-instagram.svg" alt=""></a></li>
-                                        <li class="social-linkedin"><a href="#"><img
-                                                    src="assets/imgs/theme/icons/icon-pinterest.svg" alt=""></a></li>
-                                    </ul>
-                                </div>
-                                <h3 class="section-title style-1 mb-30 mt-30">Reviews (3)</h3>
-                                <!--Comments-->
-                                <div class="comments-area style-2">
-                                    <div class="row">
-                                        <div class="col-lg-8">
-                                            <h4 class="mb-30">Customer questions & answers</h4>
-                                            {% for review in reviews %}
-                                            {% if review %}
-                                            <div class="comment-list">
-                                                <div class="single-comment justify-content-between d-flex">
-                                                    <div class="user justify-content-between d-flex">
-                                                        <div class="thumb text-center">
-                                                            <img src="{% static 'user_side/assets/imgs/page/avatar-6.jpg' %}"
-                                                                alt="">
-                                                            <h6><a href="#">{{ review.user }}</a></h6>
-                                                            <p class="font-xxs">Since 2012</p>
-                                                        </div>
-                                                        <div class="desc">
 
-                                                            <div class="star-rating-display"
-                                                                data-rating="{{ review.rating }}">
-                                                                <span class="star">&#9733;</span>
-                                                                <span class="star">&#9733;</span>
-                                                                <span class="star">&#9733;</span>
-                                                                <span class="star">&#9733;</span>
-                                                                <span class="star">&#9733;</span>
-                                                            </div>
-
-                                                            <p>{{ review.comment }}</p>
-                                                            <div class="d-flex justify-content-between">
-                                                                <div class="d-flex align-items-center">
-                                                                    <p class="font-xs mr-30">{{ review.created_at }}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <div style="margin-left:100px; width:50px;">
-                                                                <form
-                                                                    action="{% url 'product:review_delete' review.id %}"
-                                                                    method="post">
-                                                                    {% csrf_token %}
-                                                                    <button class="btn btn-danger "
-                                                                        type="submit">Delete</button>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                            <div class="col-lg-4">
-                                                <h4 class="mb-30">Customer reviews</h4>
-                                                <div class="d-flex mb-30">
-                                                    <div class="star-rating-display"
-                                                        data-rating="{{ products.get_average_rating }}">
-                                                        <span class="star">&#9733;</span>
-                                                        <span class="star">&#9733;</span>
-                                                        <span class="star">&#9733;</span>
-                                                        <span class="star">&#9733;</span>
-                                                        <span class="star">&#9733;</span>
-                                                    </div>
-
-                                                    <h6></h6>
-                                                </div>
-                                                <div class="progress">
-                                                    <span>5 star</span>
-                                                    <div class="progress-bar" role="progressbar" style="width: 50%;"
-                                                        aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">50%
-                                                    </div>
-                                                </div>
-                                                <div class="progress">
-                                                    <span>4 star</span>
-                                                    <div class="progress-bar" role="progressbar" style="width: 25%;"
-                                                        aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%
-                                                    </div>
-                                                </div>
-                                                <div class="progress">
-                                                    <span>3 star</span>
-                                                    <div class="progress-bar" role="progressbar" style="width: 45%;"
-                                                        aria-valuenow="45" aria-valuemin="0" aria-valuemax="100">45%
-                                                    </div>
-                                                </div>
-                                                <div class="progress">
-                                                    <span>2 star</span>
-                                                    <div class="progress-bar" role="progressbar" style="width: 65%;"
-                                                        aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65%
-                                                    </div>
-                                                </div>
-                                                <div class="progress mb-30">
-                                                    <span>1 star</span>
-                                                    <div class="progress-bar" role="progressbar" style="width: 85%;"
-                                                        aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">85%
-                                                    </div>
-                                                </div>
-                                                <a href="#" class="font-xs text-muted">How are ratings calculated?</a>
-                                            </div>
+                                <div>
+                                    <form method="post" action="{% url 'user_panel:add_review' product.id %}">
+                                        {% csrf_token %}
+                                        <div class="form-group">
+                                            <label>Your Rating:</label>
+                                            <span class="star-rating">
+                                                <input type="radio" name="rating" value="1"><i></i>
+                                                <input type="radio" name="rating" value="2"><i></i>
+                                                <input type="radio" name="rating" value="3"><i></i>
+                                                <input type="radio" name="rating" value="4"><i></i>
+                                                <input type="radio" name="rating" value="5"><i></i>
+                                            </span>
                                         </div>
+                                        <div class="form-group">
+                                            <label for="comment">Your Review:</label>
+                                            <textarea name="comment" id="comment" required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Submit Review</button>
+                                    </form>
+                                    <h3>Reviews ({{ product.reviews.count }})</h3>
+                                    {% if product.reviews.exists %}
+                                    {% for review in product.reviews.all %}
+                                    <div class="review">
+                                        <div class="star-rating" style="pointer-events:none;">
+                                            {% for i in "12345" %}
+                                            {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star" style="color: #FFDF88;"></i>
+                                            {% else %}
+                                            <i class="far fa-star" style="color: #DDDDDD;"></i>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <p>{{ review.comment }}</p>
+                                        <p>By: {{ review.user.username }} on {{ review.created_at|date:"F d, Y" }}</p>
                                     </div>
-                                    <!--comment form-->
-                                    <div class="comment-form">
-                                        <h4 class="mb-15">Add a review</h4>
-                                        <div class="d-flex mb-30">
-                                            <div class="star-rating-display"
-                                                data-rating="{{ products.get_average_rating }}">
-                                                <span class="star">&#9733;</span>
-                                                <span class="star">&#9733;</span>
-                                                <span class="star">&#9733;</span>
-                                                <span class="star">&#9733;</span>
-                                                <span class="star">&#9733;</span>
-                                            </div>
-
-                                            <h6></h6>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-lg-8 col-md-12">
-                                                <form method="post" class="form-contact comment_form" action=""
-                                                    id="commentForm">
-                                                    {% csrf_token %}
-                                                    <div class="row">
-                                                        <div class="col-12">
-                                                            <div class="form-group">
-                                                                <textarea class="form-control w-100" name="comment"
-                                                                    id="comment" cols="30" rows="9"
-                                                                    placeholder="Write Comment"></textarea>
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <div class="star-rating" id="star-rating">
-                                                                <span class="star" data-value="1">&#9733;</span>
-                                                                <span class="star" data-value="2">&#9733;</span>
-                                                                <span class="star" data-value="3">&#9733;</span>
-                                                                <span class="star" data-value="4">&#9733;</span>
-                                                                <span class="star" data-value="5">&#9733;</span>
-                                                            </div>
-                                                            <input type="hidden" id="rating" name="rating" value="0">
-
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <button type="submit" class="button button-contactForm">Submit
-                                                            Review</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <p>No reviews yet. Be the first to review this product!</p>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -478,49 +376,16 @@
 
 {% comment %} review {% endcomment %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const stars = document.querySelectorAll('.star-rating .star');
-        const ratingInput = document.getElementById('rating');
-
-        function fillStars(upToIndex, className) {
-            stars.forEach((star, index) => {
-                if (index <= upToIndex) {
-                    star.classList.add(className);
-                } else {
-                    star.classList.remove(className);
-                }
-            });
-        }
-
-        function clearHoverStars() {
-            stars.forEach(star => star.classList.remove('hovered'));
-        }
-        stars.forEach((star, index) => {
-            // Handle click event
-            star.addEventListener('click', function() {
-                ratingInput.value = index + 1;
-                fillStars(index, 'selected');
-            });
-            // Handle mouseover event
-            star.addEventListener('mouseover', function() {
-                clearHoverStars();
-                fillStars(index, 'hovered');
-            });
-            // Handle mouseout event
-            star.addEventListener('mouseout', function() {
-                clearHoverStars();
-            });
-        });
-        // Initial rendering based on data-rating attribute for static star displays
-        const starContainers = document.querySelectorAll('.star-rating-display');
-        starContainers.forEach(container => {
-            const rating = parseInt(container.getAttribute('data-rating'));
-            const stars = container.querySelectorAll('.star');
-            stars.forEach((star, index) => {
-                if (index < rating) {
-                    star.classList.add('filled');
-                }
-            });
+    const starRating = document.querySelector('.star-rating');
+    const stars = starRating.querySelectorAll('input');
+    stars.forEach((star, index) => {
+        star.addEventListener('click', () => {
+            for (let i = 0; i <= index; i++) {
+                stars[i].checked = true;
+            }
+            for (let i = index + 1; i < stars.length; i++) {
+                stars[i].checked = false;
+            }
         });
     });
 </script>
@@ -605,6 +470,38 @@
                 const imageUrls = this.dataset.imageUrls.split(',');
                 // Update the images using the `imageUrls` array
                 console.log(imageUrls); // Replace with your image update logic
+            });
+        });
+    });
+</script>
+
+{% comment %} add to wish list {% endcomment %}
+
+<script>
+    $(document).ready(function() {
+        $('.add-to-wishlist').on('click', function(e) {
+            e.preventDefault();
+            var url = $(this).attr('href');
+            var variantId = $('#selected-variant-id')
+        .val(); // Get the selected variant ID from the hidden input
+            $.ajax({
+                url: url,
+                type: 'POST', // Change to POST method
+                data: {
+                    'variant_id': variantId,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}' // Include CSRF token
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        alert(response.message);
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('Error adding item to wishlist. Please try again.');
+                    console.log(xhr.responseText); // Log the error for debugging
+                }
             });
         });
     });

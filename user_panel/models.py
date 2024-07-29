@@ -1,5 +1,6 @@
 from django.db import models
 from accounts.models import User
+from product_management.models import Products
 
 
 class Address(models.Model):
@@ -21,3 +22,13 @@ class Address(models.Model):
         if self.default:
             Address.objects.filter(user=self.user, default=True).update(default=False)
         super().save(*args, **kwargs)
+
+class ProductReview(models.Model):
+    product = models.ForeignKey(Products, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.IntegerField()
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']

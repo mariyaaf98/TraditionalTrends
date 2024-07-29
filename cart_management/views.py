@@ -13,7 +13,8 @@ from order_management.models import Order,OrderItem
 import datetime 
 from django.utils.timezone import now
 from datetime import timedelta
-# *******************************************
+import re
+
 @login_required
 @require_POST
 def add_to_cart(request):
@@ -66,7 +67,11 @@ def add_to_cart(request):
 def cart_view(request):
     cart_items = CartItem.objects.filter(cart__user=request.user).select_related('variant__product')
 
-    cart_total = sum(item.quantity * (item.variant.product.offer_price if item.variant else item.product.offer_price) for item in cart_items)
+    cart_total = sum(
+        item.quantity * (item.variant.product.offer_price if item.variant else item.product.offer_price)
+        for item in cart_items
+    )
+
     context = {
         'cart_items': [
             {
@@ -81,6 +86,9 @@ def cart_view(request):
         'cart_total': cart_total,
     }
     return render(request, 'user_side/shop-cart.html', context)
+
+
+
 
 @login_required
 @require_POST
@@ -150,7 +158,21 @@ def clear_cart(request):
 def checkout(request):
     cart, created = Cart.objects.get_or_create(user=request.user, is_active=True)
     cart_items = CartItem.objects.filter(cart=cart)
+
+    if not cart_items.exists():
+        messages.error(request, "Your cart is empty. Please add items before proceeding to checkout.")
+        return redirect('cart_management:cart')
+    
     total_price = sum(item.variant.product.offer_price * item.quantity for item in cart_items)
+    for item in cart_items:
+        if item.quantity > item.variant.variant_stock:
+            messages.error(request, f"Insufficient stock for {item.variant.product.product_name}.")
+            return redirect('cart_management:cart')
+        if item.variant.product.is_deleted or  item.variant.is_deleted:
+            messages.error(request, f"{item.variant.product.product_name} is no longer available.")
+            return redirect('cart_management:cart')
+
+    
     
     address_list = Address.objects.filter(user=request.user)
     selected_address = address_list.filter(default=True).first()
@@ -169,7 +191,7 @@ def checkout(request):
                 if selected_address:
                     try:
                         with transaction.atomic():
-                            # Check stock and update variant quantities
+                            # stock and update variant quantities
                             for item in cart_items:
                                 variant = item.variant
                                 if variant.variant_stock < item.quantity:
@@ -196,7 +218,6 @@ def checkout(request):
                                 order_id=f"ORDER-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}-{request.user.id}"
                             )
 
-                            # Create order items
                             for item in cart_items:
                                 OrderItem.objects.create(
                                     main_order=order,
@@ -206,7 +227,6 @@ def checkout(request):
                                     is_active=True
                                 )
 
-                            # Clear the cart
                             CartItem.objects.filter(cart=cart).delete()
                             cart.is_active = False
                             cart.save()
@@ -251,4 +271,57 @@ def update_default_address(request):
             return JsonResponse({'status': 'error', 'message': 'Invalid address selected.'})
     return JsonResponse({'status': 'error', 'message': 'No address selected.'})
 
+
+@login_required
+def checkout_add_address(request):
+    addresses = Address.objects.filter(user=request.user)
     
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        house_name = request.POST.get('house_name')
+        street_name = request.POST.get('street_name')
+        pin_number = request.POST.get('pin_number')
+        district = request.POST.get('district')
+        state = request.POST.get('state')
+        country = request.POST.get('country')
+        phone_number = request.POST.get('phone_number')
+        default = 'default' in request.POST
+        
+        print(f"Received POST data: {request.POST}")  # Debugging line
+
+        # Validate required fields
+        if not all([name, house_name, street_name, pin_number, district, state, country, phone_number]):
+            messages.error(request, 'All fields are required.')
+            return redirect('cart_management:checkout-add-address')
+        
+        # Validate address fields
+        pattern = r'^[A-Za-z\s]*$'
+        if not (re.match(pattern, name) and re.match(pattern, house_name) and
+                re.match(pattern, street_name) and re.match(pattern, district) and
+                re.match(pattern, state) and re.match(pattern, country)):
+            messages.error(request, 'Address fields should only contain letters and spaces.')
+            return redirect('cart_management:checkout-add-address')
+        
+        # Validate phone number
+        if not phone_number.isdigit() or int(phone_number) == 0:
+            messages.error(request, 'Phone number must be numeric and cannot be all zeros.')
+            return redirect('cart_management:checkout-add-address')
+        
+        # Create and save the new address
+        address = Address(
+            user=request.user,
+            name=name,
+            house_name=house_name,
+            street_name=street_name,
+            pin_number=pin_number,
+            district=district,
+            state=state,
+            country=country,
+            phone_number=phone_number,
+            default=default
+        )
+        address.save()
+        messages.success(request, 'Address added successfully!')
+        return redirect('cart_management:checkout')  # Redirect to checkout or a relevant page
+
+    return render(request, 'user_side/checkout.html', {'addresses': addresses})

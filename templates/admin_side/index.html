@@ -4,17 +4,7 @@
 {% block content %}
 
     <div class="screen-overlay"></div>
-    <aside class="navbar-aside" id="offcanvas_aside">
-        <div class="aside-top">
-            <a href="index.html" class="brand-wrap">
-                <img src="{% static 'admin_side/assets/imgs/theme/logo.svg' %}" class="logo" alt="Evara Dashboard">
-            </a>
-            <div>
-                <button class="btn btn-icon btn-aside-minimize"> <i class="text-muted material-icons md-menu_open"></i> </button>
-            </div>
-        </div>
-        {% include 'admin_side/sidebar.html' %}
-    </aside>
+    {% include 'admin_side/sidebar.html' %}
     <main class="main-wrap">
         {% include 'admin_side/header.html'%}
 

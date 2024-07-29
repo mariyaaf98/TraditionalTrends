@@ -1,0 +1,68 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+{% block content %}
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html'%}
+    <section class="content-main">
+        <div class="content-header">
+            <div>
+                <h2 class="content-title card-title">Order List </h2>
+                <p>Lorem ipsum dolor sit amet.</p>
+            </div>
+            <div>
+                <input type="text" placeholder="Search order ID" class="form-control bg-white">
+            </div>
+        </div>
+        <div class="card mb-4">
+            <!-- ... (header remains the same) ... -->
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#ID</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Total</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Date</th>
+                                <th scope="col" class="text-end"> Action </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td>{{order.order_id}}</td>
+                                <td><b>{{ order.user.username }}</b></td>
+                                <td>{{ order.user.email }}</td>
+                                <td>{{ order.total_amount }}</td>
+                                <td>
+                                    <span class="badge rounded-pill 
+                                        {% if order.order_status == 'Order Placed' %}bg-secondary
+                                        {% elif order.order_status == 'Pending' %}bg-warning
+                                        {% elif order.order_status == 'Processing' %}bg-info
+                                        {% elif order.order_status == 'Shipped' %}bg-primary
+                                        {% elif order.order_status == 'Delivered' %}bg-success
+                                        {% elif order.order_status == 'Cancelled' %}bg-danger{% endif %} 
+                                        text-white">
+                                        {{ order.order_status }}
+                                    </span>
+                                </td>
+                                <td>{{ order.date }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'order_management:admin-order-detail' order.id %}"
+                                        class="btn btn-md rounded font-sm">Detail</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div> <!-- table-responsive //end -->
+            </div> <!-- card-body end// -->
+        </div> <!-- card end// -->
+        <!-- ... (pagination remains the same) ... -->
+    </section> <!-- content-main end// -->
+</main>
+{% endblock content %}

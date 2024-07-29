@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'user_panel',
     'cart_management',
     'order_management',
-    
+    'wishlist',
 ]
 
 MIDDLEWARE = [
@@ -73,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'TraditionalTrends.context_processors.cart_context_processor',
             ],
         },
     },

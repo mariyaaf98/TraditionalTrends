@@ -54,7 +54,7 @@
          <div class="container">
              <div class="header-wrap">
                  <div class="logo logo-width-1">
-                     <a href="index.html"><img src="{% static 'user_side/assets/imgs/theme/logo.svg' %}" alt="logo"></a>
+                     <a href="{% url 'accounts:home'%}"><img src="{% static 'user_side/assets/imgs/theme/Capture.PNG' %}" alt="logo"></a>
                  </div>
                  <div class="header-right">
                      <div class="search-style-2">
@@ -74,7 +74,7 @@
                      <div class="header-action-right">
                          <div class="header-action-2">
                              <div class="header-action-icon-2">
-                                 <a href="shop-wishlist.html">
+                                 <a href="{% url 'wishlist:view-wishlist' %}">
                                      <img class="svgInject" alt="Evara"
                                          src="{% static 'user_side/assets/imgs/theme/icons/icon-heart.svg' %}">
                                      <span class="pro-count blue">4</span>

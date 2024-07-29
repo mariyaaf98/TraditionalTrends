@@ -1,0 +1,14 @@
+{% extends 'user_side/ase.html' %}
+
+{% block content %}
+<h2>Your Wishlist</h2>
+{% if items %}
+    <ul>
+    {% for item in items %}
+        <li>{{ item.variant.product.product_name }} - {{ item.variant.colour_name }}</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>Your wishlist is empty.</p>
+{% endif %}
+{% endblock %}

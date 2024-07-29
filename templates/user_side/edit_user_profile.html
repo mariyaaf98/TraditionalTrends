@@ -7,30 +7,32 @@
         {% include 'user_side/user_dashboard.html' %}
         <div class="col-md-8">
             <div class="card border-0 shadow-sm mb-4">
-            {% for message in messages %}
-                            {% if message.tags == 'success' %}
-                                <p class="alert alert-success">{{ message }}</p>
-                            {% elif message.tags == 'error' %}
-                                <p class="alert alert-danger">{{ message }}</p>
-                            {% elif message.tags == 'warning' %}
-                                <p class="alert alert-warning">{{ message }}</p>
-                            {% else %}
-                             <p>{{ message }}</p>
-                            {% endif %}
-                        {% endfor %}
+                {% for message in messages %}
+                {% if message.tags == 'success' %}
+                <p class="alert alert-success">{{ message }}</p>
+                {% elif message.tags == 'error' %}
+                <p class="alert alert-danger">{{ message }}</p>
+                {% elif message.tags == 'warning' %}
+                <p class="alert alert-warning">{{ message }}</p>
+                {% else %}
+                <p>{{ message }}</p>
+                {% endif %}
+                {% endfor %}
                 <div class="card-body">
                     <h4 class="card-title mb-4">Edit Profile</h4>
-                    <form method="POST" >
+                    <form method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="form_type" value="profile_form">
                         <div class="row g-3">
                             <div class="col-sm-6">
                                 <label class="form-label">Username</label>
-                                <input type="text" class="form-control" name="username" value="{{ user.username }}" required>
+                                <input type="text" class="form-control" name="username" value="{{ user.username }}"
+                                    required>
                             </div>
                             <div class="col-sm-6">
                                 <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" name="full_name" value="{{ user.full_name }}" required>
+                                <input type="text" class="form-control" name="full_name" value="{{ user.full_name }}"
+                                    required>
                             </div>
                             <div class="col-sm-6">
                                 <label class="form-label">Email</label>
@@ -47,11 +49,10 @@
                     </form>
                 </div>
             </div>
-
-             <div class="card border-0 shadow-sm mb-4">
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
                     <h4 class="card-title mb-4">Change Password</h4>
-                    <form method="POST" >
+                    <form method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="form_type" value="password_form">
                         {{ password_form.as_p }}
@@ -60,7 +61,7 @@
                         </div>
                     </form>
                 </div>
-            </div> 
+            </div>
         </div>
     </div>
 </main>

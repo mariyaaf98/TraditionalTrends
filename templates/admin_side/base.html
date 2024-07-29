@@ -10,18 +10,7 @@
 
     {% block content %}
 
-    <!-- message  -->
-    {% for message in messages %}
-        {% if message.tags == 'success' %}
-            <p class="alert alert-success">{{ message }}</p>
-        {% elif message.tags == 'error' %}
-            <p class="alert alert-danger">{{ message }}</p>
-        {% elif message.tags == 'warning' %}
-            <p class="alert alert-warning">{{ message }}</p>
-        {% else %}
-        <p>{{ message }}</p>
-        {% endif %}
-    {% endfor %}
+    
 
     
     {% endblock content %}

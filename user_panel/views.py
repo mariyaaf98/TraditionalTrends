@@ -12,8 +12,8 @@ from django.db.models import Q
 from product_management .models import Products
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
-
-
+from .forms import ProductReview
+import re
 
 
 def variant_images_view(request, variant_id):
@@ -24,8 +24,6 @@ def variant_images_view(request, variant_id):
     except Product_Variant.DoesNotExist:
         return JsonResponse({'error': 'Variant not found'}, status=404)
     
-
-
 
 @login_required
 def add_address(request):
@@ -46,11 +44,18 @@ def add_address(request):
             messages.error(request, 'All fields are required.')
             return redirect('user_panel:add-address')
         
-        if not (name.isalnum() and house_name.isalnum() and street_name.isalnum() and
-                district.isalnum() and state.isalnum() and country.isalnum()):
-            messages.error(request, 'Fields should not contain whitespace or special characters.')
+        pattern = r'^[A-Za-z][A-Za-z\s]*$'
+        
+        if not (re.match(pattern, name) and re.match(pattern, house_name) and
+            re.match(pattern, street_name) and re.match(pattern, district) and
+            re.match(pattern, state) and re.match(pattern, country)):
+         messages.error(request, 'Fields should start with a letter and can contain only letters and spaces.')
+         return redirect('user_panel:add-address')
+        
+        if not phone_number.isdigit() or int(phone_number) == 0:
+            messages.error(request, 'Phone number must be numeric and cannot be all zeros.')
             return redirect('user_panel:add-address')
-
+        
         address = Address(
             user=request.user,
             name=name,
@@ -65,15 +70,13 @@ def add_address(request):
         )
         address.save()
         return redirect('user_panel:add-address')
-
-    
     return render(request, 'user_side/address_form.html', {'addresses': addresses})
+
 
 @login_required
 def edit_address(request, address_id):
 
     address = get_object_or_404(Address, id=address_id, user=request.user)
-
 
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -86,20 +89,23 @@ def edit_address(request, address_id):
         phone_number = request.POST.get('phone_number')
         default = 'default' in request.POST
 
-    
 
-
-         #validattions
         if not all([name, house_name, street_name, pin_number, district, state, country, phone_number]):
             messages.error(request, 'All fields are required.')
-            return redirect('user_panel:edit-address', address_id=address_id)
-
-       
-        if not (name.isalnum() and house_name.isalnum() and street_name.isalnum() and
-                district.isalnum() and state.isalnum() and country.isalnum()):
-            messages.error(request, 'Fields should not contain whitespace or special characters.')
-            return redirect('user_panel:edit-address', address_id=address_id)
+            return redirect('user_panel:add-address')
         
+        pattern = r'^[A-Za-z][A-Za-z\s]*$'
+        
+        if not (re.match(pattern, name) and re.match(pattern, house_name) and
+            re.match(pattern, street_name) and re.match(pattern, district) and
+            re.match(pattern, state) and re.match(pattern, country)):
+         messages.error(request, 'Fields should start with a letter and can contain only letters and spaces.')
+         return redirect('user_panel:add-address')
+        
+        if not phone_number.isdigit() or int(phone_number) == 0:
+            messages.error(request, 'Phone number must be numeric and cannot be all zeros.')
+            return redirect('user_panel:add-address')
+
 
         address.name = name
         address.house_name = house_name
@@ -120,18 +126,14 @@ def edit_address(request, address_id):
 def delete_address(request, address_id):
     address = get_object_or_404(Address, id=address_id)
     address.delete()
-    # return JsonResponse({'message': 'Address deleted successfully.'})
     return redirect('user_panel:add-address')
 
 
 
 def product_details(request, product_id):
     product = get_object_or_404(Products, id=product_id)
-    
-    # Fetch variants and their images
+
     variants = Product_Variant.objects.filter(product=product).prefetch_related('images')
-    
-    # Determine selected variant (default to first variant)
     selected_variant = variants.first()
     variant_images = selected_variant.images.all() if selected_variant else VariantImage.objects.none()
 
@@ -145,7 +147,6 @@ def product_details(request, product_id):
     for variant in variants:
         variant.image_urls = [image.image.url for image in variant.images.all()]
 
-    # Get related products
     related_products = product.related_products()
 
 
@@ -158,6 +159,31 @@ def product_details(request, product_id):
     }
     return render(request, 'user_side/product_details.html', context)
 
+@login_required
+def add_review(request, product_id):
+    product = get_object_or_404(Products, id=product_id)
+    rating = request.POST.get('rating')
+    comment = request.POST.get('comment')
+    
+    review = ProductReview.objects.create(
+        product=product,
+        user=request.user,
+        rating=rating,
+        comment=comment
+    )
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'review': {
+                'rating': review.rating,
+                'comment': review.comment,
+                'user': review.user.username,
+                'created_at': review.created_at.isoformat()
+            }
+        })
+    
+    return redirect('user_panel:product-details', product_id=product_id)
 
 
 
@@ -206,6 +232,8 @@ def shop_list(request):
     elif sort_by == 'z_to_a':
         products = products.order_by('-product_name')
 
+    product_count = products.count()
+
     context = {
         'products': products,
         'categories': categories,
@@ -215,13 +243,11 @@ def shop_list(request):
         'sort_by': sort_by,
         'query': query,  
         'category_id': category_id, 
+        'product_count': product_count,
         
     }
 
     return render(request, 'user_side/shop_list.html', context)
-
-
-
 
 
 
@@ -256,9 +282,6 @@ def product_list_by_category(request, category_id=None):
         max_price = None
         products = Products.objects.none()
 
-
-    
-
     context = {
         'categories': categories,
         'products': products,
@@ -279,25 +302,48 @@ def user_profile(request):
 
 @login_required
 def edit_user_profile(request):
-    # Initialize password_form to ensure it's always available
     password_form = PasswordChangeForm(user=request.user)
     
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
         
         if form_type == 'profile_form':
-            # Handle profile update (unchanged)
             user = request.user
-            user.username = request.POST.get('username', user.username)
-            user.full_name = request.POST.get('full_name', user.full_name)
-            user.email = request.POST.get('email', user.email)
-            user.phone = request.POST.get('phone', user.phone)
+            username = request.POST.get('username', user.username)
+            full_name = request.POST.get('full_name', user.full_name)
+            email = request.POST.get('email', user.email)
+            phone = request.POST.get('phone', user.phone)
+            
+            if not username or not username[0].isalpha():
+                messages.error(request, 'Username must start with an alphabetic character.')
+                return redirect('user_panel:edit-user-profile')
+            
+            if not re.match(r'^[a-zA-Z0-9_]*$', username):
+                messages.error(request, 'Username can only contain alphanumeric characters and underscores.')
+                return redirect('user_panel:edit-user-profile')
+            
+            if not full_name or not full_name[0].isalpha():
+                messages.error(request, 'Full Name must start with an alphabetic character.')
+                return redirect('user_panel:edit-user-profile')
+            
+            if not re.match(r'^[a-zA-Z0-9_]*$', full_name):
+                messages.error(request, 'Full Name can only contain alphanumeric characters and underscores.')
+                return redirect('user_panel:edit-user-profile')
+            
+           
+            if phone == '0000000000':  
+                messages.error(request, 'Phone number cannot be all zeros.')
+                return redirect('user_panel:edit-user-profile')
+            
+            user.username = username
+            user.full_name = full_name
+            user.email = email
+            user.phone = phone
             user.save()
             messages.success(request, 'Your profile has been updated successfully.')
             return redirect('user_panel:edit-user-profile')
         
         elif form_type == 'password_form':
-            # Handle password change
             password_form = PasswordChangeForm(user=request.user, data=request.POST)
             if password_form.is_valid():
                 user = password_form.save()
@@ -311,33 +357,4 @@ def edit_user_profile(request):
     
 
 
-
-
-
-
-
-    # if request.method == 'POST':
-    #     username = request.POST.get('username')
-    #     full_name = request.POST.get('full_name')
-    #     email = request.POST.get('email')
-    #     phone = request.POST.get('phone')
-
-    #     user = request.user
-    #     user.username = username
-    #     user.full_name = full_name
-    #     user.email = email
-    #     user.phone = phone
-
-    #     user.save()
-    #     messages.success(request, 'Profile updated successfully')
-    #     return redirect('user_panel:edit-user-profile')
-
-    # return render(request,'user_side/edit_user_profile.html',{'user': request.user})
-
-
-
-
-# def password_change(request):
-
-#     return render(request,'user_side/edit_user_profile.html')
 
