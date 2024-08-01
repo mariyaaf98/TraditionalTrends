@@ -9,11 +9,15 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from user_panel.models import Address
 from django.contrib import messages
-from order_management.models import Order,OrderItem
+from order_management.models import Order,OrderItem,Wallet
 import datetime 
 from django.utils.timezone import now
 from datetime import timedelta
 import re
+import razorpay
+from django.conf import settings
+from django.urls import reverse
+import logging
 
 @login_required
 @require_POST
@@ -153,27 +157,31 @@ def clear_cart(request):
         cart.items.all().delete()
     return redirect('cart_management:cart')
 
+
+
+logger = logging.getLogger(__name__)
 @login_required
 @transaction.atomic
 def checkout(request):
+    razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
     cart, created = Cart.objects.get_or_create(user=request.user, is_active=True)
     cart_items = CartItem.objects.filter(cart=cart)
 
     if not cart_items.exists():
         messages.error(request, "Your cart is empty. Please add items before proceeding to checkout.")
         return redirect('cart_management:cart')
-    
+
     total_price = sum(item.variant.product.offer_price * item.quantity for item in cart_items)
+    
+    # check stock and product avilabilities
     for item in cart_items:
         if item.quantity > item.variant.variant_stock:
             messages.error(request, f"Insufficient stock for {item.variant.product.product_name}.")
             return redirect('cart_management:cart')
-        if item.variant.product.is_deleted or  item.variant.is_deleted:
+        if item.variant.product.is_deleted or item.variant.is_deleted:
             messages.error(request, f"{item.variant.product.product_name} is no longer available.")
             return redirect('cart_management:cart')
 
-    
-    
     address_list = Address.objects.filter(user=request.user)
     selected_address = address_list.filter(default=True).first()
 
@@ -182,75 +190,122 @@ def checkout(request):
 
     if request.method == 'POST':
         if 'place_order' in request.POST:
-            if cart_items.exists(): 
+            if cart_items.exists():
                 payment_method = request.POST.get('payment_method')
                 if not payment_method:
                     messages.error(request, "Please select a payment method.")
                     return redirect('cart_management:checkout')
-                
-                if selected_address:
-                    try:
-                        with transaction.atomic():
-                            # stock and update variant quantities
-                            for item in cart_items:
-                                variant = item.variant
-                                if variant.variant_stock < item.quantity:
-                                    messages.error(request, f'Not enough stock for {variant.product.product_name} - {variant.colour_name}')
-                                    return redirect('cart_management:checkout')
-                                
-                                # reduce variant stock
-                                variant.variant_stock -= item.quantity
-                                variant.save()
 
-                            # Create the order
-                            order = Order.objects.create(
+                if not selected_address:
+                    messages.error(request, "Please select a delivery address.")
+                    return redirect('cart_management:checkout')
+
+                try:
+                    with transaction.atomic():
+                        # Stock check and update variant quantities
+                        for item in cart_items:
+                            variant = item.variant
+                            if variant.variant_stock < item.quantity:
+                                messages.error(request, f'Not enough stock for {variant.product.product_name} - {variant.colour_name}')
+                                return redirect('cart_management:checkout')
+
+                            variant.variant_stock -= item.quantity
+                            variant.save()
+
+                        order = Order.objects.create(
+                            user=request.user,
+                            total_amount=total_price,
+                            payment_option=payment_method,
+                            name=selected_address.name,
+                            house_name=selected_address.house_name,
+                            street_name=selected_address.street_name,
+                            pin_number=selected_address.pin_number,
+                            district=selected_address.district,
+                            state=selected_address.state,
+                            country=selected_address.country,
+                            phone_number=selected_address.phone_number,
+                            order_id=f"ORDER-{now().strftime('%Y%m%d%H%M%S')}-{request.user.id}"
+                        )
+
+                        for item in cart_items:
+                            OrderItem.objects.create(
+                                main_order=order,
+                                variant=item.variant,
+                                quantity=item.quantity,
                                 user=request.user,
-                                total_amount=total_price,
-                                payment_option=payment_method,
-                                name=selected_address.name,
-                                house_name=selected_address.house_name,
-                                street_name=selected_address.street_name,
-                                pin_number=selected_address.pin_number,
-                                district=selected_address.district,
-                                state=selected_address.state,
-                                country=selected_address.country,
-                                phone_number=selected_address.phone_number,
-                                order_id=f"ORDER-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}-{request.user.id}"
+                                is_active=True
                             )
 
-                            for item in cart_items:
-                                OrderItem.objects.create(
-                                    main_order=order,
-                                    variant=item.variant,
-                                    quantity=item.quantity,
-                                    user=request.user,
-                                    is_active=True
-                                )
+                        if payment_method == 'Online Payment':
+                            # Create Razorpay Order
+                            razorpay_order = razorpay_client.order.create(dict(
+                                amount=int(total_price * 100),
+                                currency='INR',
+                                payment_capture='1'
+                            ))
 
+                    
+                            order.razorpay_order_id = razorpay_order['id']
+                            order.save()
+
+                        
+                            razorpay_payment = {
+                                'razorpay_key': settings.RAZORPAY_KEY_ID,
+                                'razorpay_order_id': razorpay_order['id'],
+                                'razorpay_amount': int(total_price * 100),
+                                'currency': 'INR',
+                                'callback_url': request.build_absolute_uri(reverse('order_management:razorpay-callback'))
+                            }
+
+                            return render(request, 'user_side/razorpay_payment.html', {'razorpay_payment': razorpay_payment})
+                        elif payment_method == 'Wallet':
+                            # Check if user has a wallet
+                            wallet, created = Wallet.objects.get_or_create(user=request.user)
+                            if wallet.is_sufficient(total_price):
+                                # Deduct amount from wallet
+                                wallet.debit(total_price)
+
+                                # Update order status
+                                order.payment_status = True
+                                order.order_status = 'Processing'
+                                order.save()
+
+                                CartItem.objects.filter(cart=cart).delete()
+                                cart.is_active = False
+                                cart.save()
+
+                                messages.success(request, "Payment successful. Your order has been placed.")
+                                return redirect('order_management:order-success')
+                            else:
+                                messages.error(request, "Insufficient wallet balance. Please choose another payment method.")
+                                return redirect('cart_management:checkout')
+                        else:
+                            # Cash on Delivery or other payment methods
                             CartItem.objects.filter(cart=cart).delete()
                             cart.is_active = False
                             cart.save()
 
                             messages.success(request, "Your order has been placed successfully!")
                             return redirect('order_management:order-success')
-                    except Exception as e:
-                        messages.error(request, f"Failed to place the order. Error: {str(e)}")
-                        return redirect('cart_management:checkout')
-                else:
-                    messages.error(request, "Please select a delivery address.")
+                except Exception as e:
+                    logger.error(f"Order placement failed for user {request.user.id}: {str(e)}", exc_info=True)
+                    messages.error(request, "Failed to place the order. Please try again later.")
+                    return redirect('cart_management:checkout')
             else:
-                messages.error(request, "Your cart is empty. Please add items before placing an order.")     
+                messages.error(request, "Your cart is empty. Please add items before placing an order.")
+                return redirect('cart_management:cart')
 
     context = {
         'cart_items': cart_items,
         'total_price': total_price,
         'address_list': address_list,
         'selected_address': selected_address,
-        'payment_methods': ['Cash on Delivery', 'Online Payment'],
+        'payment_methods': ['Cash on Delivery', 'Online Payment', 'Wallet'],
         'arrival_date': arrival_date,
     }
 
     return render(request, 'user_side/checkout.html', context)
+
 
 
 
@@ -287,7 +342,7 @@ def checkout_add_address(request):
         phone_number = request.POST.get('phone_number')
         default = 'default' in request.POST
         
-        print(f"Received POST data: {request.POST}")  # Debugging line
+        
 
         # Validate required fields
         if not all([name, house_name, street_name, pin_number, district, state, country, phone_number]):

@@ -22,6 +22,7 @@ class Order(models.Model):
     payment_status = models.BooleanField(default=False)
     payment_id = models.CharField(max_length=50, blank=True, null=True)
     coupon_discount = models.IntegerField(blank=True, null=True)
+    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True)
     
     name = models.CharField(max_length=50)
     house_name = models.CharField(max_length=400)
@@ -73,3 +74,68 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} of {self.variant.product.product_name} in order {self.main_order.order_id}"
+
+
+class Wallet(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def __str__(self):
+        return f'{self.user.username} Wallet - Balance: {self.balance}'
+
+    def credit(self, amount, description=""):
+        """Add amount to wallet balance."""
+        if amount <= 0:
+            raise ValueError("Credit amount must be positive.")
+        self.balance += amount
+        self.save()
+        Transaction.objects.create(
+            user=self.user,
+            amount=amount,
+            transaction_type='credit',
+            description=description
+        )
+
+    def debit(self, amount, description=""):
+        """Subtract amount from wallet balance."""
+        if amount <= 0:
+            raise ValueError("Debit amount must be positive.")
+        if amount > self.balance:
+            raise ValueError("Insufficient balance.")
+        self.balance -= amount
+        self.save()
+        Transaction.objects.create(
+            user=self.user,
+            amount=amount,
+            transaction_type='debit',
+            description=description
+        )
+        return True
+
+    def is_sufficient(self, amount):
+        """Check if wallet has sufficient balance."""
+        return self.balance >= amount
+
+    def refund_order(self, order):
+        """Refund the order amount to the user's wallet."""
+        if order.payment_option == 'Online Payment' and order.order_status == 'Cancelled':
+            self.credit(order.total_amount, f"Refund for order {order.order_id}")
+            return True
+        return False
+
+    
+
+class Transaction(models.Model):
+    TRANSACTION_TYPES = [
+        ('credit', 'Credit'),
+        ('debit', 'Debit'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.transaction_type} - {self.amount}"

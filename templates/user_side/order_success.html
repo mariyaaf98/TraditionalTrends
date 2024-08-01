@@ -30,8 +30,8 @@
                         </svg>
                     </div>
 
-                    <h5 class="mb-5" >Order ID: {{ order.order_id }}</h5>
-                    <p class="mb-5">Arriving By : <span class="text-danger" > {{ arrival_date|date:"D, M j, Y" }}</span></p><br>
+                    <h5 class="mb-5">Order ID: {{ order.order_id }}</h5>
+                    <p class="mb-5">Arriving By: <span class="text-danger">{{ arrival_date|date:"D, M j, Y" }}</span></p><br>
 
                     <h4 class="mb-5">Order Items:</h4>
                     <ul class="list-group mb-4">
@@ -41,6 +41,8 @@
                                 <p><strong>Quantity:</strong> {{ item.quantity }}</p>
                                 <p><strong>Price:</strong> {{ item.variant.product.offer_price }}</p>
                             </li>
+                        {% empty %}
+                            <li class="list-group-item">No items found in this order.</li>
                         {% endfor %}
                     </ul>
 

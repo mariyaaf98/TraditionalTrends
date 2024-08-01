@@ -1,0 +1,57 @@
+{% extends 'user_side/base.html' %}
+{% load static %}
+{% block content %}
+<main class="container my-5">
+    <div class="row g-5">
+        {% include 'user_side/user_dashboard.html' %}
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-1">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h2 class="card-title text-center mb-4">Wallet Balance</h2>
+                        <div class="text-center">
+                            <h3 class="display-4 fw-bold text-primary">
+                                {% if wallet %}
+                                ₹{{ wallet.balance }}
+                                {% else %}
+                                ₹0.00
+                                {% endif %}
+                            </h3>
+                            <p class="text-muted">Available Balance</p>
+                        </div>
+                        <hr>
+                        <h5 class="mb-3">Recent Transactions</h5>
+                        {% if transactions %}
+                        <ul class="list-unstyled">
+                            {% for transaction in transactions %}
+                            <li class="d-flex justify-content-between mb-2">
+                                <div>
+                                    <h6 class="mb-1">{{ transaction.description }}</h6>
+                                    <p class="text-muted mb-0">
+                                        {{ transaction.date|date:"F j, Y, g:i a" }} -
+                                        <span
+                                            class="{% if transaction.transaction_type == 'debit' %}text-danger{% else %}text-success{% endif %}">
+                                            {{ transaction.transaction_type|capfirst }}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="text-end">
+                                    <h6
+                                        class="mb-1 {% if transaction.transaction_type == 'debit' %}text-danger{% else %}text-success{% endif %}">
+                                        {% if transaction.transaction_type == 'debit' %}-{% endif %}₹{{ transaction.amount }}
+                                    </h6>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-center text-muted">No recent transactions.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</main>
+{% endblock %}

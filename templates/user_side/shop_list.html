@@ -385,8 +385,10 @@
                                 </div>
                                 <div class="sort-by-dropdown">
                                     <ul class="list-unstyled">
-                                        <li><a class="dropdown-item {% if sort_by == 'price_low_to_high' %}active{% endif %}" href="?sort_by=price_low_to_high">Price: Low to High</a></li>
-                                        <li><a class="dropdown-item {% if sort_by == 'price_high_to_low' %}active{% endif %}"href="?sort_by=price_high_to_low">Price: High to Low</a></li> 
+                                        <li><a class="dropdown-item {% if sort_by == 'price_low_to_high' %}active{% endif %}"
+                                                href="?sort_by=price_low_to_high">Price: Low to High</a></li>
+                                        <li><a class="dropdown-item {% if sort_by == 'price_high_to_low' %}active{% endif %}"
+                                                href="?sort_by=price_high_to_low">Price: High to Low</a></li>
                                         <li><a class="dropdown-item" href="?sort_by=a_to_z">A - Z</a></li>
                                         <li><a class="dropdown-item" href="?sort_by=z_to_a">Z - A</a></li>
                                         {% comment %} <li><a
@@ -457,13 +459,35 @@
                     <div class="pagination-area mt-15 mb-sm-5 mb-lg-0">
                         <nav aria-label="Page navigation example">
                             <ul class="pagination justify-content-start">
-                                <li class="page-item active"><a class="page-link" href="#">01</a></li>
-                                <li class="page-item"><a class="page-link" href="#">02</a></li>
-                                <li class="page-item"><a class="page-link" href="#">03</a></li>
-                                <li class="page-item"><a class="page-link dot" href="#">...</a></li>
-                                <li class="page-item"><a class="page-link" href="#">16</a></li>
-                                <li class="page-item"><a class="page-link" href="#"><i
-                                            class="fi-rs-angle-double-small-right"></i></a></li>
+                                {% if products.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                        href="?page={{ products.previous_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if query %}&query={{ query }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}"
+                                        aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% for num in products.paginator.page_range %}
+                                {% if products.number == num %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                                {% else %}
+                                <li class="page-item"><a class="page-link"
+                                        href="?page={{ num }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if query %}&query={{ query }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if products.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                        href="?page={{ products.next_page_number }}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}{% if query %}&query={{ query }}{% endif %}{% if category_id %}&category={{ category_id }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}"
+                                        aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                {% endif %}
                             </ul>
                         </nav>
                     </div>
@@ -682,32 +706,32 @@
 <script src="https://cdn.jsdelivr.net/npm/nouislider/distribute/nouislider.min.js"></script>
 
 <script>
-$(document).ready(function() {
-    $('.add-to-wishlist').on('click', function(e) {
-        e.preventDefault();
-        var url = $(this).attr('href');
-        var variantId = $('#selected-variant-id').val(); // Get the selected variant ID from the hidden input
-        
-        $.ajax({
-            url: url,
-            type: 'POST', // Change to POST method
-            data: {
-                'variant_id': variantId,
-                'csrfmiddlewaretoken': '{{ csrf_token }}' // Include CSRF token
-            },
-            success: function(response) {
-                if(response.status === 'success') {
-                    alert(response.message);
-                } else {
-                    alert('Error: ' + response.message);
+    $(document).ready(function() {
+        $('.add-to-wishlist').on('click', function(e) {
+            e.preventDefault();
+            var url = $(this).attr('href');
+            var variantId = $('#selected-variant-id')
+        .val(); // Get the selected variant ID from the hidden input
+            $.ajax({
+                url: url,
+                type: 'POST', // Change to POST method
+                data: {
+                    'variant_id': variantId,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}' // Include CSRF token
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        alert(response.message);
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('Error adding item to wishlist. Please try again.');
+                    console.log(xhr.responseText); // Log the error for debugging
                 }
-            },
-            error: function(xhr, status, error) {
-                alert('Error adding item to wishlist. Please try again.');
-                console.log(xhr.responseText); // Log the error for debugging
-            }
+            });
         });
     });
-});
 </script>
 {% endblock content %}

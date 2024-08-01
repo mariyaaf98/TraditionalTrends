@@ -121,7 +121,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -169,3 +169,8 @@ MESSAGE_TAGS = {
     message_constants.WARNING: 'warning',
     message_constants.ERROR: 'error',
 }
+
+
+
+RAZORPAY_KEY_ID = 'rzp_test_atDMV07p8I1XuT'
+RAZORPAY_KEY_SECRET = 'yIrDxoivXEqMMEmUINTo8yyV'

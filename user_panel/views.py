@@ -14,7 +14,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from .forms import ProductReview
 import re
-
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 def variant_images_view(request, variant_id):
     try:
@@ -232,7 +232,17 @@ def shop_list(request):
     elif sort_by == 'z_to_a':
         products = products.order_by('-product_name')
 
-    product_count = products.count()
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(products, 10) # show 10 products in each page.
+    try:
+        products = paginator.page(page)
+    except PageNotAnInteger:
+        products = paginator.page(1)
+    except EmptyPage:
+        products = paginator.page(paginator.num_pages)
+
+    product_count = products.paginator.count
 
     context = {
         'products': products,
@@ -311,33 +321,39 @@ def edit_user_profile(request):
             user = request.user
             username = request.POST.get('username', user.username)
             full_name = request.POST.get('full_name', user.full_name)
-            email = request.POST.get('email', user.email)
             phone = request.POST.get('phone', user.phone)
-            
-            if not username or not username[0].isalpha():
-                messages.error(request, 'Username must start with an alphabetic character.')
-                return redirect('user_panel:edit-user-profile')
-            
-            if not re.match(r'^[a-zA-Z0-9_]*$', username):
-                messages.error(request, 'Username can only contain alphanumeric characters and underscores.')
-                return redirect('user_panel:edit-user-profile')
-            
-            if not full_name or not full_name[0].isalpha():
-                messages.error(request, 'Full Name must start with an alphabetic character.')
-                return redirect('user_panel:edit-user-profile')
-            
-            if not re.match(r'^[a-zA-Z0-9_]*$', full_name):
-                messages.error(request, 'Full Name can only contain alphanumeric characters and underscores.')
-                return redirect('user_panel:edit-user-profile')
+
+            if username:
+                if not username or not username[0].isalpha():
+                    messages.error(request, 'Username must start with an alphabetic character.')
+                    return redirect('user_panel:edit-user-profile')
+                
+                if not re.match(r'^[a-zA-Z0-9_]*$', username):
+                    messages.error(request, 'Username can only contain alphanumeric characters and underscores.')
+                    return redirect('user_panel:edit-user-profile')
+
+            if full_name:
+                if not full_name or not full_name[0].isalpha():
+                    messages.error(request, 'Full Name must start with an alphabetic character.')
+                    return redirect('user_panel:edit-user-profile')
+                
+                if not re.match(r'^[a-zA-Z0-9_ ]*$', full_name):
+                    messages.error(request, 'Full Name can only contain alphanumeric characters and underscores.')
+                    return redirect('user_panel:edit-user-profile')
             
            
-            if phone == '0000000000':  
-                messages.error(request, 'Phone number cannot be all zeros.')
-                return redirect('user_panel:edit-user-profile')
+            if phone:
+                if not phone.isdigit():
+                    messages.error(request, 'Phone number must contain only integers.')
+                    return redirect('user_panel:edit-user-profile')
+
+                if phone == '0000000000':
+                    messages.error(request, 'Phone number cannot be all zeros.')
+                    return redirect('user_panel:edit-user-profile')
+            
             
             user.username = username
             user.full_name = full_name
-            user.email = email
             user.phone = phone
             user.save()
             messages.success(request, 'Your profile has been updated successfully.')
@@ -347,7 +363,7 @@ def edit_user_profile(request):
             password_form = PasswordChangeForm(user=request.user, data=request.POST)
             if password_form.is_valid():
                 user = password_form.save()
-                update_session_auth_hash(request, user)  # Keep the user logged in
+                update_session_auth_hash(request, user)
                 messages.success(request, 'Your password was successfully updated!')
                 return redirect('user_panel:edit-user-profile')
             else:

@@ -1,18 +1,18 @@
 {% load static %}
 <aside class="navbar-aside" id="offcanvas_aside">
     <div class="aside-top">
-        {% comment %} {% url 'admin_panel:dashboard' %} {% endcomment %}
         <a href="#" class="brand-wrap">
             <img src="{% static 'admin_side/assets/imgs/theme/logo.svg' %}" class="logo" alt="Evara Dashboard">
         </a>
         <div>
-            <button class="btn btn-icon btn-aside-minimize"> <i class="text-muted material-icons md-menu_open"></i> </button>
+            <button class="btn btn-icon btn-aside-minimize"> <i class="text-muted material-icons md-menu_open"></i>
+            </button>
         </div>
     </div>
     <nav>
         <ul class="menu-aside">
-            <li class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                <a class="menu-link" href="#"> 
+            <li class="menu-item {% if request.resolver_match.url_name == 'admin-index' %}active{% endif %}">
+                <a class="menu-link" href="{% url 'admin_panel:admin-index' %}">
                     <i class="icon material-icons md-home"></i>
                     <span class="text">Dashboard</span>
                 </a>

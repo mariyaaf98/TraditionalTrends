@@ -1,0 +1,107 @@
+{% extends 'user_side/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="container my-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Order Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-sm-6">
+                            <h6 class="mb-3">Order Information:</h6>
+                            <div><strong>Order Number:</strong> {{ order.order_id }}</div>
+                             <div><strong>Payment Method:</strong> {{ order.payment_option }}</div>
+                            <div><strong>Date:</strong> {{ order.date }}</div>
+                            <div><strong>Status:</strong> 
+                                <span class="badge {% if order.order_status == 'Order Placed' %}bg-secondary
+                                {% elif order.order_status == 'Pending' %}bg-warning
+                                {% elif order.order_status == 'Processing' %}bg-info
+                                {% elif order.order_status == 'Shipped' %}bg-primary
+                                {% elif order.order_status == 'Delivered' %}bg-success
+                                {% elif order.order_status == 'Cancelled' %}bg-danger{% endif %}">
+                                    {{ order.order_status }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <h6 class="mb-3">Shipping Address:</h6>
+                            <address>
+                                {{ order.name }}<br>
+                                {{ order.house_name }}<br>
+                                {{ order.street_name }}<br>
+                                {{ order.pin_number }}<br>
+                                {{ order.district }},
+                                {{ order.state }}<br>
+                                {{ order.phone_number }}<br>
+                                
+                                
+                                {% if order.shipping_address.address_line2 %}
+                                    {{ order.shipping_address.address_line2 }}<br>
+                                {% endif %}
+                                {{ order.shipping_address.city }}, {{ order.shipping_address.state }} {{ order.shipping_address.postal_code }}<br>
+                                {{ order.shipping_address.country }}
+                            </address>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order_items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if item.variant.images.exists %}
+                                                <img src="{{ item.variant.images.first.image.url }}" alt="{{ item.variant.product.product_name }}" class="img-thumbnail me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                            {% else %}
+                                                <img src="{{ item.variant.product.thumbnail.url }}" alt="{{ item.variant.product.product_name }}" class="img-thumbnail me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-0">{{ item.variant.product.product_name }}</h6>
+                                                <small class="text-muted">{{ item.variant.product.product_category.category_name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>₹{{ item.unit_price }}</td>
+                                    <td>₹{{item.total_price}}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td>₹{{ order.total_amount }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                    <td><strong>₹{{ order.total_amount }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'order_management:order-list' %}" class="btn btn-secondary">Back to Orders</a>
+                        {% comment %} {% if order.order_status != 'Cancelled' and order.order_status != 'Delivered' %}
+                            <button class="btn btn-danger" id="cancelOrderBtn">Cancel Order</button>
+                        {% endif %} {% endcomment %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

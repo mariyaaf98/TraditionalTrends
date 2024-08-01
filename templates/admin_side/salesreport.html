@@ -1,0 +1,142 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.26/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    <div class="content-header">
+        <div>
+            <h2 class="content-title card-title">Sales Report </h2>
+            <p>Whole data about your order here</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="download-pdf" class="btn btn-primary">
+                <i class="text-muted material-icons md-post_add"></i>Download as PDF
+            </button>
+            <button id="download-excel" class="btn btn-primary">
+                <i class="text-muted material-icons md-post_add"></i>Download as Excel
+            </button>
+        </div>
+    </div>
+    <div class="mb-4">
+        <form method="post" action="" class="row g-2">
+            {% csrf_token %}
+            <div class="col-auto d-flex align-items-center">
+                <h5 class="mb-0">Start Date:</h5>
+            </div>
+            <div class="col-auto">
+                <input type="date" name="start_date" class="form-control" placeholder="Start date">
+            </div>
+            <div class="col-auto d-flex align-items-center">
+                <h5 class="mb-0">End Date:</h5>
+            </div>
+            <div class="col-auto">
+                <input type="date" name="end_date" class="form-control" placeholder="End date">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+    </div>
+    
+    
+    <!-- Table -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table" id="sales-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Order Total</th>
+                            <th>Payment Method</th>
+                            <th>Coupon</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.date }}</td>
+                            <td>{{ order.order_id }}</td>
+                            <td>{{ order.user.username }}</td>
+                            <td>₹{{ order.total_amount }}</td>
+                            <td>{{ order.payment_option }}</td>
+                            {% if order.coupon %}
+                            <td>{{ order.coupon.coupon_code }}</td>
+                            {% else %}
+                            <td>Nill</td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">No orders found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="pagination-area mt-30 mb-50">
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-start">
+                <li class="page-item active"><a class="page-link" href="#">01</a></li>
+                <li class="page-item"><a class="page-link" href="#">02</a></li>
+                <li class="page-item"><a class="page-link" href="#">03</a></li>
+                <li class="page-item"><a class="page-link dot" href="#">...</a></li>
+                <li class="page-item"><a class="page-link" href="#">16</a></li>
+<li class="page-item"><a class="page-link" href="#"><i class="material-icons md-chevron_right"></i></a></li>
+            </ul>
+        </nav>
+    </div>
+</section> <!-- content-main end// -->
+
+<script>
+    document.getElementById('download-pdf').addEventListener('click', function () {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const table = document.getElementById('sales-table');
+
+        doc.text("Sales Report", 20, 20);
+
+        doc.autoTable({
+            html: table,
+            startY: 30,
+            styles: {
+                cellPadding: 5,
+                fontSize: 10,
+                halign: 'center',
+                valign: 'middle',
+                fillColor: [0, 0, 0],
+                textColor: [255, 255, 255]
+            },
+            headStyles: {
+                fillColor: [0, 0, 0],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            bodyStyles: {
+                fillColor: [255, 255, 255],
+                textColor: [0, 0, 0]
+            },
+            alternateRowStyles: {
+                fillColor: [230, 230, 230]
+            }
+        });
+
+        doc.save('sales_report.pdf');
+    });
+
+    document.getElementById('download-excel').addEventListener('click', function () {
+        const table = document.getElementById('sales-table');
+        const ws = XLSX.utils.table_to_sheet(table);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
+        XLSX.writeFile(wb, "sales_report.xlsx");
+    });
+</script>
+{% endblock %}
