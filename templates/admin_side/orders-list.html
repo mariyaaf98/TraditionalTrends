@@ -4,40 +4,118 @@
 <div class="screen-overlay"></div>
 {% include 'admin_side/sidebar.html' %}
 <main class="main-wrap">
-    {% include 'admin_side/header.html'%}
+    {% include 'admin_side/header.html' %}
     <section class="content-main">
         <div class="content-header">
             <div>
-                <h2 class="content-title card-title">Order List </h2>
-                <p>Lorem ipsum dolor sit amet.</p>
+                <h2 class="content-title card-title">Order Management</h2>
+                <p>Manage all orders and return requests</p>
             </div>
             <div>
                 <input type="text" placeholder="Search order ID" class="form-control bg-white">
             </div>
         </div>
+
+        {% if pending_returns %}
+        <!-- Orders with Pending Return Requests -->
         <div class="card mb-4">
-            <!-- ... (header remains the same) ... -->
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Orders with Pending Return Requests</h5>
+            </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover align-middle" id="pendingReturnRequestsTable">
+                        <thead class="table-light">
                             <tr>
                                 <th>#ID</th>
-                                <th scope="col">Name</th>
-                                <th scope="col">Email</th>
-                                <th scope="col">Total</th>
-                                <th scope="col">Status</th>
-                                <th scope="col">Date</th>
-                                <th scope="col" class="text-end"> Action </th>
+                                <th>User</th>
+                                <th>Total</th>
+                                <th>Order Status</th>
+                                <th>Payment Status</th>
+                                <th>Date</th>
+                                <th>Return Reason</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for order in orders %}
+                            {% for order in pending_returns %}
+                                {% for item in order.items.all %}
+                                    {% for return_request in item.returns.all %}
+                                        {% if return_request.status == 'REQUESTED' %}
+                                        <tr>
+                                            <td>{{ order.order_id }}</td>
+                                            <td>{{ order.user.username }}</td>
+                                            <td>${{ order.total_amount }}</td>
+                                            <td>
+                                                <span class="badge rounded-pill 
+                                                    {% if order.order_status == 'Order Placed' %}bg-secondary
+                                                    {% elif order.order_status == 'Pending' %}bg-warning
+                                                    {% elif order.order_status == 'Processing' %}bg-info
+                                                    {% elif order.order_status == 'Shipped' %}bg-primary
+                                                    {% elif order.order_status == 'Delivered' %}bg-success
+                                                    {% elif order.order_status == 'Cancelled' %}bg-danger{% endif %} 
+                                                    text-white">
+                                                    {{ order.order_status }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge {% if order.payment_status %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {% if order.payment_status %}Paid{% else %}Unpaid{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>{{ order.date|date:"M d, Y" }}</td>
+                                            <td>{{ return_request.reason }}</td>
+                                            <td>
+                                                <a href="{% url 'order_management:admin-order-detail' order.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                                                <form class="return-form d-inline" action="{% url 'order_management:process-return' return_request.id %}" method="POST">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="approve">
+                                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                                </form>
+                                                <form class="return-form d-inline" action="{% url 'order_management:process-return' return_request.id %}" method="POST">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="reject">
+                                                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- All Other Orders -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">All Other Orders</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="allOrdersTable">
+                        <thead class="table-light">
                             <tr>
-                                <td>{{order.order_id}}</td>
-                                <td><b>{{ order.user.username }}</b></td>
-                                <td>{{ order.user.email }}</td>
-                                <td>{{ order.total_amount }}</td>
+                                <th>#ID</th>
+                                <th>User</th>
+                                <th>Total</th>
+                                <th>Order Status</th>
+                                <th>Payment Status</th>
+                                <th>Date</th>
+                                <th>Return Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in other_orders %}
+                            <tr>
+                                <td>{{ order.order_id }}</td>
+                                <td>{{ order.user.username }}</td>
+                                <td>${{ order.total_amount }}</td>
                                 <td>
                                     <span class="badge rounded-pill 
                                         {% if order.order_status == 'Order Placed' %}bg-secondary
@@ -50,19 +128,69 @@
                                         {{ order.order_status }}
                                     </span>
                                 </td>
-                                <td>{{ order.date }}</td>
-                                <td class="text-end">
-                                    <a href="{% url 'order_management:admin-order-detail' order.id %}"
-                                        class="btn btn-md rounded font-sm">Detail</a>
+                                <td>
+                                    <span class="badge {% if order.payment_status %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if order.payment_status %}Paid{% else %}Unpaid{% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ order.date|date:"M d, Y" }}</td>
+                                <td>
+                                    {% for item in order.items.all %}
+                                        {% for return_request in item.returns.all %}
+                                            <span class="badge 
+                                                {% if return_request.status == 'APPROVED' %}bg-success
+                                                {% elif return_request.status == 'REJECTED' %}bg-danger
+                                                {% elif return_request.status == 'COMPLETED' %}bg-info{% endif %}">
+                                                {{ return_request.get_status_display }}
+                                            </span>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'order_management:admin-order-detail' order.id %}" class="btn btn-sm btn-outline-primary">Details</a>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                </div> <!-- table-responsive //end -->
-            </div> <!-- card-body end// -->
-        </div> <!-- card end// -->
-        <!-- ... (pagination remains the same) ... -->
-    </section> <!-- content-main end// -->
+                </div>
+            </div>
+        </div>
+
+    </section>
 </main>
+
+<!-- Include SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('JavaScript is running');
+
+    function handleFormSubmit(event) {
+        event.preventDefault(); // Prevent the default form submission
+        const form = event.target;
+        const action = form.querySelector('input[name="action"]').value;
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: action === 'approve' ? 'Do you want to approve this return request?' : 'Do you want to reject this return request?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: action === 'approve' ? 'Approve' : 'Reject',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit(); // Submit the form if confirmed
+            }
+        });
+    }
+
+    document.querySelectorAll('.return-form').forEach(form => {
+        form.addEventListener('submit', handleFormSubmit);
+    });
+});
+</script>
+
 {% endblock content %}

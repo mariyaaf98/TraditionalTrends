@@ -35,7 +35,8 @@
                                 </div>
                                 <div class="col-md-9">
                                     <h5 class="mb-2">{{ item.variant.product.product_name }}</h5>
-                                    <p class="mb-1">Category: {{ item.variant.product.product_category.category_name }}</p>
+                                    <p class="mb-1">Category: {{ item.variant.product.product_category.category_name }}
+                                    </p>
                                     <p class="mb-1">Price: ₹{{ item.unit_price }}</p>
                                     <p class="mb-0">
                                         Status:
@@ -54,12 +55,34 @@
                                         </span>
                                     </p>
                                     {% if item.is_active %}
+                                    {% if order.order_status == 'Delivered' %}
+                                    {% if item.returns.exists %}
+                                    {% if item.returns.first.status == 'REQUESTED' %}
+                                    <p class="text-danger">Return Requested</p>
+                                    {% elif item.returns.first.status == 'APPROVED' %}
+                                    <p class="text-success">Return Approved</p>
+                                    {% elif item.returns.first.status == 'REJECTED' %}
+                                    <p class="text-danger">Return Rejected</p>
+                                    {% else %}
+                                    <button class="btn btn-outline-primary btn-sm mt-2 return-order-item"
+                                        data-item-id="{{ item.id }}">
+                                        <i class="bi bi-arrow-return-left"></i> Return
+                                    </button>
+                                    {% endif %}
+                                    {% else %}
+                                    <button class="btn btn-outline-primary btn-sm mt-2 return-order-item"
+                                        data-item-id="{{ item.id }}">
+                                        <i class="bi bi-arrow-return-left"></i> Return
+                                    </button>
+                                    {% endif %}
+                                    {% else %}
                                     <p class="mb-0">
                                         Expected Delivery:
                                         <span class="text-danger fs-6">{{ arrival_date|date:"jS F Y" }}</span>
                                     </p>
                                     <button class="btn btn-danger btn-sm mt-2 cancel-order-item"
                                         data-item-id="{{ item.id }}">Cancel</button>
+                                    {% endif %}
                                     {% else %}
                                     <p class="text-danger mt-2">Canceled</p>
                                     {% endif %}
@@ -69,15 +92,16 @@
                             <hr>{% endif %}
                             {% endfor %}
                         </div>
-                         <div class="card-footer d-flex justify-content-between align-items-center">
-                            <a href="{% url 'order_management:order-detail' order.order_id %}" class="btn btn-primary btn-sm">View Order Details</a>
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <a href="{% url 'order_management:order-detail' order.order_id %}"
+                                class="btn btn-primary btn-sm">View Order Details</a>
                             <strong>Total: ₹{{ order.total_amount }}</strong>
                         </div>
                     </div>
                     {% empty %}
                     <p class="text-center">No orders found.</p>
                     {% endfor %}
-                    
+
                     <!-- Pagination Controls -->
                     <nav aria-label="Page navigation">
                         <ul class="pagination">
@@ -88,18 +112,20 @@
                                 </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}"
+                                    aria-label="Previous">
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
                             </li>
                             {% endif %}
 
                             {% for num in page_obj.paginator.page_range %}
-                                {% if page_obj.number == num %}
-                                <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
-                                {% else %}
-                                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                                {% endif %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
                             {% endfor %}
 
                             {% if page_obj.has_next %}
@@ -122,8 +148,31 @@
     </div>
 </main>
 
-{% comment %} order cancelation {% endcomment %}
+<!-- Return Request Modal -->
+<div class="modal fade" id="returnModal" tabindex="-1" aria-labelledby="returnModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="returnModalLabel">Request Return</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="returnForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="returnItemId" name="item_id">
+                    <div class="mb-3">
+                        <label for="returnReason" class="form-label">Reason for Return</label>
+                        <textarea class="form-control" id="returnReason" name="reason" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Return Request</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    // Order cancellation script
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.cancel-order-item').forEach(function(button) {
             button.addEventListener('click', function() {
@@ -161,7 +210,7 @@
                             canceledText.className = 'text-danger mt-2';
                             canceledText.textContent = 'Canceled';
                             itemElement.querySelector('.col-md-9').appendChild(
-                                canceledText);
+                            canceledText);
                         } else {
                             alert('Failed to cancel the item.');
                         }
@@ -169,6 +218,85 @@
             });
         });
     });
-</script>
+    // Return functionality script
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+        // Add event listeners for return buttons
+        document.querySelectorAll('.return-order-item').forEach(function(button) {
+            button.addEventListener('click', function() {
+                console.log('Return button clicked');
+                var itemId = this.getAttribute('data-item-id');
+                showReturnModal(itemId);
+            });
+        });
+        // Handle return form submission
+        var returnForm = document.getElementById('returnForm');
+        if (returnForm) {
+            returnForm.addEventListener('submit', function(e) {
+                console.log('Form submitted');
+                e.preventDefault();
+                submitReturnRequest(e);
+            });
+        } else {
+            console.error('Return form not found');
+        }
+    });
 
+    function showReturnModal(itemId) {
+        console.log('Showing modal for item:', itemId);
+        document.getElementById('returnItemId').value = itemId;
+        var returnModal = new bootstrap.Modal(document.getElementById('returnModal'));
+        returnModal.show();
+    }
+
+    function submitReturnRequest(e) {
+        e.preventDefault();
+        var itemId = document.getElementById('returnItemId').value;
+        var reason = document.getElementById('returnReason').value;
+        var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        var url = '{% url "order_management:request-return" 0 %}'.replace('0', itemId);
+        console.log('Submitting return request for item:', itemId);
+        console.log('Reason:', reason);
+        console.log('CSRF Token:', csrftoken);
+        fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                },
+                body: JSON.stringify({
+                    reason: reason
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                handleReturnResponse(data, itemId);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function handleReturnResponse(data, itemId) {
+        if (data.success) {
+            alert('Return request submitted successfully.');
+            closeReturnModal();
+            updateUIAfterReturn(itemId);
+        } else {
+            alert('Failed to submit return request: ' + data.error);
+        }
+    }
+
+    function closeReturnModal() {
+        var returnModal = bootstrap.Modal.getInstance(document.getElementById('returnModal'));
+        returnModal.hide();
+    }
+
+    function updateUIAfterReturn(itemId) {
+        var itemElement = document.getElementById('order-item-' + itemId);
+        var returnButton = itemElement.querySelector('.return-order-item');
+        returnButton.textContent = 'Return Requested';
+        returnButton.disabled = true;
+        // You can add more UI updates here if needed
+    }
+</script>
 {% endblock %}

@@ -76,6 +76,24 @@ class OrderItem(models.Model):
         return f"{self.quantity} of {self.variant.product.product_name} in order {self.main_order.order_id}"
 
 
+class Return(models.Model):
+    RETURN_STATUS_CHOICES = [
+        ('REQUESTED', 'Requested'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+        ('COMPLETED', 'Completed'),
+    ]
+    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name='returns')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=RETURN_STATUS_CHOICES, default='REQUESTED')
+    reason = models.TextField()
+    requested_date = models.DateTimeField(auto_now_add=True)
+    processed_date = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Return for {self.order_item} - {self.get_status_display()}"
+    
+
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -116,10 +134,11 @@ class Wallet(models.Model):
         """Check if wallet has sufficient balance."""
         return self.balance >= amount
 
-    def refund_order(self, order):
+    def refund_order(self):
         """Refund the order amount to the user's wallet."""
-        if order.payment_option == 'Online Payment' and order.order_status == 'Cancelled':
-            self.credit(order.total_amount, f"Refund for order {order.order_id}")
+        if (self.payment_option == 'Online Payment' or self.payment_option == 'Wallet') and self.order_status == 'Cancelled':
+            wallet, created = Wallet.objects.get_or_create(user=self.user)
+            wallet.credit(self.total_amount, f"Refund for order {self.order_id}")
             return True
         return False
 

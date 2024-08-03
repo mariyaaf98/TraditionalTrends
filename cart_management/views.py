@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from user_panel.models import Address
 from django.contrib import messages
 from order_management.models import Order,OrderItem,Wallet
+from coupon_management.models import Coupon
 import datetime 
 from django.utils.timezone import now
 from datetime import timedelta
@@ -70,7 +71,7 @@ def add_to_cart(request):
 @login_required
 def cart_view(request):
     cart_items = CartItem.objects.filter(cart__user=request.user).select_related('variant__product')
-
+    coupons = Coupon.objects.filter(is_active=True)
     cart_total = sum(
         item.quantity * (item.variant.product.offer_price if item.variant else item.product.offer_price)
         for item in cart_items
@@ -88,6 +89,7 @@ def cart_view(request):
             for item in cart_items
         ],
         'cart_total': cart_total,
+        'coupons': coupons,
     }
     return render(request, 'user_side/shop-cart.html', context)
 

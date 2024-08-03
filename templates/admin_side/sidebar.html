@@ -47,6 +47,12 @@
                     <span class="text">Orders</span>
                 </a>
             </li>
+            <li class="menu-item {% if 'coupon-list' in request.path %}active{% endif %}">
+                <a class="menu-link" href="{% url 'coupon_management:coupon-list' %}">
+                    <i class="icon material-icons md-monetization_on"></i>
+                    <span class="text">Cupon</span>
+                </a>
+            </li>
         </ul>
     </nav>
 </aside>
