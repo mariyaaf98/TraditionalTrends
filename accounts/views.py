@@ -32,6 +32,10 @@ def user_login(request):
             if user is not None:
                 if user.is_active:
                     login(request, user)
+
+                    # Store user ID in the session
+                    request.session['user_id'] = user.id
+
                     return redirect('accounts:home')
                 else:
                     form.add_error(None, 'This account is blocked.')

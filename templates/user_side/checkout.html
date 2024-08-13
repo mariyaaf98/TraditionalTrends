@@ -3,53 +3,44 @@
 {% load cart_filters %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="h3 mb-4">CHECKOUT</h1>
+<div class="container my-5">
+    <h1 class="h2 mb-4 text-center">Checkout</h1>
 
     <div id="message-container">
         {% for message in messages %}
-        {% if message.tags == 'success' %}
-        <p class="alert alert-success">{{ message }}</p>
-        {% elif message.tags == 'error' %}
-        <p class="alert alert-danger">{{ message }}</p>
-        {% elif message.tags == 'warning' %}
-        <p class="alert alert-warning">{{ message }}</p>
-        {% else %}
-        <p>{{ message }}</p>
-        {% endif %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
         {% endfor %}
-    </div><br>
+    </div>
 
-    <div class="row">
-        <div class="col-md-8">
+    <div class="row g-4">
+        <div class="col-lg-8">
             <!-- Cart Items -->
-            <div class="mb-4">
-                {% for item in cart_items %}
-                <div class="d-flex mb-3 align-items-center justify-content-between">
-                    <div class="d-flex">
-                        <div class="me-3">
-                            <img src="{{ item.variant.images.first.image.url }}"
-                                alt="{{ item.variant.product.product_name }}" class="img-thumbnail"
-                                style="width: 100px; height: 100px; object-fit: cover;">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Cart Items</h5>
+                    {% for item in cart_items %}
+                    <div class="d-flex mb-3 align-items-center">
+                        <img src="{{ item.variant.images.first.image.url }}" alt="{{ item.variant.product.product_name }}" class="img-thumbnail me-3" style="width: 100px; height: 100px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">{{ item.variant.product.product_name }}</h6>
+                            <p class="text-muted mb-0">Colour: {{ item.variant.colour_name }}</p>
+                            <p class="text-muted mb-0">Quantity: {{ item.quantity }}</p>
+                            <p class="mb-0">Price: ₹{{ item.variant.product.offer_price }}</p>
                         </div>
-                        <div>
-                            <h6 class="card-title">{{ item.variant.product.product_name }}</h6>
-                            <p class="card-text">Colour: {{ item.variant.colour_name }}</p>
-                            <p class="card-text">Quantity: {{item.quantity }}</p>
-                            <p class="card-text">Price: ₹{{ item.variant.product.offer_price }}</p>
-                        </div>
+                        <p class="text-danger mb-0 ms-3">Arrives By {{ arrival_date|date:"D, M j, Y" }}</p>
                     </div>
-                    <div>
-                        <p class="text-danger mb-0">Arrives By {{ arrival_date|date:"D, M j, Y" }}</p>
-                    </div>
+                    {% if not forloop.last %}<hr>{% endif %}
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
 
             <!-- Delivery Address -->
-            <div class="card mb-4">
+            <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Delivery Address</h5>
+                    <h5 class="card-title mb-3">Delivery Address</h5>
                     <p class="card-text" id="selected-address">
                         {{ selected_address.name }}<br>
                         {{ selected_address.house_name }}, {{ selected_address.street_name }}<br>
@@ -58,79 +49,17 @@
                         Mobile: {{ selected_address.phone_number }}
                     </p>
                     <div class="d-flex justify-content-between mb-3">
-                        <a href="#" class="btn btn-outline-secondary" data-bs-toggle="collapse"
-                            data-bs-target="#addressList" aria-expanded="false" aria-controls="addressList">Choose
-                            Address</a>
-                        <a href="#" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addAddressForm"
-                            aria-expanded="false" aria-controls="addAddressForm">Add Address</a>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#addressList">Choose Address</button>
+                        <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addAddressForm">Add Address</button>
                     </div>
 
                     <!-- Address List Collapse -->
                     <div class="collapse" id="addressList">
-                        <!-- Your code for listing addresses -->
-                    </div>
-
-                    <!-- Add Address Form Collapse -->
-                    <div class="collapse" id="addAddressForm">
-                        <form method="post" action="{% url 'cart_management:checkout-add-address' %}">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Name:</label>
-                                <input type="text" name="name" id="name" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="house_name" class="form-label">House Name:</label>
-                                <input type="text" name="house_name" id="house_name" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="street_name" class="form-label">Street Name:</label>
-                                <input type="text" name="street_name" id="street_name" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="pin_number" class="form-label">Pin Number:</label>
-                                <input type="text" name="pin_number" id="pin_number" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="district" class="form-label">District:</label>
-                                <input type="text" name="district" id="district" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="state" class="form-label">State:</label>
-                                <input type="text" name="state" id="state" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="country" class="form-label">Country:</label>
-                                <input type="text" name="country" id="country" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="phone_number" class="form-label">Phone Number:</label>
-                                <input type="text" name="phone_number" id="phone_number" class="form-control" required>
-                            </div>
-
-                            <div class="form-check mb-3">
-                                <input type="checkbox" name="default" id="default" class="form-check-input">
-                                <label for="default" class="form-check-label">Set as Default Address</label>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">Add Address</button>
-                        </form>
-                    </div>
-
-                    <div class="collapse mt-3" id="addressList">
                         <form id="address-form" method="post">
                             {% csrf_token %}
                             {% for addr in address_list %}
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="radio" name="address_id"
-                                    id="address_{{ addr.id }}" value="{{ addr.id }}"
-                                    {% if addr.id == selected_address.id %}checked{% endif %}>
+                                <input class="form-check-input" type="radio" name="address_id" id="address_{{ addr.id }}" value="{{ addr.id }}" {% if addr.id == selected_address.id %}checked{% endif %}>
                                 <label class="form-check-label" for="address_{{ addr.id }}">
                                     <p class="mb-0">{{ addr.name }}</p>
                                     <p class="mb-0">{{ addr.house_name }}, {{ addr.street_name }}</p>
@@ -140,20 +69,69 @@
                                 </label>
                             </div>
                             {% endfor %}
-                            <button type="button" class="btn btn-primary btn-sm" onclick="updateDefaultAddress()">Change
-                                Address</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="updateDefaultAddress()">Change Address</button>
+                        </form>
+                    </div>
+
+                    <!-- Add Address Form Collapse -->
+                    <div class="collapse mt-3" id="addAddressForm">
+                        <form method="post" action="{% url 'cart_management:checkout-add-address' %}">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" name="name" id="name" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="house_name" class="form-label">House Name</label>
+                                    <input type="text" name="house_name" id="house_name" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="street_name" class="form-label">Street Name</label>
+                                    <input type="text" name="street_name" id="street_name" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="pin_number" class="form-label">Pin Number</label>
+                                    <input type="text" name="pin_number" id="pin_number" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="district" class="form-label">District</label>
+                                    <input type="text" name="district" id="district" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="state" class="form-label">State</label>
+                                    <input type="text" name="state" id="state" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="country" class="form-label">Country</label>
+                                    <input type="text" name="country" id="country" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="phone_number" class="form-label">Phone Number</label>
+                                    <input type="text" name="phone_number" id="phone_number" class="form-control" required>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="default" id="default" class="form-check-input">
+                                        <label for="default" class="form-check-label">Set as Default Address</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary">Add Address</button>
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-lg-4">
             <!-- Order Summary -->
-            <div class="card mb-4">
+            <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">ORDER SUMMARY</h5>
-                    <p class="card-text">{{ cart_items|length }} ITEMS</p>
+                    <h5 class="card-title mb-4">Order Summary</h5>
+                    <p class="card-text">{{ cart_items|length }} Items</p>
 
                     <div class="d-flex justify-content-between mb-2">
                         <span>Order Total</span>
@@ -164,48 +142,178 @@
                         <span class="text-success">FREE</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>GST Amount</span>
-                        <span>₹{{ gst_amount }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
                         <span>Coupon Applied</span>
-                        <span>₹{{ coupon_discount }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Discount 15%</span>
-                        <span>-₹{{ discount_amount }}</span>
+                        <span id="coupon-discount">₹{{ coupon_discount }}</span>
                     </div>
                     <hr>
                     <div class="d-flex justify-content-between">
                         <strong>TOTAL</strong>
-                        <strong>₹{{ total_price }}</strong>
+                        <strong id="total-price">₹{{ total_price }}</strong>
                     </div>
                 </div>
             </div>
 
-            <!-- Payment Method -->
-            <div class="card mb-4">
+            <!-- Coupon Section -->
+            <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title">Payment Method</h5>
-                    <form method="post">
+                    <h5 class="card-title mb-3">Apply Coupon</h5>
+                    <form id="coupon-form">
                         {% csrf_token %}
-                        {% for method in payment_methods %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="payment_method" id="{{ method }}"
-                                value="{{ method }}">
-                            <label class="form-check-label" for="{{ method }}">
-                                {{ method }}
-                            </label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="coupon-code" placeholder="Enter coupon code">
+                            <button class="btn btn-outline-secondary" type="submit" id="apply-coupon">Apply</button>
                         </div>
-                        {% endfor %}
-                        <button type="submit" name="place_order" class="btn btn-danger btn-lg w-100 mt-4">Place
-                            Order</button>
                     </form>
+                    <div id="coupon-message"></div>
+                    <button class="btn btn-outline-secondary w-100 mt-2" data-bs-toggle="modal" data-bs-target="#couponsModal">
+                        View Available Coupons
+                    </button>
+                    <button id="remove-coupon" class="btn btn-outline-secondary w-100 mt-2">Remove Coupon</button>
                 </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Payment Method</h5>
+        <form method="post" action="{% url 'cart_management:checkout' %}" id="checkout-form">
+            {% csrf_token %}
+            {% for method in payment_methods %}
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="payment_method" id="{{ method }}" value="{{ method }}" required>
+                <label class="form-check-label" for="{{ method }}">
+                    {{ method }}
+                </label>
+            </div>
+            {% endfor %}
+            <input type="hidden" name="place_order" value="1">
+            <button type="submit" class="btn btn-primary w-100 mt-3">Place Order</button>
+        </form>
+    </div>
+</div>
+        </div>
+    </div>
+</div>
+
+<!-- Coupons Modal -->
+<div class="modal fade" id="couponsModal" tabindex="-1" aria-labelledby="couponsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="couponsModalLabel">Available Coupons</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if coupons %}
+                    {% for coupon in coupons %}
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <h6 class="mb-1">{{ coupon.code }}</h6>
+                            <p class="mb-0">Discount: {{ coupon.discount }}{% if coupon.is_percentage %}%{% else %}₹{% endif %}</p>
+                            <p class="mb-0">Expires on: {{ coupon.expiration_date|date:"D, M j, Y" }}</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="applyCoupon('{{ coupon.code }}')">Apply</button>
+                        </div>
+                    </div>
+                    {% if not forloop.last %}<hr>{% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p>No available coupons at this time.</p>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+
+<!-- JavaScript to handle apply coupon -->
+
+<script>
+    // Function to apply a coupon from the modal
+    function applyCoupon(couponCode) {
+        document.getElementById('coupon-code').value = couponCode;
+        document.getElementById('apply-coupon').click();
+    }
+    // Event listener to handle form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const couponForm = document.getElementById('coupon-form');
+        const couponMessage = document.getElementById('coupon-message');
+        couponForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const couponCode = document.getElementById('coupon-code').value;
+            fetch("{% url 'coupon_management:apply-coupon' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        coupon_code: couponCode
+                    })
+                })
+                .then(response => {
+    if (!response.ok) {
+        return response.text().then(text => { throw new Error(text); });
+    }
+    return response.json();
+})
+.then(data => {
+    if (data.status === 'success') {
+        document.getElementById('coupon-discount').textContent = '₹' + data.discount;
+        document.getElementById('total-price').textContent = '₹' + data.new_total;
+        couponMessage.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+    } else {
+        couponMessage.innerHTML = '<div class="alert alert-danger">' + data.message + '</div>';
+    }
+})
+.catch(error => {
+    console.error('Error:', error);
+    couponMessage.innerHTML =
+        '<div class="alert alert-danger">An error occurred while applying the coupon. ' + error.message + '</div>';
+});
+
+        });
+    });
+</script>
+
+<!-- JavaScript to handle remove coupon -->
+
+<script>
+    document.getElementById('remove-coupon').addEventListener('click', function() {
+    fetch("{% url 'coupon_management:remove-coupon' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Update the UI to reflect the original cart total
+                document.getElementById('coupon-discount').textContent = '₹0';
+                document.getElementById('total-price').textContent = '₹' + data.new_total;
+                document.getElementById('coupon-message').innerHTML =
+                    '<div class="alert alert-success">' + data.message + '</div>';
+            } else {
+                document.getElementById('coupon-message').innerHTML =
+                    '<div class="alert alert-danger">' + data.message + '</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('coupon-message').innerHTML =
+                '<div class="alert alert-danger">An error occurred while removing the coupon.</div>';
+        });
+});
+
+</script>
+
+
+
+
+
 
 <!-- JavaScript to handle address change -->
 <script>
@@ -239,5 +347,30 @@
                 console.error('Error:', error);
             });
     }
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkoutForm = document.getElementById('checkout-form');
+    checkoutForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        // Check if an address is selected
+        const selectedAddress = document.querySelector('input[name="address_id"]:checked');
+        if (!selectedAddress) {
+            alert('Please select a delivery address.');
+            return;
+        }
+        
+        // Check if a payment method is selected
+        const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked');
+        if (!selectedPaymentMethod) {
+            alert('Please select a payment method.');
+            return;
+        }
+        
+        // If all checks pass, submit the form
+        this.submit();
+    });
+});
 </script>
 {% endblock %}

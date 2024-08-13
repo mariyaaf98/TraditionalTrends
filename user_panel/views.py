@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404,redirect
 from product_management . models import Products, Product_Variant, VariantImage
-from django.http import JsonResponse,HttpResponseNotAllowed
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .models import Address
 from category_management.models import Category
@@ -46,9 +46,7 @@ def add_address(request):
         
         pattern = r'^[A-Za-z][A-Za-z\s]*$'
         
-        if not (re.match(pattern, name) and re.match(pattern, house_name) and
-            re.match(pattern, street_name) and re.match(pattern, district) and
-            re.match(pattern, state) and re.match(pattern, country)):
+        if not (re.match(pattern, name)):
          messages.error(request, 'Fields should start with a letter and can contain only letters and spaces.')
          return redirect('user_panel:add-address')
         
@@ -123,6 +121,7 @@ def edit_address(request, address_id):
 
     return render(request, 'user_side/edit_address.html', {'address': address})
 
+@login_required
 def delete_address(request, address_id):
     address = get_object_or_404(Address, id=address_id)
     address.delete()
@@ -143,9 +142,10 @@ def product_details(request, product_id):
         variants.remove(selected_variant)
         variants.insert(0, selected_variant)
 
-    # Prepare image URLs for each variant
+   # Prepare image URLs for each variant and check stock
     for variant in variants:
         variant.image_urls = [image.image.url for image in variant.images.all()]
+        variant.in_stock = variant.variant_stock > 0
 
     related_products = product.related_products()
 
@@ -211,11 +211,11 @@ def shop_list(request):
     # Price filter
     try:
         if min_price:
-            min_price = Decimal(min_price.replace('₹', '').replace(',', ''))
+            min_price = Decimal(min_price)
             products = products.filter(offer_price__gte=min_price)
         
         if max_price:
-            max_price = Decimal(max_price.replace('₹', '').replace(',', ''))
+            max_price = Decimal(max_price)
             products = products.filter(offer_price__lte=max_price)
     except (TypeError, ValueError, ValidationError):
         min_price = None
@@ -263,10 +263,13 @@ def shop_list(request):
 
 @login_required
 def product_list_by_category(request, category_id=None):
+    # Fetch available categories
     categories = Category.objects.filter(Q(is_deleted=False) & Q(is_available=True))
 
+    # Get sorting preference
     sort_by = request.GET.get('sort_by', 'featured')
-    
+
+    # Filter products by category if category_id is provided
     if category_id:
         selected_category = get_object_or_404(Category, id=category_id, is_deleted=False)
         products = Products.objects.filter(product_category=selected_category, is_active=True)
@@ -274,9 +277,9 @@ def product_list_by_category(request, category_id=None):
         products = Products.objects.filter(is_active=True)
         selected_category = None
 
+    # Handle price filtering
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
-
     max_product_price = Products.objects.aggregate(Max('offer_price'))['offer_price__max'] or Decimal('0.00')
 
     try:
@@ -285,12 +288,21 @@ def product_list_by_category(request, category_id=None):
             products = products.filter(offer_price__gte=min_price)
         
         if max_price:
-            max_price = Decimal(max_price.replace('₹', '').replace(',', ''))  
+            max_price = Decimal(max_price.replace('₹', '').replace(',', ''))
             products = products.filter(offer_price__lte=max_price)
     except (TypeError, ValueError, ValidationError):
-        min_price = None
-        max_price = None
+        # In case of invalid input, show all products or handle as needed
         products = Products.objects.none()
+
+    # Sorting
+    if sort_by == 'price_low_to_high':
+        products = products.order_by('offer_price')
+    elif sort_by == 'price_high_to_low':
+        products = products.order_by('-offer_price')
+    elif sort_by == 'a_to_z':
+        products = products.order_by('product_name')
+    elif sort_by == 'z_to_a':
+        products = products.order_by('-product_name')
 
     context = {
         'categories': categories,
@@ -304,9 +316,8 @@ def product_list_by_category(request, category_id=None):
 
     return render(request, 'user_side/shop_list.html', context)
 
-
+@login_required
 def user_profile(request):
-
     return render(request, 'user_side/user_profile.html')
 
 

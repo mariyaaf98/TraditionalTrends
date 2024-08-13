@@ -9,6 +9,8 @@ from django.db.models import Sum, Avg
 from django.utils import timezone
 from product_management.models import Product_Variant, Products
 from datetime import datetime
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
 
 def is_admin(user):
     return user.is_superuser
@@ -34,13 +36,17 @@ def admin_logout(request):
     logout(request)
     return redirect('admin_panel:admin_login')
 
+@login_required
 def users_list(request):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
+    
     user_details = User.objects.all().filter(is_superuser=False)
 
     return render(request, "admin_side/userslist.html", {"user_details": user_details})
 
+
+@login_required
 def block_unblock_user(request, id):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin-login")
@@ -113,20 +119,34 @@ def admin_dashboard(request):
 
     return render(request, 'admin_side/index.html', context)
 
+@login_required
 def sales_report(request):
-    if request.method == 'POST':
-        start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date')
-        
-        if start_date and end_date:
-            try:
-                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            except ValueError:
-                return redirect('admin_panel:sales-report')
-            
-            orders = Order.objects.filter(date__range=[start_date, end_date], order_status="Delivered")
-            return render(request, 'admin_side/dashboard/salesreport.html', {'orders': orders})
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin-login")
     
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    # Initialize queryset
     orders = Order.objects.filter(order_status="Delivered")
-    return render(request, 'admin_side/salesreport.html', {'orders': orders})
+
+    # Filter by date range if both start_date and end_date are provided
+    if start_date and end_date:
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            orders = orders.filter(date__range=[start_date, end_date])
+        except ValueError:
+            return redirect('admin_panel:sales-report')
+
+    # Pagination
+    paginator = Paginator(orders, 10)  # Show 10 orders per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Render the template
+    return render(request, 'admin_side/salesreport.html', {
+        'page_obj': page_obj,
+        'start_date': start_date,
+        'end_date': end_date,
+    })

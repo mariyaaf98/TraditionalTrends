@@ -25,7 +25,7 @@
                     <input type="text" placeholder="Search Coupons" class="form-control bg-white" style="width: 500px;">
                 </div>
                 <div>
-                    <a href="{% url 'cupon_management:create_coupon' %}" class="btn btn-primary btn-sm rounded">Create New Coupon</a>
+                    <a href="{% url 'coupon_management:create_coupon' %}" class="btn btn-primary btn-sm rounded">Create New Coupon</a>
                 </div>
             </div>
             <div class="card mb-4">
@@ -73,7 +73,6 @@
                                     <th>Percentage</th>
                                     <th>Expiration Date</th>
                                     <th>Status</th>
-                                    <th>Usage Limit</th>
                                     <th>Minimum Purchase Amount</th>
                                     <th class="text-end">Action</th>
                                 </tr>
@@ -86,7 +85,6 @@
                                     <td>{{ coupon.is_percentage|yesno:"Yes,No" }}</td>
                                     <td>{{ coupon.expiration_date }}</td>
                                     <td>{{ coupon.is_active|yesno:"Active,Inactive" }}</td>
-                                    <td>{{ coupon.usage_limit }}</td>
                                     <td>{{ coupon.minimum_purchase_amount }}</td>
                                     <td class="text-end">
                                         <button class="btn btn-warning rounded font-sm" onclick="editCoupon({{ coupon.id }})">Edit</button>
@@ -171,14 +169,14 @@
             if (result.isConfirmed) {
                 // Submit the form if confirmed
                 const form = document.getElementById('delete-form');
-                form.action = "{% url 'cupon_management:delete-coupon' coupon_id=0 %}".replace('0', couponId);
+                form.action = "{% url 'coupon_management:delete-coupon' coupon_id=0 %}".replace('0', couponId);
                 form.submit();
             }
         });
     }
 
     function editCoupon(couponId) {
-        window.location.href = "{% url 'cupon_management:edit-coupon' coupon_id=0 %}".replace('0', couponId);
+        window.location.href = "{% url 'coupon_management:edit-coupon' coupon_id=0 %}".replace('0', couponId);
     }
 </script>
 

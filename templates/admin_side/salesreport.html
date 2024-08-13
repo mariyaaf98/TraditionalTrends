@@ -4,6 +4,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.26/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
 {% include 'admin_side/sidebar.html' %}
 <main class="main-wrap">
     <div class="content-header">
@@ -21,26 +22,25 @@
         </div>
     </div>
     <div class="mb-4">
-        <form method="post" action="" class="row g-2">
+        <form method="get" action="" class="row g-2">
             {% csrf_token %}
             <div class="col-auto d-flex align-items-center">
                 <h5 class="mb-0">Start Date:</h5>
             </div>
             <div class="col-auto">
-                <input type="date" name="start_date" class="form-control" placeholder="Start date">
+                <input type="date" name="start_date" class="form-control" placeholder="Start date" value="{{ start_date }}">
             </div>
             <div class="col-auto d-flex align-items-center">
                 <h5 class="mb-0">End Date:</h5>
             </div>
             <div class="col-auto">
-                <input type="date" name="end_date" class="form-control" placeholder="End date">
+                <input type="date" name="end_date" class="form-control" placeholder="End date" value="{{ end_date }}">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
         </form>
     </div>
-    
     
     <!-- Table -->
     <div class="card mb-4">
@@ -65,11 +65,7 @@
                             <td>{{ order.user.username }}</td>
                             <td>₹{{ order.total_amount }}</td>
                             <td>{{ order.payment_option }}</td>
-                            {% if order.coupon %}
-                            <td>{{ order.coupon.coupon_code }}</td>
-                            {% else %}
-                            <td>Nill</td>
-                            {% endif %}
+                            <td>{% if order.coupon %}{{ order.coupon.coupon_code }}{% else %}Nill{% endif %}</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -84,16 +80,49 @@
     <div class="pagination-area mt-30 mb-50">
         <nav aria-label="Page navigation example">
             <ul class="pagination justify-content-start">
-                <li class="page-item active"><a class="page-link" href="#">01</a></li>
-                <li class="page-item"><a class="page-link" href="#">02</a></li>
-                <li class="page-item"><a class="page-link" href="#">03</a></li>
-                <li class="page-item"><a class="page-link dot" href="#">...</a></li>
-                <li class="page-item"><a class="page-link" href="#">16</a></li>
-<li class="page-item"><a class="page-link" href="#"><i class="material-icons md-chevron_right"></i></a></li>
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" aria-label="First">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" aria-label="Previous">
+                            <span aria-hidden="true">&lsaquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ num }}</a></li>
+                    {% elif num == 1 %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ num }}</a></li>
+                        <li class="page-item"><a class="page-link dot" href="#">...</a></li>
+                    {% elif num == page_obj.paginator.num_pages %}
+                        <li class="page-item"><a class="page-link dot" href="#">...</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" aria-label="Next">
+                            <span aria-hidden="true">&rsaquo;</span>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
             </ul>
         </nav>
     </div>
-</section> <!-- content-main end// -->
+</main> <!-- main-wrap end// -->
 
 <script>
     document.getElementById('download-pdf').addEventListener('click', function () {

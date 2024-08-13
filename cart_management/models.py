@@ -1,6 +1,6 @@
 from django.db import models
 from accounts.models import User
-from product_management.models import Product_Variant
+from product_management.models import Product_Variant,Products
 
 
 class Cart(models.Model):
@@ -11,6 +11,9 @@ class Cart(models.Model):
 
     def __str__(self):
         return f"Cart for {self.user.username}"
+
+    def get_total_price(self):
+        return sum(item.variant.product.offer_price * item.quantity for item in self.cartitem_set.all() if item.variant.product.offer_price is not None)
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)

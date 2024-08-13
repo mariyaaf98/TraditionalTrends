@@ -9,8 +9,7 @@
     <section class="content-main">
         <div class="content-header">
             <div>
-                <h2 class="content-title card-title">Categories </h2>
-                <p>Add, edit or delete a category</p>
+                <h2 class="content-title card-title">Add Variant </h2>
             </div>
             <div>
                 <input type="text" placeholder="Search Categories" class="form-control bg-white" style="width: 500px;">
@@ -44,7 +43,7 @@
                             </div>
                             <div class="mb-3">
                                 <label for="stock" class="form-label">Stock:</label>
-                                <input type="text" placeholder="Type here" class="form-control" id="product_name" name="variant_stock" />
+                                <input type="number" placeholder="Type here" class="form-control" id="variant_stock" name="variant_stock" min="1" step="1"  required/>
                             </div>
                             <div class="mb-3">
                                 <input type="checkbox" id="variant_status" name="variant_status" class="form-check-input">
@@ -60,19 +59,6 @@
                                 <input type="file" id="product-images" name="product_images" accept="image/*" multiple onchange="handleMultipleImages(event)">
                                 <div id="image-previews"></div>
                             </div>
-                            {% comment %} <div class="mb-3">
-                                <label for="images" class="form-label">Images:</label>
-                                <input type="file" id="images" name="images" class="form-control-file" accept="image/*" multiple>
-                            </div> {% endcomment %}
-                            <!-- <div class="mb-3">
-                                <label  for="brand_image">Brand Image:</label>
-                                <input  class="form-control" type="file" name="brand_image" id="brand_image">
-                            </div> -->
-                            <!-- <div class="mb-3">
-                                <label>Status:</label>
-                                <input type="checkbox" id="is_available" name="status" value="True">
-                            </div> -->
-                            
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary">Add Variant</button>
                             </div>

@@ -16,7 +16,8 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
+from coupon_management.models import Coupon,UserCoupon
+from decimal import Decimal
 
 @login_required
 def order_success(request):
@@ -36,16 +37,37 @@ def order_success(request):
         if order.order_status == 'Cancelled':
             arrival_date = None
 
+        # Calculate total price from order items
+        total_price = sum(Decimal(item.variant.product.offer_price) * item.quantity for item in order_items)
+
+        # Check if a coupon was applied to the order
+        user_coupon = UserCoupon.objects.filter(user=request.user, order=order, used=True).first()
+        discount = Decimal('0.00')
+        if user_coupon:
+            coupon = user_coupon.coupon
+            if coupon.is_percentage:
+                discount = (coupon.discount / Decimal('100')) * total_price
+            else:
+                discount = coupon.discount
+
+        # Calculate the final amount after applying the discount
+        final_amount = total_price - discount if user_coupon else total_price
+
         context = {
             'order': order,
             'order_items': order_items,
             'arrival_date': arrival_date,
+            'discount': discount,
+            'final_amount': final_amount,
+            'total_price': total_price,
+            'coupon_applied': user_coupon is not None,
         }
         return render(request, 'user_side/order_success.html', context)
 
     except Order.DoesNotExist:
         messages.error(request, "No recent order found.")
         return redirect('cart_management:cart')
+
 
 @login_required
 def order_list(request):
@@ -66,19 +88,42 @@ def order_list(request):
 
 @login_required
 def user_order_detail(request, order_id):
-    order = get_object_or_404(Order, order_id=order_id)
+    order = get_object_or_404(Order, order_id=order_id, user=request.user)
     order_items = OrderItem.objects.filter(main_order=order)
+
+    # Calculate subtotal (before coupon discount)
+    subtotal = sum(item.total_cost() for item in order_items)
 
     # Fetch return information for each order item
     for item in order_items:
         item.return_info = Return.objects.filter(order_item=item).first()
     
+    # Get user's wallet
     wallet = Wallet.objects.filter(user=request.user).first()
+
+    # Fetch the applied coupon using UserCoupon model
+    user_coupon = UserCoupon.objects.filter(order=order, user=request.user).first()
+    coupon = user_coupon.coupon if user_coupon else None
+
+    # Compute discount amount
+    discount_amount = Decimal('0.00')
+    if coupon:
+        if coupon.is_percentage:
+            discount_amount = subtotal * (Decimal(coupon.discount) / Decimal('100'))
+        else:
+            discount_amount = min(Decimal(coupon.discount), subtotal)  # Ensure discount doesn't exceed subtotal
+
+    # Calculate the final total after discount
+    final_total = subtotal - discount_amount
 
     context = {
         'order': order,
         'order_items': order_items,
         'wallet': wallet,
+        'coupon': coupon,
+        'subtotal': subtotal,
+        'discount_amount': discount_amount,
+        'final_total': final_total,
     }
     return render(request, 'user_side/order_detail.html', context)
 
@@ -90,7 +135,23 @@ def cancel_order_item(request, item_id):
         variant = order_item.variant
         order = order_item.main_order
 
+        # Calculate refund amount
         refund_amount = order_item.total_cost()
+
+        # Check if a coupon was used for the order
+        user_coupon = UserCoupon.objects.filter(order=order, user=order.user, used=True).first()
+        if user_coupon:
+            coupon = user_coupon.coupon
+            if coupon.is_valid():  # Ensure the coupon is valid
+                discount_amount = Decimal(coupon.discount)
+                if coupon.is_percentage:
+                    discount_amount = refund_amount * (discount_amount / Decimal('100'))
+                refund_amount -= discount_amount
+
+        # Ensure refund amount is not negative
+        refund_amount = max(refund_amount, Decimal('0.00'))
+
+        # Update variant stock and order item status
         variant.variant_stock += order_item.quantity
         variant.save()
 
@@ -102,7 +163,7 @@ def cancel_order_item(request, item_id):
             order.order_status = 'Cancelled'
             order.save()
 
-        # Refund to wallet 
+        # Refund to wallet
         if (order.payment_option == 'Online Payment' or order.payment_option == 'Wallet') and refund_amount > 0:
             wallet, created = Wallet.objects.get_or_create(user=order.user)
             wallet.credit(refund_amount)
@@ -116,8 +177,7 @@ def cancel_order_item(request, item_id):
 
 
 def admin_order_list(request):
-    # Get all orders
-    all_orders = Order.objects.all()
+    all_orders = Order.objects.all().select_related('user').prefetch_related('items', 'items__returns')
 
     # Get orders with pending return requests
     pending_returns = all_orders.filter(
@@ -129,6 +189,12 @@ def admin_order_list(request):
     other_orders = all_orders.exclude(
     id__in=pending_returns.values_list('id', flat=True)).order_by('-date')
 
+    # Update payment status for orders with status 'Delivered'
+    for order in all_orders:
+        if order.order_status == 'Delivered':
+            order.payment_status = True
+            order.save()
+            
     context = {
         'pending_returns': pending_returns,
         'other_orders': other_orders,
@@ -139,23 +205,26 @@ def admin_order_list(request):
 
 def admin_order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id)
-    order_items = OrderItem.objects.filter(main_order=order)
+    order_items = OrderItem.objects.filter(main_order=order).select_related('main_order').prefetch_related('returns')
+
+    order.is_paid = (order.order_status == 'Delivered' or order.payment_status or order.payment_option in ['Wallet', 'Online Payment'])
 
     # Fetch return information for each order item
     for item in order_items:
-        item.return_info = Return.objects.filter(order_item=item).first()
-    
+        item.return_info = item.returns.first()  # Assumes one return per item
+
     item_quantity = order_items.aggregate(total_quantity=Sum('quantity'))['total_quantity']
     total_price = sum(item.total_cost() for item in order_items)
     
     context = {
         'order': order,
         'order_items': order_items,
-        'item_quantity': item_quantity, 
-        'total_price': total_price,    
+        'item_quantity': item_quantity,
+        'total_price': total_price,
     }
 
     return render(request, 'admin_side/order_detail.html', context)
+
 
 
 def admin_update_order_status(request, order_id):
@@ -191,12 +260,12 @@ def request_return(request, item_id):
 
         # Check if the order item is valid for return
         if order_item.main_order.order_status == 'Delivered' and not Return.objects.filter(order_item=order_item).exists():
-            # Create a new return request
+        
             Return.objects.create(
                 order_item=order_item,
                 user=request.user,
                 reason=reason,
-                status='REQUESTED'  # Set initial status to REQUESTED
+                status='REQUESTED'
             )
             
             return JsonResponse({'success': True, 'message': 'Return requested successfully.'})
@@ -216,6 +285,40 @@ def process_return(request, return_id):
     if action == 'approve':
         return_request.status = 'APPROVED'
         return_request.processed_date = timezone.now()
+
+        # Retrieve the order item and calculate the total refund amount
+        order_item = return_request.order_item
+        price = order_item.unit_price
+        quantity = order_item.quantity
+        total_refund = price * quantity
+
+        # Check if a coupon was applied to the order
+        order = order_item.main_order
+        user_coupon = UserCoupon.objects.filter(order=order, user=request.user, used=True).first()
+        if user_coupon:
+            coupon = user_coupon.coupon
+            if coupon.is_valid():  
+                discount_amount = Decimal(coupon.discount)
+                if coupon.is_percentage:
+                    discount_amount = total_refund * (discount_amount / Decimal('100'))
+                total_refund -= discount_amount
+
+        # Ensure total refund is not negative
+        total_refund = max(total_refund, Decimal('0.00'))
+
+        # Add the total refund amount to the user's wallet
+        wallet, created = Wallet.objects.get_or_create(user=return_request.user)
+        wallet.balance += total_refund
+        wallet.save()
+
+        # Create a new transaction record
+        Transaction.objects.create(
+            user=return_request.user,
+            amount=total_refund,
+            transaction_type='credit',
+            date=timezone.now()
+        )
+
         return_request.save()
         messages.success(request, f'Return request #{return_id} approved.')
         
@@ -273,11 +376,18 @@ def razorpay_callback(request):
 
 def user_wallet_view(request):
     user = request.user
-    wallet = get_object_or_404(Wallet, user=user)
+
+    # Try to get the wallet; if not found, show an error message or redirect
+    try:
+        wallet = Wallet.objects.get(user=user)
+    except Wallet.DoesNotExist:
+        # Handle the case where the wallet does not exist
+        messages.error(request, "No wallet found for the user.")
+        return redirect('user_panel:user-profile') 
+
     transactions_list = Transaction.objects.filter(user=user).order_by('-date')
     
-    
-    paginator = Paginator(transactions_list, 5)
+    paginator = Paginator(transactions_list, 10)
     page_number = request.GET.get('page')
     
     try:

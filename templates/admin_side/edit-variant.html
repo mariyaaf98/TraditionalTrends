@@ -19,7 +19,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="variant_stock" class="form-label">Stock</label>
-                        <input type="number" class="form-control" id="variant_stock" name="variant_stock" value="{{ variant.variant_stock }}" min="0">
+                        <input type="number" placeholder="Type here" class="form-control" id="variant_stock" name="variant_stock" min="1" step="1" value="{{ variant.variant_stock }}" required/>
                     </div>
                     <div class="mb-3">
                         <label for="variant_status" class="form-label">Status</label>

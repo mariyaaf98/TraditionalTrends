@@ -10,15 +10,18 @@ from django.views.decorators.http import require_POST
 from user_panel.models import Address
 from django.contrib import messages
 from order_management.models import Order,OrderItem,Wallet
-from coupon_management.models import Coupon
+from coupon_management.models import Coupon,UserCoupon
 import datetime 
 from django.utils.timezone import now
+from django.utils import timezone
 from datetime import timedelta
 import re
+from django.db.models import Q
 import razorpay
 from django.conf import settings
 from django.urls import reverse
 import logging
+from decimal import Decimal
 
 @login_required
 @require_POST
@@ -71,7 +74,7 @@ def add_to_cart(request):
 @login_required
 def cart_view(request):
     cart_items = CartItem.objects.filter(cart__user=request.user).select_related('variant__product')
-    coupons = Coupon.objects.filter(is_active=True)
+    
     cart_total = sum(
         item.quantity * (item.variant.product.offer_price if item.variant else item.product.offer_price)
         for item in cart_items
@@ -89,7 +92,6 @@ def cart_view(request):
             for item in cart_items
         ],
         'cart_total': cart_total,
-        'coupons': coupons,
     }
     return render(request, 'user_side/shop-cart.html', context)
 
@@ -99,28 +101,27 @@ def cart_view(request):
 @login_required
 @require_POST
 def update_cart_item(request, item_id):
-    
-    MAX_QUANTITY = 5  
+    MAX_QUANTITY=5
+    try:
+        quantity = int(request.POST.get('quantity', 1))
+        cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user, cart__is_active=True)
+        variant = cart_item.variant
 
-    quantity = int(request.POST.get('quantity', 1))
+        if quantity > MAX_QUANTITY:
+            return JsonResponse({'error': f'Maximum quantity of {MAX_QUANTITY} items per product allowed.'}, status=400)
 
-    cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user, cart__is_active=True)
-    variant = cart_item.variant
+        if variant and quantity > variant.variant_stock:
+            return JsonResponse({'error': 'This item is currently unavailable in the requested quantity.'}, status=400)
 
-    # Check if the requested quantity exceeds the maximum allowed
-    if quantity > MAX_QUANTITY:
-        return JsonResponse({'error': f'Maximum quantity of {MAX_QUANTITY} items per product allowed.'}, status=400)
+        if quantity > 0:
+            cart_item.quantity = quantity
+            cart_item.save()
+            item_total_price = cart_item.quantity * cart_item.variant.product.offer_price
+        else:
+            cart_item.delete()
+            item_total_price = 0
 
-    # Check if the requested quantity exceeds available stock
-    if variant and quantity > variant.variant_stock:
-        return JsonResponse({'error': 'This item is currently unavailable in the requested quantity.'}, status=400)
-
-    if quantity > 0:
-        cart_item.quantity = quantity
-        cart_item.save()
-
-        item_total_price = cart_item.quantity * cart_item.variant.product.offer_price
-        cart_items = cart_item.cart.items.all()
+        cart_items = CartItem.objects.filter(cart=cart_item.cart)
         cart_total_price = sum(item.quantity * item.variant.product.offer_price for item in cart_items)
 
         response = {
@@ -128,25 +129,20 @@ def update_cart_item(request, item_id):
             'item_total_price': item_total_price,
             'cart_total_price': cart_total_price
         }
-    else:
-        cart_item.delete()
-        cart_items = CartItem.objects.filter(cart=cart_item.cart)
-        cart_total_price = sum(item.quantity * item.variant.product.offer_price for item in cart_items)
-        response = {
-            'success': True,
-            'item_total_price': 0,
-            'cart_total_price': cart_total_price
-        }
+        return JsonResponse(response)
+    except Exception as e:
+        logger.error(f'Error updating cart item: {e}')
+        return JsonResponse({'error': 'An unexpected error occurred.'}, status=500)
 
-    return JsonResponse(response)
+
 
 @login_required
 @require_POST
 def delete_cart_item(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
+    print(f"Deleting cart item: {cart_item.id}")  # Debugging statement
     cart_item.delete()
 
-    # Calculate the new cart total after item removal
     cart_items = CartItem.objects.filter(cart__user=request.user)
     cart_total = sum(item.quantity * item.variant.product.offer_price for item in cart_items)
 
@@ -156,18 +152,243 @@ def delete_cart_item(request, item_id):
 def clear_cart(request):
     cart = Cart.objects.filter(user=request.user, is_active=True).first()
     if cart:
-        cart.items.all().delete()
+        CartItem.objects.filter(cart=cart).delete()
     return redirect('cart_management:cart')
 
 
-
 logger = logging.getLogger(__name__)
+# @login_required
+# @transaction.atomic
+# def checkout(request):
+#     razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+#     cart, created = Cart.objects.get_or_create(user=request.user, is_active=True)
+#     cart_items = CartItem.objects.filter(cart=cart)
+
+#     today = timezone.now().date()
+#     coupons = Coupon.objects.filter(
+#         is_active=True,
+#         expiration_date__gte=today
+#     ).exclude(
+#         Q(usercoupon__user=request.user) & Q(usercoupon__used=True)
+#     )
+
+#     if not cart_items.exists():
+#         messages.error(request, "Your cart is empty. Please add items before proceeding to checkout.")
+#         return redirect('cart_management:cart')
+
+#     total_price = sum(item.variant.product.offer_price * item.quantity for item in cart_items)
+    
+#     # check stock and product avilabilities
+#     for item in cart_items:
+#         if item.quantity > item.variant.variant_stock:
+#             messages.error(request, f"Insufficient stock for {item.variant.product.product_name}.")
+#             return redirect('cart_management:cart')
+#         if item.variant.product.is_deleted or item.variant.is_deleted:
+#             messages.error(request, f"{item.variant.product.product_name} is no longer available.")
+#             return redirect('cart_management:cart')
+
+#     address_list = Address.objects.filter(user=request.user)
+#     selected_address = address_list.filter(default=True).first()
+
+#     estimated_delivery_days = 5  
+#     arrival_date = now() + timedelta(days=estimated_delivery_days)
+
+#     if request.method == 'POST':
+#         if 'place_order' in request.POST:
+#             if cart_items.exists():
+#                 payment_method = request.POST.get('payment_method')
+#                 if not payment_method:
+#                     messages.error(request, "Please select a payment method.")
+#                     return redirect('cart_management:checkout')
+
+#                 if not selected_address:
+#                     messages.error(request, "Please select a delivery address.")
+#                     return redirect('cart_management:checkout')
+
+#                 # Apply coupon discount if a coupon is applied
+#                 applied_coupon = request.session.get('applied_coupon', None)
+#                 if applied_coupon:
+#                     coupon = Coupon.objects.get(code=applied_coupon['code'])
+#                     discount = Decimal(applied_coupon['discount'])
+#                     total_price -= discount
+
+#                 # Apply coupon discount if a valid coupon is applied
+#                 # applied_coupon = request.session.get('applied_coupon', None)
+#                 # if applied_coupon:
+#                 #     try:
+#                 #         coupon = Coupon.objects.get(code=applied_coupon['code'], is_active=True)
+
+#                 #         # Validate coupon expiration
+#                 #         if coupon.expiration_date and now().date() > coupon.expiration_date:
+#                 #             messages.error(request, "The coupon has expired.")
+#                 #             return redirect('cart_management:checkout')
+
+#                 #         # Validate coupon usage limit
+#                 #         if coupon.times_used >= coupon.usage_limit:
+#                 #             messages.error(request, "The coupon usage limit has been reached.")
+#                 #             return redirect('cart_management:checkout')
+
+#                 #         # Validate if the coupon is user-specific and applicable
+#                 #         if coupon.user and coupon.user != request.user:
+#                 #             messages.error(request, "This coupon is not valid for your account.")
+#                 #             return redirect('cart_management:checkout')
+
+#                 #         # Calculate the discount and apply it to the total price
+#                 #         discount = Decimal(applied_coupon['discount'])
+#                 #         total_price -= discount
+
+#                 #     except Coupon.DoesNotExist:
+#                 #         messages.error(request, "Invalid coupon code.")
+#                 #         return redirect('cart_management:checkout')
+
+#                 try:
+#                     with transaction.atomic():
+#                         # Stock check and update variant quantities
+#                         for item in cart_items:
+#                             variant = item.variant
+#                             if variant.variant_stock < item.quantity:
+#                                 messages.error(request, f'Not enough stock for {variant.product.product_name} - {variant.colour_name}')
+#                                 return redirect('cart_management:checkout')
+
+#                             variant.variant_stock -= item.quantity
+#                             variant.save()
+
+#                         order = Order.objects.create(
+#                             user=request.user,
+#                             total_amount=total_price,
+#                             payment_option=payment_method,
+#                             name=selected_address.name,
+#                             house_name=selected_address.house_name,
+#                             street_name=selected_address.street_name,
+#                             pin_number=selected_address.pin_number,
+#                             district=selected_address.district,
+#                             state=selected_address.state,
+#                             country=selected_address.country,
+#                             phone_number=selected_address.phone_number,
+#                             order_id=f"ORDER-{now().strftime('%Y%m%d%H%M%S')}-{request.user.id}"
+#                         )
+
+#                         for item in cart_items:
+#                             OrderItem.objects.create(
+#                                 main_order=order,
+#                                 variant=item.variant,
+#                                 quantity=item.quantity,
+#                                 user=request.user,
+#                                 is_active=True
+#                             )
+
+#                          # Decrement coupon usage if applied
+#                         if applied_coupon:
+#                             UserCoupon.objects.create(
+#                                 user=request.user,
+#                                 coupon=coupon,
+#                                 used=True,
+#                                 used_at=now(),
+#                                 order=order
+#                             )
+#                             coupon.save()
+
+#                         if payment_method == 'Online Payment':
+#                             # Create Razorpay Order
+#                             razorpay_order = razorpay_client.order.create(dict(
+#                                 amount=int(total_price * 100),
+#                                 currency='INR',
+#                                 payment_capture='1'
+#                             ))
+
+                    
+#                             order.razorpay_order_id = razorpay_order['id']
+#                             order.save()
+
+                        
+#                             razorpay_payment = {
+#                                 'razorpay_key': settings.RAZORPAY_KEY_ID,
+#                                 'razorpay_order_id': razorpay_order['id'],
+#                                 'razorpay_amount': int(total_price * 100),
+#                                 'currency': 'INR',
+#                                 'callback_url': request.build_absolute_uri(reverse('order_management:razorpay-callback'))
+#                             }
+
+
+#                             # Clear coupon session data
+#                             if 'applied_coupon' in request.session:
+#                                 del request.session['applied_coupon']
+
+#                             return render(request, 'user_side/razorpay_payment.html', {'razorpay_payment': razorpay_payment})
+#                         elif payment_method == 'Wallet':
+#                             # Check if user has a wallet
+#                             wallet, created = Wallet.objects.get_or_create(user=request.user)
+#                             if wallet.is_sufficient(total_price):
+#                                 # Deduct amount from wallet
+#                                 wallet.debit(total_price)
+
+#                                 # Update order status
+#                                 order.payment_status = True
+#                                 order.order_status = 'Processing'
+#                                 order.save()
+
+#                                 # Clear coupon session data
+#                                 if 'applied_coupon' in request.session:
+#                                     del request.session['applied_coupon']
+
+#                                 CartItem.objects.filter(cart=cart).delete()
+#                                 cart.is_active = False
+#                                 cart.save()
+
+#                                 messages.success(request, "Payment successful. Your order has been placed.")
+#                                 return redirect('order_management:order-success')
+#                             else:
+#                                 messages.error(request, "Insufficient wallet balance. Please choose another payment method.")
+#                                 return redirect('cart_management:checkout')
+#                         else:
+#                             # Cash on Delivery or other payment methods
+#                             CartItem.objects.filter(cart=cart).delete()
+#                             cart.is_active = False
+#                             cart.save()
+
+#                             # Clear coupon session data
+#                             if 'applied_coupon' in request.session:
+#                                 del request.session['applied_coupon']
+
+#                             messages.success(request, "Your order has been placed successfully!")
+#                             return redirect('order_management:order-success')
+                        
+                        
+#                 except Exception as e:
+#                     logger.error(f"Order placement failed for user {request.user.id}: {str(e)}", exc_info=True)
+#                     messages.error(request, "Failed to place the order. Please try again later.")
+#                     return redirect('cart_management:checkout')
+#             else:
+#                 messages.error(request, "Your cart is empty. Please add items before placing an order.")
+#                 return redirect('cart_management:cart')
+
+#     context = {
+#         'cart_items': cart_items,
+#         'total_price': total_price,
+#         'address_list': address_list,
+#         'selected_address': selected_address,
+#         'payment_methods': ['Cash on Delivery', 'Online Payment', 'Wallet'],
+#         'arrival_date': arrival_date,
+#         'coupons':coupons,
+#     }
+
+#     return render(request, 'user_side/checkout.html', context)
+
+
 @login_required
 @transaction.atomic
 def checkout(request):
     razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
     cart, created = Cart.objects.get_or_create(user=request.user, is_active=True)
     cart_items = CartItem.objects.filter(cart=cart)
+
+    today = timezone.now().date()
+    coupons = Coupon.objects.filter(
+        is_active=True,
+        expiration_date__gte=today
+    ).exclude(
+        Q(usercoupon__user=request.user) & Q(usercoupon__used=True)
+    )
 
     if not cart_items.exists():
         messages.error(request, "Your cart is empty. Please add items before proceeding to checkout.")
@@ -202,18 +423,29 @@ def checkout(request):
                     messages.error(request, "Please select a delivery address.")
                     return redirect('cart_management:checkout')
 
+                # Apply coupon discount if a coupon is applied
+                applied_coupon = request.session.get('applied_coupon', None)
+                coupon = None
+                if applied_coupon:
+                    try:
+                        coupon = Coupon.objects.get(code=applied_coupon['code'])
+                        discount = Decimal(applied_coupon['discount'])
+                        total_price -= discount
+                    except Coupon.DoesNotExist:
+                        messages.error(request, "The applied coupon is no longer valid.")
+                        return redirect('cart_management:checkout')
+
+
                 try:
                     with transaction.atomic():
-                        # Stock check and update variant quantities
+                        # Stock check
                         for item in cart_items:
                             variant = item.variant
                             if variant.variant_stock < item.quantity:
                                 messages.error(request, f'Not enough stock for {variant.product.product_name} - {variant.colour_name}')
                                 return redirect('cart_management:checkout')
 
-                            variant.variant_stock -= item.quantity
-                            variant.save()
-
+                        # Create order without updating stock yet
                         order = Order.objects.create(
                             user=request.user,
                             total_amount=total_price,
@@ -226,7 +458,8 @@ def checkout(request):
                             state=selected_address.state,
                             country=selected_address.country,
                             phone_number=selected_address.phone_number,
-                            order_id=f"ORDER-{now().strftime('%Y%m%d%H%M%S')}-{request.user.id}"
+                            order_id=f"ORDER-{now().strftime('%Y%m%d%H%M%S')}-{request.user.id}",
+                            coupon_discount=discount if coupon else None,
                         )
 
                         for item in cart_items:
@@ -238,6 +471,7 @@ def checkout(request):
                                 is_active=True
                             )
 
+                        # Handle different payment methods
                         if payment_method == 'Online Payment':
                             # Create Razorpay Order
                             razorpay_order = razorpay_client.order.create(dict(
@@ -259,36 +493,76 @@ def checkout(request):
                                 'callback_url': request.build_absolute_uri(reverse('order_management:razorpay-callback'))
                             }
 
+
+                            # Clear coupon session data
+                            if 'applied_coupon' in request.session:
+                                del request.session['applied_coupon']
+
                             return render(request, 'user_side/razorpay_payment.html', {'razorpay_payment': razorpay_payment})
                         elif payment_method == 'Wallet':
-                            # Check if user has a wallet
                             wallet, created = Wallet.objects.get_or_create(user=request.user)
                             if wallet.is_sufficient(total_price):
-                                # Deduct amount from wallet
-                                wallet.debit(total_price)
+                                try:
+                                    # Attempt to debit the wallet
+                                    wallet.debit(total_price, f"Payment for order {order.order_id}")
+                                    
+                                    # If successful, update stock and order status
+                                    for item in cart_items:
+                                        variant = item.variant
+                                        variant.variant_stock -= item.quantity
+                                        variant.save()
 
-                                # Update order status
-                                order.payment_status = True
-                                order.order_status = 'Processing'
-                                order.save()
+                                    order.payment_status = True
+                                    order.order_status = 'Processing'
+                                    order.save()
 
-                                CartItem.objects.filter(cart=cart).delete()
-                                cart.is_active = False
-                                cart.save()
+                                    # Apply coupon if used
+                                    if coupon:
+                                        UserCoupon.objects.create(
+                                            user=request.user,
+                                            coupon=coupon,
+                                            used=True,
+                                            used_at=now(),
+                                            order=order
+                                        )
 
-                                messages.success(request, "Payment successful. Your order has been placed.")
-                                return redirect('order_management:order-success')
+                                    # Clear cart and coupon
+                                    CartItem.objects.filter(cart=cart).delete()
+                                    cart.is_active = False
+                                    cart.save()
+                                    if 'applied_coupon' in request.session:
+                                        del request.session['applied_coupon']
+
+                                    messages.success(request, "Payment successful. Your order has been placed.")
+                                    return redirect('order_management:order-success')
+                                except ValueError as e:
+                                    # If wallet debit fails, delete the order and show an error
+                                    order.delete()
+                                    messages.error(request, str(e))
+                                    return redirect('cart_management:checkout')
                             else:
+                                # If insufficient balance, delete the order and show an error
+                                order.delete()
                                 messages.error(request, "Insufficient wallet balance. Please choose another payment method.")
                                 return redirect('cart_management:checkout')
-                        else:
-                            # Cash on Delivery or other payment methods
+                        
+                        else:  # Cash on Delivery
+                            # Update stock for COD orders
+                            for item in cart_items:
+                                variant = item.variant
+                                variant.variant_stock -= item.quantity
+                                variant.save()
+
                             CartItem.objects.filter(cart=cart).delete()
                             cart.is_active = False
                             cart.save()
 
+                            if 'applied_coupon' in request.session:
+                                del request.session['applied_coupon']
+
                             messages.success(request, "Your order has been placed successfully!")
                             return redirect('order_management:order-success')
+
                 except Exception as e:
                     logger.error(f"Order placement failed for user {request.user.id}: {str(e)}", exc_info=True)
                     messages.error(request, "Failed to place the order. Please try again later.")
@@ -304,9 +578,13 @@ def checkout(request):
         'selected_address': selected_address,
         'payment_methods': ['Cash on Delivery', 'Online Payment', 'Wallet'],
         'arrival_date': arrival_date,
+        'coupons':coupons,
     }
 
     return render(request, 'user_side/checkout.html', context)
+
+
+
 
 
 

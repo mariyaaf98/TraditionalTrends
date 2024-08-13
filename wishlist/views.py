@@ -34,14 +34,22 @@ def add_to_wishlist(request, product_id):
 
 @login_required
 def remove_from_wishlist(request, wishlist_item_id):
-    wishlist_item = get_object_or_404(WishlistItem, id=wishlist_item_id, user=request.user)
-    product_name = wishlist_item.variant.product.product_name
-    variant_color = wishlist_item.variant.colour_name
-
-    wishlist_item.delete()
+    if request.method == 'POST':
+        wishlist_item = get_object_or_404(WishlistItem, id=wishlist_item_id, user=request.user)
+        product_name = wishlist_item.variant.product.product_name
+        variant_color = wishlist_item.variant.colour_name
+        
+        wishlist_item.delete()
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'success', 'message': f'{product_name} - {variant_color} removed from your wishlist.'})
+        
+        messages.success(request, f'{product_name} - {variant_color} removed from your wishlist.')
+        return redirect('wishlist:view-wishlist')
     
-    messages.success(request, f'{product_name} - {variant_color} removed from your wishlist.')
-    return redirect('wishlist:view-wishlist')
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=400)
+
+
 
 @login_required
 def view_wishlist(request):

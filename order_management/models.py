@@ -34,6 +34,8 @@ class Order(models.Model):
     phone_number = models.CharField(max_length=15)
 
     def save(self, *args, **kwargs):
+        if self.order_status == 'Delivered':
+            self.payment_status = True
         if not self.order_id:
             self.order_id = self.generate_order_id()
         super(Order, self).save(*args, **kwargs)

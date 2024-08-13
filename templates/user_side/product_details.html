@@ -1,495 +1,385 @@
 {% extends 'user_side/base.html' %}
 {% load static %}
 {% block content %}
+
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Custom CSS -->
 <style>
     .star-rating {
-        font-size: 0;
-        white-space: nowrap;
-        display: inline-block;
-        width: 250px;
-        height: 50px;
-        overflow: hidden;
-        position: relative;
-        background: url('data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMjBweCIgaGVpZ2h0PSIyMHB4IiB2aWV3Qm94PSIwIDAgMjAgMjAiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDIwIDIwIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cG9seWdvbiBmaWxsPSIjREREREREIiBwb2ludHM9IjEwLDAgMTMuMDksNi41ODMgMjAsNy42MzkgMTUsMTIuNzY0IDE2LjE4LDIwIDEwLDE2LjU4MyAzLjgyLDIwIDUsMTIuNzY0IDAsNy42MzkgNi45MSw2LjU4MyAiLz48L3N2Zz4=');
-        background-size: contain;
-    }
-
-    .star-rating i {
-        opacity: 0;
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 100%;
-        width: 20%;
-        z-index: 1;
-        background: url('data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMjBweCIgaGVpZ2h0PSIyMHB4IiB2aWV3Qm94PSIwIDAgMjAgMjAiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDIwIDIwIiB4bWw6c3BhY2U9InByZXNlcnZlIj48cG9seWdvbiBmaWxsPSIjRkZERjg4IiBwb2ludHM9IjEwLDAgMTMuMDksNi41ODMgMjAsNy42MzkgMTUsMTIuNzY0IDE2LjE4LDIwIDEwLDE2LjU4MyAzLjgyLDIwIDUsMTIuNzY0IDAsNy42MzkgNi45MSw2LjU4MyAiLz48L3N2Zz4=');
-        background-size: contain;
+        display: inline-flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
     }
 
     .star-rating input {
-        -moz-appearance: none;
-        -webkit-appearance: none;
-        opacity: 0;
-        display: inline-block;
-        width: 20%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        z-index: 2;
+        display: none;
+    }
+
+    .star-rating label {
+        color: #ddd;
+        font-size: 2em;
+        padding: 0 0.1em;
+        cursor: pointer;
+    }
+
+    .star-rating label:hover,
+    .star-rating label:hover ~ label,
+    .star-rating input:checked ~ label {
+        color: #ffca08;
+    }
+
+    .product-image-slider img {
+        max-height: 400px;
+        object-fit: contain;
+    }
+
+    .thumbnail-item img {
+        max-height: 100px;
+        object-fit: cover;
+    }
+
+    .color-selector {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
         position: relative;
     }
 
-    .star-rating input:hover+i,
-    .star-rating input:checked+i {
-        opacity: 1;
-    }
-
-    .star-rating i~i {
-        width: 40%;
-    }
-
-    .star-rating i~i~i {
-        width: 60%;
-    }
-
-    .star-rating i~i~i~i {
-        width: 80%;
-    }
-
-    .star-rating i~i~i~i~i {
-        width: 100%;
+    .color-selector.active::after {
+        content: '\2713';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-weight: bold;
     }
 </style>
-<main class="main">
-    <div class="page-header breadcrumb-wrap">
-        <div class="container">
-            <div class="breadcrumb">
-                <a href="index.html" rel="nofollow">Home</a>
-                <span></span> Fashion
-                <span></span> Abstract Print Patchwork Dress
+
+<main class="container my-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item"><a href="#">Fashion</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ product.product_name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Product Images -->
+        <div class="col-md-6">
+            <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for image in variant_images %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ product.product_name }}">
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+            <div class="d-flex justify-content-center mt-3">
+                {% for image in variant_images %}
+                <img src="{{ image.image.url }}" class="img-thumbnail mx-1" style="width: 60px; height: 60px; object-fit: cover;" 
+                     data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter0 }}" aria-current="true" aria-label="Slide {{ forloop.counter }}">
+                {% endfor %}
             </div>
         </div>
+
+        <!-- Product Details -->
+        <div class="col-md-6">
+            <h1 class="mb-3">{{ product.product_name }}</h1>
+            <p class="text-muted">Brand: {{ product.product_brand }}</p>
+            <div class="mb-3">
+                <span class="h3 text-primary">₹{{ product.offer_price }}</span>
+                <span class="text-muted text-decoration-line-through ms-2">₹{{ product.price }}</span>
+                <span class="badge bg-success ms-2">{{ product.percentage_discount }}% Off</span>
+            </div>
+            <p>{{ product.product_description }}</p>
+
+             <form id="add-to-cart-form" method="post" action="{% url 'cart_management:add-to-cart' %}">
+        {% csrf_token %}
+        <input type="hidden" name="product_id" value="{{ product.id }}">
+        <input type="hidden" name="variant_id" id="selected-variant-id" value="{{ selected_variant.id }}">
+
+        <div class="mb-3">
+            <label class="form-label">Color</label>
+            <div>
+                {% for variant in variants %}
+                <button type="button" class="color-selector btn p-0 me-2 {% if variant.id == selected_variant.id %}active{% endif %}"
+                        data-variant-id="{{ variant.id }}"
+                        data-image-urls="{% for image in variant.images.all %}{{ image.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                        data-in-stock="{{ variant.in_stock|yesno:'true,false' }}"
+                        style="background-color: {{ variant.colour_code }};">
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Quantity</label>
+            <div class="input-group" style="width: 150px;">
+                <button class="btn btn-outline-secondary qty-down" type="button">-</button>
+                <input type="text" class="form-control text-center qty-val" value="1" readonly>
+                <button class="btn btn-outline-secondary qty-up" type="button">+</button>
+            </div>
+        </div>
+
+        <div id="stock-status" class="mb-3">
+            {% if selected_variant.in_stock %}
+                <span class="text-success">In Stock</span>
+            {% else %}
+                <span class="text-danger">Out of Stock</span>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="add-to-cart-btn" {% if not selected_variant.in_stock %}disabled{% endif %}>
+            Add to cart
+        </button>
+        <a href="{% url 'wishlist:add-to-wishlist' product.id %}" class="btn btn-outline-primary ms-2 add-to-wishlist">
+            <i class="bi bi-heart"></i> Add to Wishlist
+        </a>
+    </form>
+        </div>
     </div>
-    <section class="mt-50 mb-50">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="product-detail accordion-detail">
-                        <div class="row mb-50">
-                            <div class="col-md-6 col-sm-12 col-xs-12">
-                                <div class="detail-gallery">
-                                    <span class="zoom-icon"><i class="fi-rs-search"></i></span>
-                                    <!-- MAIN SLIDES -->
-                                    <div class="product-image-slider" id="product-image-slider">
-                                        {% if variant_images %}
-                                        {% for image in variant_images %}
-                                        <img src="{{ image.image.url }}" alt="{{ product.product_name }}"
-                                            class="main-image img-fluid">
+
+    <!-- Product Description and Reviews -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="productTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Description</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Reviews</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="productTabsContent">
+                <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
+                    <div class="p-4">
+                        <p>{{ product.product_description }}</p>
+                        <!-- Add more product details here -->
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+                    <div class="p-4">
+                        <h3>Customer Reviews</h3>
+                        {% if product.reviews.exists %}
+                            {% for review in product.reviews.all %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ review.user.username }}</h5>
+                                    <p class="card-text">{{ review.comment }}</p>
+                                    <div class="star-rating" data-rating="{{ review.rating }}">
+                                        {% for i in "12345" %}
+                                        <i class="bi bi-star{% if forloop.counter <= review.rating %}-fill{% endif %} text-warning"></i>
                                         {% endfor %}
-                                        {% elif product.thumbnail %}
-                                        <img src="{{ product.thumbnail.url }}" alt="{{ product.product_name }}"
-                                            class="main-image img-fluid">
-                                        {% else %}
-                                        <img src="{% static 'images/No_Image-1024.webp' %}"
-                                            alt="{{ product.product_name }}" class="main-image img-fluid">
-                                        {% endif %}
                                     </div>
-                                    <!-- THUMBNAILS -->
-                                    <div class="slider-nav-thumbnails pl-15 pr-15" id="thumbnails-slider"
-                                        style="max-width: 400px; margin: auto;">
-                                        {% if variant_images %}
-                                        {% for image in variant_images %}
-                                        <div class="thumbnail-item"><img src="{{ image.image.url }}"
-                                                alt="{{ product.product_name }}" class="thumbnail-image img-thumbnail">
-                                        </div>
-                                        {% endfor %}
-                                        {% elif product.thumbnail %}
-                                        <div class="thumbnail-item"><img src="{{ product.thumbnail.url }}"
-                                                alt="{{ product.product_name }}" class="thumbnail-image img-thumbnail">
-                                        </div>
-                                        {% else %}
-                                        <div class="thumbnail-item"><img src="{% static 'images/No_Image-1024.webp' %}"
-                                                alt="{{ product.product_name }}" class="thumbnail-image img-thumbnail">
-                                        </div>
-                                        {% endif %}
-                                    </div>
+                                    <small class="text-muted">{{ review.created_at|date:"F d, Y" }}</small>
                                 </div>
-                                <!-- End Gallery -->
                             </div>
-                            <div class="col-md-6 col-sm-12 col-xs-12">
-                                <div class="detail-info">
-                                    <h2 class="title-detail">{{ product.product_name }}</h2>
-                                    <div class="product-detail-rating">
-                                        <div class="pro-details-brand">
-                                            <span> Brands: <a
-                                                    href="shop-grid-right.html">{{ product.product_brand}}</a></span>
-                                        </div>
-                                        <div class="product-rate-cover text-end">
-                                            <div class="product-rate d-inline-block">
-                                                <div class="product-rating" style="width:90%"></div>
-                                            </div>
-                                            <span class="font-small ml-5 text-muted"> (25 reviews)</span>
-                                        </div>
-                                    </div>
-                                    <div class="clearfix product-price-cover">
-                                        <div class="product-price primary-color float-left">
-                                            <ins><span class="text-brand">₹{{ product.offer_price }}</span></ins>
-                                            <ins><span class="old-price font-md ml-15">
-                                                    ₹{{ product.price }}</span></ins>
-                                            <span
-                                                class="save-price font-md color3 ml-15">{{ product.percentage_discount }}%
-                                                Off</span>
-                                        </div>
-                                    </div>
-                                    <div class="bt-1 border-color-1 mt-15 mb-15"></div>
-                                    <div class="short-desc mb-30">
-                                        <p>{{ product.product_description }}</p>
-                                    </div>
-                                    <div class="product_sort_info font-xs mb-30">
-                                        <ul>
-                                            <li class="mb-10"><i class="fi-rs-crown mr-5"></i> 1 Year AL Jazeera Brand
-                                                Warranty</li>
-                                            <li class="mb-10"><i class="fi-rs-refresh mr-5"></i> 30 Day Return Policy
-                                            </li>
-                                            <li><i class="fi-rs-credit-card mr-5"></i> Cash on Delivery available</li>
-                                        </ul>
-                                    </div>
-                                    <div class="attr-detail attr-color mb-3">
-                                        <strong class="me-2">Color</strong>
-                                        <ul class="list-inline mb-0">
-                                            {% for variant in variants %}
-                                            <li class="list-inline-item">
-                                                <button type="button"
-                                                    class="color-selector btn p-0 position-relative rounded-circle border border-dark"
-                                                    data-variant-id="{{ variant.id }}"
-                                                    data-image-urls="{% for image in variant.images.all %}{{ image.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}"
-                                                    style="width: 30px; height: 30px; background-color: {{ variant.colour_code }};">
-                                                    <span
-                                                        class="active-indicator position-absolute top-0 start-100 translate-middle p-2 bg-success border border-light rounded-circle d-none">
-                                                        <span class="visually-hidden">Selected color</span>
-                                                    </span>
-                                                </button>
-                                            </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No reviews yet. Be the first to review this product!</p>
+                        {% endif %}
 
-                                    <div class="bt-1 border-color-1 mt-30 mb-30"></div>
-                                    <form id="add-to-cart-form" method="post"
-                                        action="{% url 'cart_management:add-to-cart' %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="product_id" value="{{ product.id }}">
-                                        <input type="hidden" name="variant_id" id="selected-variant-id"
-                                            value="{{ selected_variant.id }}">
-
-                                        <div class="detail-extralink">
-                                            <div class="detail-qty border radius">
-                                                <a href="#" class="qty-down"><i class="fi-rs-angle-small-down"></i></a>
-                                                <span class="qty-val">1</span>
-                                                <a href="#" class="qty-up"><i class="fi-rs-angle-small-up"></i></a>
-                                            </div>
-                                            <div class="product-extra-link2">
-                                                <button type="submit" class="button button-add-to-cart">Add to
-                                                    cart</button>
-                                                <a aria-label="Add To Wishlist"
-                                                    class="action-btn hover-up add-to-wishlist"
-                                                    href="{% url 'wishlist:add-to-wishlist' product.id %}"
-                                                    data-variant-id="{{ selected_variant.id }}">
-                                                    <i class="fi-rs-heart"></i>
-                                                </a>
-                                                <a aria-label="Compare" class="action-btn hover-up"
-                                                    href="shop-compare.html">
-                                                    <i class="fi-rs-shuffle"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                                <!-- Detail Info -->
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-lg-10 m-auto entry-main-content">
-                                <h2 class="section-title style-1 mb-30">Description</h2>
-                                <div class="description mb-50">
-                                    <p>{{ products.product_description }}</p>
-                                    <ul class="product-more-infor mt-30">
-                                        <li><span>Type Of Packing</span> Custom-designed, fashion-forward packaging to
-                                            complement the style and sophistication of your purchase.</li>
-                                        <li><span>Color Options</span> Available in elegant Green, chic Pink, stylish
-                                            Powder Blue, and classic Purple.</li>
-                                        <li><span>Quantity Per Case</span>100 ml bottles, ideal for personal or gift
-                                            use.l</li>
-                                        <li><span>Ethyl Alcohol Content: </span>70% - ensuring high quality and
-                                            durability.</li>
-                                        <li><span>Carton Details</span>Each carton contains multiple pieces, ensuring
-                                            secure and organized shipping.</li>
-                                    </ul>
-                                    <hr class="wp-block-separator is-style-dots">
-
-                                    <h4 class="mt-30">Packaging & Delivery</h4>
-                                    <p>We take pride in ensuring that your purchase arrives in perfect condition. Each
-                                        item is meticulously packaged using premium materials to protect it during
-                                        transit. Our products are carefully wrapped and secured in a sturdy box,
-                                        complete with branded tissue paper and a signature seal for an elegant touch,
-                                        making the unboxing experience as delightful as the product itself.
-
-                                        Our fast and reliable delivery services ensure your order reaches you as quickly
-                                        as possible. We partner with efficient and dependable shipping providers and
-                                        offer real-time tracking information so you can monitor your package's journey
-                                        from our warehouse to your doorstep. Depending on your location, various
-                                        shipping options are available to suit your needs, including expedited delivery
-                                        for those times when you just can’t wait. Enjoy hassle-free delivery and
-                                        exceptional service with every order.
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <form method="post" action="{% url 'user_panel:add_review' product.id %}">
-                                        {% csrf_token %}
-                                        <div class="form-group">
-                                            <label>Your Rating:</label>
-                                            <span class="star-rating">
-                                                <input type="radio" name="rating" value="1"><i></i>
-                                                <input type="radio" name="rating" value="2"><i></i>
-                                                <input type="radio" name="rating" value="3"><i></i>
-                                                <input type="radio" name="rating" value="4"><i></i>
-                                                <input type="radio" name="rating" value="5"><i></i>
-                                            </span>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="comment">Your Review:</label>
-                                            <textarea name="comment" id="comment" required></textarea>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary">Submit Review</button>
-                                    </form>
-                                    <h3>Reviews ({{ product.reviews.count }})</h3>
-                                    {% if product.reviews.exists %}
-                                    {% for review in product.reviews.all %}
-                                    <div class="review">
-                                        <div class="star-rating" style="pointer-events:none;">
-                                            {% for i in "12345" %}
-                                            {% if forloop.counter <= review.rating %}
-                                            <i class="fas fa-star" style="color: #FFDF88;"></i>
-                                            {% else %}
-                                            <i class="far fa-star" style="color: #DDDDDD;"></i>
-                                            {% endif %}
-                                            {% endfor %}
-                                        </div>
-                                        <p>{{ review.comment }}</p>
-                                        <p>By: {{ review.user.username }} on {{ review.created_at|date:"F d, Y" }}</p>
-                                    </div>
+                        <h4 class="mt-4">Write a Review</h4>
+                        <form method="post" action="{% url 'user_panel:add_review' product.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Your Rating</label>
+                                <div class="star-rating">
+                                    {% for i in "54321" %}
+                                    <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" />
+                                    <label for="star{{ i }}" title="{{ i }} stars">
+                                        <i class="bi bi-star-fill"></i>
+                                    </label>
                                     {% endfor %}
-                                    {% else %}
-                                    <p>No reviews yet. Be the first to review this product!</p>
-                                    {% endif %}
                                 </div>
                             </div>
-
-                            <!-- Related Products -->
-                            <div class="col-12">
-                                <div class="row related-products">
-                                    <h2 class="section-title style-1 mb-30">Related-products</h2>
-                                    {% if related_products %}
-                                    {% for related_product in related_products %}
-                                    <div class="col-lg-3 col-md-4 col-12 col-sm-6">
-                                        <div class="product-cart-wrap small hover-up">
-                                            <div class="product-img-action-wrap">
-                                                <div class="product-img product-img-zoom">
-                                                    <a href="{% url 'user_panel:product-details' related_product.id %}"
-                                                        tabindex="0">
-                                                        <img class="default-img"
-                                                            src="{{ related_product.thumbnail.url }}" alt="">
-                                                        <img class="hover-img" src="{{ related_product.thumbnail.url }}"
-                                                            alt="">
-                                                    </a>
-                                                </div>
-                                                <div class="product-action-1">
-                                                    <a aria-label="Quick view" class="action-btn small hover-up"
-                                                        data-bs-toggle="modal" data-bs-target="#quickViewModal"><i
-                                                            class="fi-rs-search"></i></a>
-                                                    <a aria-label="Add To Wishlist" class="action-btn small hover-up"
-                                                        href="" tabindex="0"><i class="fi-rs-heart"></i></a>
-                                                    <a aria-label="Compare" class="action-btn small hover-up" href=""
-                                                        tabindex="0"><i class="fi-rs-shuffle"></i></a>
-                                                </div>
-                                                <div class="product-badges product-badges-position product-badges-mrg">
-                                                    <span class="hot">Hot</span>
-                                                    <!-- You can customize badges based on product status -->
-                                                </div>
-                                            </div>
-                                            <div class="product-content-wrap">
-                                                <h2><a href="{% url 'user_panel:product-details' related_product.id %}"
-                                                        tabindex="0">{{ related_product.product_name }}</a></h2>
-                                                <div class="rating-result" title="90%">
-                                                    <span>
-                                                        <!-- You can display product ratings here --></span>
-                                                </div>
-                                                <div class="product-price">
-                                                    <span>$ {{ related_product.offer_price }} </span>
-                                                    <span class="old-price">$ {{ related_product.price }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                    {% else %}
-                                    <p>No related products found.</p>
-                                    {% endif %}
-                                </div>
+                            <div class="mb-3">
+                                <label for="comment" class="form-label">Your Review</label>
+                                <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
                             </div>
-                            <!-- End Related Products -->
-                        </div>
+                            <button type="submit" class="btn btn-primary">Submit Review</button>
+                        </form>
                     </div>
                 </div>
             </div>
-    </section>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    <div class="row mt-5">
+        <h2 class="mb-4">Related Products</h2>
+        {% if related_products %}
+            {% for related_product in related_products %}
+            <div class="col-md-3 mb-4">
+                <div class="card h-100">
+                    <img src="{{ related_product.thumbnail.url }}" class="card-img-top" alt="{{ related_product.product_name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ related_product.product_name }}</h5>
+                        <p class="card-text">
+                            <span class="text-primary">$ {{ related_product.offer_price }}</span>
+                            <small class="text-muted text-decoration-line-through">$ {{ related_product.price }}</small>
+                        </p>
+                        <a href="{% url 'user_panel:product-details' related_product.id %}" class="btn btn-outline-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No related products found.</p>
+        {% endif %}
+    </div>
 </main>
+
+<!-- Bootstrap JS and Popper.js -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+
+<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-{% comment %} images show {% endcomment %}
 <script>
+   $(document).ready(function() {
+    // Color selector functionality
     $('.color-selector').on('click', function(e) {
         e.preventDefault();
+        $('.color-selector').removeClass('active');
+        $(this).addClass('active');
+        var selectedVariantId = $(this).data('variant-id');
+        $('#selected-variant-id').val(selectedVariantId);
+        
         var imageUrls = $(this).data('image-urls').split(',');
-        // Update main image slider
-        $('#product-image-slider .main-image').each(function(index, img) {
-            // Adjust the index to start from 0 and go backwards
-            var adjustedIndex = index - 1;
-            if (adjustedIndex >= 0 && adjustedIndex < imageUrls.length && imageUrls[adjustedIndex]) {
-                $(img).attr('src', imageUrls[adjustedIndex]);
-            }
-        });
-        // Update thumbnails
-        $('#thumbnails-slider .thumbnail-item img').each(function(index, img) {
-            // Adjust the index to start from 0 and go backwards
-            var adjustedIndex = index;
-            if (adjustedIndex >= 0 && adjustedIndex < imageUrls.length && imageUrls[adjustedIndex]) {
-                $(img).attr('src', imageUrls[adjustedIndex]);
-            } else {
-                $(img).attr('src', ''); // Clear if no image is available
-            }
-        });
-    });
-</script>
+        updateCarouselAndThumbnails(imageUrls);
 
-{% comment %} review {% endcomment %}
-<script>
-    const starRating = document.querySelector('.star-rating');
-    const stars = starRating.querySelectorAll('input');
-    stars.forEach((star, index) => {
-        star.addEventListener('click', () => {
-            for (let i = 0; i <= index; i++) {
-                stars[i].checked = true;
-            }
-            for (let i = index + 1; i < stars.length; i++) {
-                stars[i].checked = false;
-            }
-        });
+        // Update stock status
+        var inStock = $(this).data('in-stock');
+        updateStockStatus(inStock);
     });
-</script>
-<script>
-    $(document).ready(function() {
-        // Event handler for color selector click
-        $('.color-selector').on('click', function(e) {
-            e.preventDefault();
-            // Get the selected variant ID from the clicked color selector
-            var selectedVariantId = $(this).data('variant-id');
-            // Update the hidden input field in the form with the selected variant ID
-            $('#selected-variant-id').val(selectedVariantId);
-            // Update the selected state of the color options (for UI purposes)
-            $('.color-selector span i').remove();
-            $(this).find('span').append(
-                '<i class="fi-rs-check position-absolute top-0 start-100 translate-middle text-white" style="font-size: 12px; right: 0; top: 0;"></i>'
-            );
-        });
-    });
-</script>
-{% comment %} add to cart {% endcomment %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $(document).ready(function() {
-        // Quantity control
-        $('.qty-up').on('click', function(e) {
-            e.preventDefault();
-            var qtyVal = parseInt($('.qty-val').text());
-            $('.qty-val').text(qtyVal + 1);
-            $('input[name="quantity"]').val(qtyVal + 1);
-        });
-        $('.qty-down').on('click', function(e) {
-            e.preventDefault();
-            var qtyVal = parseInt($('.qty-val').text());
-            if (qtyVal > 1) {
-                $('.qty-val').text(qtyVal - 1);
-                $('input[name="quantity"]').val(qtyVal - 1);
-            }
-        });
-        // Add hidden input for quantity
-        $('form#add-to-cart-form').append('<input type="hidden" name="quantity" value="1">');
-        // AJAX form submission (optional)
-        $('#add-to-cart-form').on('submit', function(event) {
-            event.preventDefault();
-            $.ajax({
-                type: 'POST',
-                url: $(this).attr('action'),
-                data: $(this).serialize(),
-                success: function(response) {
-                    alert(response.message);
-                    // Optionally update cart UI here
-                },
-                error: function(response) {
-                    alert(response.responseJSON.error);
-                }
-            });
-        });
-    });
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const colorSelectors = document.querySelectorAll('.color-selector');
 
-        function updateActiveColor(clickedSelector) {
-            colorSelectors.forEach(selector => {
-                const indicator = selector.querySelector('.active-indicator');
-                if (selector === clickedSelector) {
-                    selector.classList.remove('border-secondary');
-                    selector.classList.add('border-primary', 'shadow-sm');
-                    indicator.classList.remove('d-none');
-                } else {
-                    selector.classList.remove('border-primary', 'shadow-sm');
-                    selector.classList.add('border-secondary');
-                    indicator.classList.add('d-none');
-                }
-            });
+    // Function to update carousel and thumbnails
+    function updateCarouselAndThumbnails(imageUrls) {
+        var carousel = $('#productCarousel');
+        var carouselInner = carousel.find('.carousel-inner');
+        var thumbnailContainer = $('.d-flex.justify-content-center.mt-3');
+        
+        // Clear existing carousel items and thumbnails
+        carouselInner.empty();
+        thumbnailContainer.empty();
+        
+        // Add new carousel items and thumbnails
+        imageUrls.forEach(function(url, index) {
+            // Add carousel item
+            var item = $('<div class="carousel-item' + (index === 0 ? ' active' : '') + '">');
+            item.append('<img src="' + url + '" class="d-block w-100" alt="Product Image">');
+            carouselInner.append(item);
+            
+            // Add thumbnail
+            var thumbnail = $('<img src="' + url + '" class="img-thumbnail mx-1" style="width: 60px; height: 60px; object-fit: cover;">');
+            thumbnail.attr('data-bs-target', '#productCarousel');
+            thumbnail.attr('data-bs-slide-to', index);
+            thumbnail.attr('aria-label', 'Slide ' + (index + 1));
+            if (index === 0) {
+                thumbnail.attr('aria-current', 'true');
+            }
+            thumbnailContainer.append(thumbnail);
+        });
+
+        // Reset carousel
+        carousel.carousel(0);
+    }
+
+    // Function to update stock status
+    function updateStockStatus(inStock) {
+        var stockStatus = $('#stock-status');
+        var addToCartBtn = $('#add-to-cart-btn');
+        
+        if (inStock) {
+            stockStatus.html('<span class="text-success">In Stock</span>');
+            addToCartBtn.prop('disabled', false);
+        } else {
+            stockStatus.html('<span class="text-danger">Out of Stock</span>');
+            addToCartBtn.prop('disabled', true);
         }
-        colorSelectors.forEach(selector => {
-            selector.addEventListener('click', function(event) {
-                event.preventDefault();
-                updateActiveColor(this);
-                const imageUrls = this.dataset.imageUrls.split(',');
-                // Update the images using the `imageUrls` array
-                console.log(imageUrls); // Replace with your image update logic
-            });
+    }
+
+    // Thumbnail click functionality
+    $(document).on('click', '.d-flex.justify-content-center.mt-3 img', function() {
+        var slideIndex = $(this).data('bs-slide-to');
+        $('#productCarousel').carousel(slideIndex);
+    });
+
+    // Function to update stock status
+    function updateStockStatus(inStock) {
+        var stockStatus = $('#stock-status');
+        var addToCartBtn = $('#add-to-cart-btn');
+        
+        if (inStock) {
+            stockStatus.html('<span class="text-success">In Stock</span>');
+            addToCartBtn.prop('disabled', false);
+        } else {
+            stockStatus.html('<span class="text-danger">Out of Stock</span>');
+            addToCartBtn.prop('disabled', true);
+        }
+    }
+
+        // Quantity control
+        $('.qty-up, .qty-down').on('click', function(e) {
+            e.preventDefault();
+            var qtyInput = $('.qty-val');
+            var currentQty = parseInt(qtyInput.val());
+            if ($(this).hasClass('qty-up')) {
+                qtyInput.val(currentQty + 1);
+            } else if (currentQty > 1) {
+                qtyInput.val(currentQty - 1);
+            }
+        });
+
+        // Add to cart AJAX
+        $('#add-to-cart-form').on('submit', function(event) {
+        event.preventDefault();
+        var formData = $(this).serializeArray();
+        var quantity = $('.qty-val').val();
+        
+        // Add quantity to form data
+        formData.push({name: 'quantity', value: quantity});
+
+        $.ajax({
+            type: 'POST',
+            url: $(this).attr('action'),
+            data: $.param(formData),
+            success: function(response) {
+                alert(response.message);
+            },
+            error: function(response) {
+                alert(response.responseJSON.error);
+            }
         });
     });
-</script>
 
-{% comment %} add to wish list {% endcomment %}
-
-<script>
-    $(document).ready(function() {
+        // Add to wishlist AJAX
         $('.add-to-wishlist').on('click', function(e) {
             e.preventDefault();
             var url = $(this).attr('href');
-            var variantId = $('#selected-variant-id')
-        .val(); // Get the selected variant ID from the hidden input
+            var variantId = $('#selected-variant-id').val();
             $.ajax({
                 url: url,
-                type: 'POST', // Change to POST method
+                type: 'POST',
                 data: {
                     'variant_id': variantId,
-                    'csrfmiddlewaretoken': '{{ csrf_token }}' // Include CSRF token
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
                 },
                 success: function(response) {
                     if (response.status === 'success') {
@@ -500,7 +390,33 @@
                 },
                 error: function(xhr, status, error) {
                     alert('Error adding item to wishlist. Please try again.');
-                    console.log(xhr.responseText); // Log the error for debugging
+                    console.log(xhr.responseText);
+                }
+            });
+        });
+
+        // Function to update carousel images
+        function updateCarousel(imageUrls) {
+            var carousel = $('#productCarousel');
+            var carouselInner = carousel.find('.carousel-inner');
+            carouselInner.empty();
+            
+            imageUrls.forEach(function(url, index) {
+                var item = $('<div class="carousel-item' + (index === 0 ? ' active' : '') + '">');
+                item.append('<img src="' + url + '" class="d-block w-100" alt="Product Image">');
+                carouselInner.append(item);
+            });
+
+            // Reset carousel
+            carousel.carousel(0);
+        }
+        
+        // Initialize star rating display
+        $('.star-rating[data-rating]').each(function() {
+            var rating = $(this).data('rating');
+            $(this).find('.bi-star').each(function(index) {
+                if (index < rating) {
+                    $(this).removeClass('bi-star').addClass('bi-star-fill');
                 }
             });
         });

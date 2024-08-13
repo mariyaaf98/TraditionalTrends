@@ -123,8 +123,9 @@
             </table><br>
             <div class="card">
                 <div class="card-body">
-                    <h4><strong>Total:</strong>
-                        ₹{{ total_price|floatformat:2 }}</h4>
+                    <h5><strong>Sub Total:</strong>₹{{ total_price|floatformat:2 }}</h5>
+                    <h4><strong>Payment amount:</strong>₹{{ order.total_amount }}</h4>
+                        
                 </div>
             </div>
 

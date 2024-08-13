@@ -8,4 +8,6 @@ urlpatterns = [
     path('delete/<int:category_id>/', views.delete_category, name='delete-category'),
     path('add/', views.add_category, name='add-category'),
     path('category-list/', views.category_list, name='category-list'),
+    path('restore-category/<int:category_id>/', views.restore_category, name='restore-category'),
+    
 ]

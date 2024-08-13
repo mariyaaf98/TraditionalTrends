@@ -4,9 +4,14 @@ from django.core.exceptions import ValidationError
 from .models import Products, Product_images, Product_Variant, VariantImage, Category, Brand
 from decimal import Decimal
 from django.db import transaction
+from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse,HttpResponseRedirect
 
+@login_required
 def add_product(request):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+    
     if request.method == 'POST':
         product_name = request.POST.get('product_name')
         product_description = request.POST.get('product_description')
@@ -30,6 +35,14 @@ def add_product(request):
             else:
                 offer_price = None
 
+            if price < 0 or (offer_price is not None and offer_price < 0):
+                messages.warning(request, "Please enter positive values for price and offer price.")
+                return redirect('product_management:add-product')
+
+            if offer_price is not None and offer_price >= price:
+                messages.warning(request, "Offer Price should be less than the actual price.")
+                return redirect('product_management:add-product')
+            
             category = Category.objects.get(id=product_category_id) if product_category_id else None
             brand = Brand.objects.get(id=product_brand_id) if product_brand_id else None
 
@@ -63,7 +76,7 @@ def add_product(request):
 
 
 
-
+@login_required
 def product_list(request):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -75,7 +88,7 @@ def product_list(request):
     return render(request, "admin_side/product_list.html", {"categories": categories, 'products': products, 'images': images})
 
 
-
+@login_required
 def delete_product(request, product_id):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -90,7 +103,7 @@ def delete_product(request, product_id):
 
     return redirect("product_management:product-list")
 
-
+@login_required
 def restore_product(request, product_id):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -105,8 +118,11 @@ def restore_product(request, product_id):
 
     return redirect("product_management:product-list")
 
-
+@login_required
 def edit_product(request, product_id):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+    
     products = get_object_or_404(Products, id=product_id)
 
     if not request.user.is_superuser:
@@ -145,7 +161,7 @@ def edit_product(request, product_id):
             messages.warning(request, "Please enter valid numeric values for price and offer price")
             return redirect("product_management:edit-product", product_id=product_id)
 
-        if offer_price > price:
+        if offer_price >= price:
             messages.warning(request, "Offer Price Should be less than actual price")
             return redirect("product_management:edit-product", product_id=product_id)
 
@@ -194,7 +210,11 @@ def edit_product(request, product_id):
 
     return render(request, "admin_side/edit-product.html", content)
 
+@login_required
 def add_variant(request, product_id):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+    
     product = get_object_or_404(Products, id=product_id)
     variants = Product_Variant.objects.filter(product=product)
     
@@ -227,7 +247,13 @@ def add_variant(request, product_id):
 
     return render(request, "admin_side/add_variant.html", {"product": product, 'variants': variants})
 
+
+
+@login_required
 def view_variant(request, product_id):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+    
     product = get_object_or_404(Products, id=product_id)
     filter_status = request.GET.get('status', 'all')
 
@@ -246,7 +272,13 @@ def view_variant(request, product_id):
 
     return render(request, "admin_side/variant_list.html", context)
 
+
+
+@login_required
 def edit_variant(request, variant_id):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+    
     variant = get_object_or_404(Product_Variant, id=variant_id)
     
     if request.method == 'POST':
@@ -266,6 +298,8 @@ def edit_variant(request, variant_id):
     return render(request, 'admin_side/edit-variant.html', {"variant": variant})
 
 
+
+@login_required
 def delete_variant(request, variant_id):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -281,7 +315,12 @@ def delete_variant(request, variant_id):
     return redirect("product_management:variant-list", product_id=variant.product.id)
 
 
+
+@login_required
 def delete_variant_image(request, image_id):
+    if not request.user.is_superuser:
+        return redirect("admin_panel:admin_login")
+    
     image = get_object_or_404(VariantImage, id=image_id)
     variant_id = image.variant.id
     image.delete()
@@ -289,6 +328,7 @@ def delete_variant_image(request, image_id):
     return redirect(request.META.get('HTTP_REFERER'))
 
 
+@login_required
 def restore_variant(request, variant_id):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")

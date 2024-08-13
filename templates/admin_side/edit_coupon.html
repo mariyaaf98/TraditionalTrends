@@ -13,7 +13,7 @@
                 <p>Edit or update coupon details</p>
             </div>
             <div>
-                <a href="{% url 'cupon_management:coupon-list' %}" class="btn btn-primary btn-sm">View Coupons</a>
+                <a href="{% url 'coupon_management:coupon-list' %}" class="btn btn-primary btn-sm">View Coupons</a>
             </div>
         </div>
 
@@ -34,7 +34,7 @@
                                 {% endif %}
                             {% endfor %}
                         </div>
-                        <form method="POST" action="{% url 'cupon_management:edit-coupon' coupon.id %}">
+                        <form method="POST" action="{% url 'coupon_management:edit-coupon' coupon.id %}">
                             {% csrf_token %}
                             <div class="row mb-3 align-items-center">
                                 <div class="col">
@@ -60,10 +60,6 @@
                             <div class="mb-3">
                                 {{ form.is_active.label_tag }}
                                 {{ form.is_active }}
-                            </div>
-                            <div class="mb-3">
-                                {{ form.usage_limit.label_tag }}
-                                <input type="number" name="usage_limit" class="form-control" placeholder="Enter usage limit" value="{{ form.usage_limit.value }}" min="0">
                             </div>
                             <div class="mb-3">
                                 {{ form.minimum_purchase_amount.label_tag }}

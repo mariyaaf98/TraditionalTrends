@@ -9,7 +9,7 @@
     <section class="content-main">
         <div class="content-header">
             <div>
-                <h2 class="content-title card-title">Categories </h2>
+                <h2 class="content-title card-title">Categories</h2>
                 <p>Add, edit or delete a category</p>
             </div>
             <div>
@@ -25,7 +25,7 @@
                 <div class="row justify-content-center">
                     <div class="col-md-6">
                         <div>
-                            <!-- message  -->
+                            <!-- message -->
                             {% for message in messages %}
                                 {% if message.tags == 'success' %}
                                     <p class="alert alert-success">{{ message }}</p>
@@ -34,7 +34,7 @@
                                 {% elif message.tags == 'warning' %}
                                     <p class="alert alert-warning">{{ message }}</p>
                                 {% else %}
-                                 <p>{{ message }}</p>
+                                    <p>{{ message }}</p>
                                 {% endif %}
                             {% endfor %}
                         </div>
@@ -42,7 +42,7 @@
                             {% csrf_token %}
                             <div class="mb-4">
                                 <label for="product_name" class="form-label">Category Name</label>
-                                <input type="text" placeholder="Type here" class="form-control" id="product_name" name="category_name" value="{{ category.category_name }}"/>
+                                <input type="text" placeholder="Type here" class="form-control" id="product_name" name="category_name" value="{{ category.category_name }}" />
                             </div>
                             <div class="mb-4">
                                 <label class="form-label">Parent Category:</label>
@@ -54,24 +54,29 @@
                                 </select>
                             </div>
                             <div class="mb-4">
-                                <label for="status">Status:</label>
-                                <input type="checkbox" name="status" {% if category.is_available %}checked{% endif %}><br>
+                                <label class="form-label">Is Available:</label>
+                                <input type="checkbox" id="is_available" name="status" {% if category.is_available %}checked{% endif %}>
                             </div>
-                            <div class="mb-4">
-                                <label class="form-label" for="minimum_amount">Minimum Amount:</label>
-                            <input class="form-control" type="text" name="minimum_amount" value="{{ category.minimum_amount }}"><br>
-                            </div>
+                            <label>
+                                <input type="checkbox" id="toggleCheckbox" onclick="toggleFields()" {% if category.minimum_amount %}checked{% endif %}> Add category offer
+                            </label>
                             
-                            <div class="mb-4">
-                                <label class="form-label">Discount:</label>
-                                <input class="form-control" type="number" id="discount" name="discount" value="{{ category.discount }}">
-                            </div>
-                            <div class="mb-4">
-                                <label class="form-label" for="date">Expiry Date:</label>
-                                <input class="form-control" type="date" name="date" value="{{ category.expirydate|date:'Y-m-d' }}" min="{{ today }}"><br>
+                            <div id="hiddenFields" class="mb-4" style="{% if not category.minimum_amount %}display: none;{% endif %}">
+                                <div class="mb-4">
+                                    <label class="form-label">Minimum Amount:</label>
+                                    <input type="text" class="form-control" id="minimum_amount" name="minimum_amount" placeholder="Type here" value="{{ category.minimum_amount }}">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Discount:</label>
+                                    <input class="form-control" type="number" id="discount" name="discount" value="{{ category.discount }}" min="1">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Expiry Date:</label>
+                                    <input class="form-control" type="date" id="expirydate" name="date" value="{{ category.expirydate|date:'Y-m-d' }}" min="{{ today }}">
+                                </div>
                             </div>
                             <div class="d-grid">
-                                <button class="btn btn-primary" type="submit">Update</button>
+                                <button type="submit" class="btn btn-primary">Update</button>
                             </div>
                         </form>
                     </div>
@@ -80,4 +85,26 @@
         </div> <!-- card .// -->
     </section> <!-- content-main end// -->
 </main>
+<script>
+    function toggleFields() {
+        var checkbox = document.getElementById('toggleCheckbox');
+        var hiddenFields = document.getElementById('hiddenFields');
+        if (checkbox.checked) {
+            hiddenFields.style.display = 'block';
+        } else {
+            hiddenFields.style.display = 'none';
+        }
+    }
+
+    // Ensure fields are hidden or shown based on initial checkbox state
+    window.onload = function() {
+        var checkbox = document.getElementById('toggleCheckbox');
+        var hiddenFields = document.getElementById('hiddenFields');
+        if (checkbox.checked) {
+            hiddenFields.style.display = 'block';
+        } else {
+            hiddenFields.style.display = 'none';
+        }
+    }
+</script>
 {% endblock content %}
