@@ -54,8 +54,7 @@ def user_register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False  # Deactivate account until it is confirmed
-            
+            user.is_active = False 
 
             otp = generate_otp()
             send_mail(
@@ -63,19 +62,16 @@ def user_register(request):
                 f"Your OTP code is {otp}",
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
-                
-                
             )
             # Store the OTP in the session
             request.session['otp'] = str(otp)
             request.session['user_data'] = form.cleaned_data
             request.session['otp_creation_time'] = timezone.now().isoformat()
             return redirect('accounts:verify_otp')
-        else:
-            messages.error(request, 'Registration failed. Please correct the errors below.')
     else:
         form = RegisterForm()
     return render(request, 'user_side/accounts/register.html', {'form': form})
+
 
 
 def verify_otp(request):

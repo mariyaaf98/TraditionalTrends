@@ -17,21 +17,21 @@
                 </form>
             </div>
         </div>
-
+        
         {% if pending_returns %}
         <!-- Orders with Pending Return Requests -->
         <div class="card mb-4">
-            {% for message in messages %}
+         {% for message in messages %}
             {% if message.tags == 'success' %}
-            <p class="alert alert-success">{{ message }}</p>
+                <p class="alert alert-success">{{ message }}</p>
             {% elif message.tags == 'error' %}
-            <p class="alert alert-danger">{{ message }}</p>
+                <p class="alert alert-danger">{{ message }}</p>
             {% elif message.tags == 'warning' %}
-            <p class="alert alert-warning">{{ message }}</p>
+                <p class="alert alert-warning">{{ message }}</p>
             {% else %}
-            <p>{{ message }}</p>
+                <p>{{ message }}</p>
             {% endif %}
-            {% endfor %}
+        {% endfor %}
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">Orders with Pending Return Requests</h5>
             </div>
@@ -40,57 +40,56 @@
                     <table class="table table-hover align-middle" id="pendingReturnRequestsTable">
                         <thead class="table-light">
                             <tr>
-                                <th>#ID</th>
+                                <th>#Order ID</th>
                                 <th>User</th>
-                                <th>Total</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
                                 <th>Order Status</th>
                                 <th>Payment Status</th>
-                                <th>Date</th>
+                                <th>Order Date</th>
                                 <th>Return Reason</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for order in pending_returns %}
-                            {% for item in order.items.all %}
-                            {% for return_request in item.returns.all %}
-                            {% if return_request.status == 'REQUESTED' %}
+                            {% for return_info in pending_returns %}
                             <tr>
-                                <td>{{ order.order_id }}</td>
-                                <td>{{ order.user.username }}</td>
-                                <td>₹{{ order.total_amount }}</td>
+                                <td>{{ return_info.order.order_id }}</td>
+                                <td>{{ return_info.order.user.username }}</td>
+                                <td>{{ return_info.item.variant.product.product_name }}</td>
+                                <td>{{ return_info.item.quantity }}</td>
                                 <td>
                                     <span class="badge rounded-pill 
-                                        {% if order.order_status == 'Order Placed' %}bg-secondary
-                                        {% elif order.order_status == 'Pending' %}bg-warning
-                                        {% elif order.order_status == 'Processing' %}bg-info
-                                        {% elif order.order_status == 'Shipped' %}bg-primary
-                                        {% elif order.order_status == 'Delivered' %}bg-success
-                                        {% elif order.order_status == 'Cancelled' %}bg-danger{% endif %} 
-                                        text-white">
-                                        {{ order.order_status }}
+                                {% if return_info.order.order_status == 'Order Placed' %}bg-secondary
+                                {% elif return_info.order.order_status == 'Pending' %}bg-warning
+                                {% elif return_info.order.order_status == 'Processing' %}bg-info
+                                {% elif return_info.order.order_status == 'Shipped' %}bg-primary
+                                {% elif return_info.order.order_status == 'Delivered' %}bg-success
+                                {% elif return_info.order.order_status == 'Cancelled' %}bg-danger{% endif %} 
+                                text-white">
+                                        {{ return_info.order.order_status }}
                                     </span>
                                 </td>
                                 <td>
                                     <span class="badge 
-                                        {% if order.payment_status %}bg-success{% else %}bg-danger{% endif %}">
-                                        {% if order.payment_status %}Paid{% else %}Unpaid{% endif %}
+                                {% if return_info.order.payment_status %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if return_info.order.payment_status %}Paid{% else %}Unpaid{% endif %}
                                     </span>
                                 </td>
-                                <td>{{ order.date|date:"M d, Y" }}</td>
-                                <td>{{ return_request.reason }}</td>
+                                <td>{{ return_info.order.date|date:"M d, Y" }}</td>
+                                <td>{{ return_info.return_request.reason }}</td>
                                 <td>
-                                    <a href="{% url 'order_management:admin-order-detail' order.id %}"
+                                    <a href="{% url 'order_management:admin-order-detail' return_info.order.id %}"
                                         class="btn btn-sm btn-outline-primary">Details</a>
                                     <form class="return-form d-inline"
-                                        action="{% url 'order_management:process-return' return_request.id %}"
+                                        action="{% url 'order_management:process-return' return_info.return_request.id %}"
                                         method="POST">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="approve">
                                         <button type="submit" class="btn btn-sm btn-success">Approve</button>
                                     </form>
                                     <form class="return-form d-inline"
-                                        action="{% url 'order_management:process-return' return_request.id %}"
+                                        action="{% url 'order_management:process-return' return_info.return_request.id %}"
                                         method="POST">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="reject">
@@ -98,9 +97,6 @@
                                     </form>
                                 </td>
                             </tr>
-                            {% endif %}
-                            {% endfor %}
-                            {% endfor %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -125,7 +121,7 @@
                                 <th>Order Status</th>
                                 <th>Payment Status</th>
                                 <th>Date</th>
-                                <th>Return Status</th>
+                                {% comment %} <th>Return Status</th> {% endcomment %}
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -154,18 +150,18 @@
                                     </span>
                                 </td>
                                 <td>{{ order.date|date:"M d, Y" }}</td>
-                                <td>
+                                {% comment %} <td>
                                     {% for item in order.items.all %}
                                     {% for return_request in item.returns.all %}
                                     <span class="badge 
-                                        {% if return_request.status == 'APPROVED' %}bg-success
-                                        {% elif return_request.status == 'REJECTED' %}bg-danger
-                                        {% elif return_request.status == 'COMPLETED' %}bg-info{% endif %}">
+                {% if return_request.status == 'APPROVED' %}bg-success
+                {% elif return_request.status == 'REJECTED' %}bg-danger{% endif %}">
                                         {{ return_request.get_status_display }}
                                     </span>
                                     {% endfor %}
                                     {% endfor %}
-                                </td>
+                                </td> {% endcomment %}
+
                                 <td>
                                     <a href="{% url 'order_management:admin-order-detail' order.id %}"
                                         class="btn btn-sm btn-outline-primary">Details</a>
@@ -180,7 +176,6 @@
 
     </section>
 </main>
-
 
 <!-- Include SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>

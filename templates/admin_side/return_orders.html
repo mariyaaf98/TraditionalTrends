@@ -1,0 +1,97 @@
+{% extends 'admin_side/base.html' %}
+{% load static %}
+
+{% block content %}
+    {% include 'admin_side/sidebar.html' %}
+    <main class="main-wrap">
+        {% include 'admin_side/header.html' %}
+        <section class="content-main">
+            <h2 class="mb-4">Return Orders</h2>
+
+            {% for order in page_obj %}
+            <div class="card mb-4 shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Order #{{ order.order_id }}</h5>
+                    <span class="badge bg-light text-dark">{{ order.date|date:"F d, Y H:i" }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Customer:</strong> {{ order.user.full_name }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Total Amount:</strong> ₹{{ order.total_amount }}
+                        </div>
+                        
+                    </div>
+
+                    <h6 class="mb-3">Order Items: {{ order.items.count }}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Variant</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                    <th>Return Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>{{ item.variant.product.product_name }}</td>
+                                    <td>{{ item.variant.variant_name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>₹{{ item.unit_price }}</td>
+                                    <td>₹{{ item.total_cost }}</td>
+                                    <td>
+                                        {% if item.returns.exists %}
+                                            {% for return_request in item.returns.all %}
+                                                <span class="badge 
+                                                    {% if return_request.status == 'APPROVED' %}bg-success
+                                                    {% elif return_request.status == 'REJECTED' %}bg-danger
+                                                    {% elif return_request.status == 'PENDING' %}bg-warning{% endif %}">
+                                                    {{ return_request.get_status_display }}
+                                                </span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">No Return Request</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="{% url 'order_management:admin-order-detail' order.id %}"
+                            class="btn btn-sm btn-outline-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">No orders found.</div>
+            {% endfor %}
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1">&laquo; First</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                    {% endif %}
+
+                    <li class="page-item disabled"><a class="page-link" href="#">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</a></li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </section>
+    </main>
+{% endblock content %}

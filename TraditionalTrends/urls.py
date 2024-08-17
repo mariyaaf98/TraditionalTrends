@@ -19,6 +19,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+
+
 urlpatterns = [
     path('', include('accounts.urls')),
     path('admin/', admin.site.urls),
@@ -31,7 +33,6 @@ urlpatterns = [
     path('order/', include('order_management.urls')),
     path('wishlist/', include('wishlist.urls')),
     path('coupon/', include('coupon_management.urls')),
-    
     
 ]
 

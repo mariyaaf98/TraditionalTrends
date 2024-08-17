@@ -148,7 +148,10 @@
                     {% endif %}
 
                     <div class="mt-4">
-                        <a href="{% url 'order_management:order-list' %}" class="btn btn-secondary">Back to Orders</a>
+                        <a href="{% url 'order_management:order-list' %}" class="btn btn-secondary me-2">Back to Orders</a>
+                        <a href="{% url 'order_management:download_invoice' order.id %}" class="btn btn-success">
+                            <i class="bi bi-download me-1"></i> Download Invoice
+                        </a>
                     </div>
                 </div>
             </div>

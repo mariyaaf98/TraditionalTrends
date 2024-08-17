@@ -3,12 +3,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm
 from django.core.exceptions import ValidationError
 
+
 User = get_user_model()
 
 class RegisterForm(forms.ModelForm):
     confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={
         'placeholder': 'Confirm Password',
         'id': 'join_confirm_password',
+        'class': 'form-control',
         'required': True
     }))
 
@@ -19,26 +21,31 @@ class RegisterForm(forms.ModelForm):
             'full_name': forms.TextInput(attrs={
                 'placeholder': 'Full Name',
                 'id': 'join_full_name',
+                'class': 'form-control',
                 'required': True
             }),
             'username': forms.TextInput(attrs={
                 'placeholder': 'Username',
                 'id': 'join_username',
+                'class': 'form-control',
                 'required': True
             }),
             'email': forms.EmailInput(attrs={
                 'placeholder': 'Email Address',
                 'id': 'join_email_address',
+                'class': 'form-control',
                 'required': True
             }),
             'phone': forms.TextInput(attrs={
                 'placeholder': '123-456-7890',
                 'id': 'phone',
+                'class': 'form-control',
                 'required': True
             }),
             'password': forms.PasswordInput(attrs={
                 'placeholder': 'Password',
                 'id': 'join_password',
+                'class': 'form-control',
                 'required': True
             }),
         }

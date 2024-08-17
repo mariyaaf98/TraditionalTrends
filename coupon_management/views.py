@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from . models import Coupon
+from . models import Coupon,UserCoupon
 from cart_management . models import Cart
 from .forms import CouponForm
 import logging
@@ -13,7 +13,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from decimal import Decimal
 import json
 from django.http import JsonResponse, Http404
-
 
 
 def generate_coupon_code(length=8):
@@ -70,120 +69,8 @@ def delete_coupon(request, coupon_id):
     return redirect('coupon_management:coupon_list')
 
 
-
-# @require_POST
-# def apply_coupon(request):
-#     try:
-#         data = json.loads(request.body)
-#         coupon_code = data.get('coupon_code')
-        
-#         coupon = get_object_or_404(Coupon, code=coupon_code)
-#         cart = Cart.objects.get(user=request.user, is_active=True)
-
-#         # Validate coupon
-#         if not coupon.is_valid():
-#             return JsonResponse({'status': 'error', 'message': 'This coupon is not valid.'})
-        
-#         if coupon.user and coupon.user != request.user:
-#             return JsonResponse({'status': 'error', 'message': 'This coupon is not valid for your account.'})
-        
-#         cart_total = cart.get_total_price()
-
-#         # Check minimum purchase amount
-#         if cart_total < coupon.minimum_purchase_amount:
-#             return JsonResponse({
-#                 'status': 'error', 
-#                 'message': f'Minimum purchase amount of ₹{coupon.minimum_purchase_amount} required for this coupon.'
-#             })
-
-#         # Calculate discount
-#         if coupon.is_percentage:
-#             discount_amount = (cart_total * coupon.discount) / 100
-#         else:
-#             discount_amount = coupon.discount
-
-#         # Ensure discount doesn't exceed cart total
-#         discount_amount = min(discount_amount, cart_total)
-#         new_total = cart_total - discount_amount
-        
-#         # Apply coupon to cart
-#         cart.applied_coupon = coupon
-#         cart.save()
-
-#         # Update coupon usage
-#         coupon.times_used += 1
-#         coupon.save()
-        
-#         return JsonResponse({
-#             'status': 'success',
-#             'message': 'Coupon applied successfully!',
-#             'coupon_code': coupon.code,
-#             'discount': str(discount_amount),
-#             'new_total': str(new_total)
-#         })
-              
-#     except Http404:
-#         return JsonResponse({'status': 'error', 'message': 'Invalid coupon code or cart not found.'})
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)})
-
-# @require_POST
-# def apply_coupon(request):
-#     try:
-#         data = json.loads(request.body)
-#         coupon_code = data.get('coupon_code')
-        
-#         coupon = get_object_or_404(Coupon, code=coupon_code)
-#         cart = Cart.objects.get(user=request.user, is_active=True)
-
-#         # Validate coupon
-#         if not coupon.is_valid():
-#             return JsonResponse({'status': 'error', 'message': 'This coupon is not valid.'})
-        
-#         if coupon.user and coupon.user != request.user:
-#             return JsonResponse({'status': 'error', 'message': 'This coupon is not valid for your account.'})
-        
-#         cart_total = cart.get_total_price()
-
-#         # Check minimum purchase amount
-#         if cart_total < coupon.minimum_purchase_amount:
-#             return JsonResponse({
-#                 'status': 'error', 
-#                 'message': f'Minimum purchase amount of ₹{coupon.minimum_purchase_amount} required for this coupon.'
-#             })
-
-#         # Calculate discount
-#         if coupon.is_percentage:
-#             discount_amount = (cart_total * coupon.discount) / 100
-#         else:
-#             discount_amount = coupon.discount
-
-#         # Ensure discount doesn't exceed cart total
-#         discount_amount = min(discount_amount, cart_total)
-#         new_total = cart_total - discount_amount
-        
-#         # Apply coupon to cart
-#         cart.applied_coupon = coupon
-#         cart.save()
-        
-#         return JsonResponse({
-#             'status': 'success',
-#             'message': 'Coupon applied successfully!',
-#             'coupon_code': coupon.code,
-#             'discount': str(discount_amount),
-#             'new_total': str(new_total)
-#         })
-              
-#     except Http404:
-#         return JsonResponse({'status': 'error', 'message': 'Invalid coupon code or cart not found.'})
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)})
-
-
-
 @require_POST
 def apply_coupon(request):
-    # Retrieve user ID from the session
     user_id = request.session.get('user_id')
     if user_id is None:
         return JsonResponse({
@@ -201,6 +88,13 @@ def apply_coupon(request):
         if not coupon.is_valid():
             raise Coupon.DoesNotExist
         
+        # Check if the user has already used this coupon
+        if UserCoupon.objects.filter(user=request.user, coupon=coupon, used=True).exists():
+            return JsonResponse({
+                'status': 'error',
+                'message': 'You have already used this coupon.'
+            })
+
         # Check minimum purchase amount
         if total_price < coupon.minimum_purchase_amount:
             return JsonResponse({
@@ -214,9 +108,9 @@ def apply_coupon(request):
 
         new_total = total_price - discount
 
-        # Convert Decimal objects to float or str
-        new_total = float(new_total)  # or str(new_total)
-        discount = float(discount)  # or str(discount)
+        # Convert Decimal objects to float 
+        new_total = float(new_total)  
+        discount = float(discount)  
 
         # Store the coupon in the session
         request.session['applied_coupon'] = {
@@ -225,10 +119,13 @@ def apply_coupon(request):
             'new_total': new_total,
         }
 
+        # Mark the coupon as used for this user
+        UserCoupon.objects.create(user=request.user, coupon=coupon, used=False)
+
         return JsonResponse({
             'status': 'success',
-            'new_total': str(new_total),  # Alternatively use float(new_total)
-            'discount': str(discount),    # Alternatively use float(discount)
+            'new_total': str(new_total),
+            'discount': str(discount),
             'message': 'Coupon applied successfully!'
         })
 
@@ -237,7 +134,6 @@ def apply_coupon(request):
             'status': 'error',
             'message': 'Invalid or expired coupon.'
         })
-
 @require_POST
 def remove_coupon(request):
     try:
@@ -260,28 +156,4 @@ def remove_coupon(request):
         return JsonResponse({'status': 'error', 'message': str(e)})
     
 
-
-
-
-# @require_POST
-# def remove_coupon(request):
-#     try:
-#         cart = Cart.objects.get(user=request.user, is_active=True)
-        
-#         # Remove the applied coupon
-#         cart.applied_coupon = None
-#         cart.save()
-        
-#         # Recalculate the cart total without the coupon
-#         original_total = cart.get_total_price()  # Assuming get_total_price() returns the total without any coupon
-
-#         return JsonResponse({
-#             'status': 'success',
-#             'message': 'Coupon removed successfully!',
-#             'new_total': str(original_total)
-#         })
-#     except Cart.DoesNotExist:
-#         return JsonResponse({'status': 'error', 'message': 'Cart not found.'})
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)})
 

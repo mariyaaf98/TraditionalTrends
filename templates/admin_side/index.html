@@ -14,24 +14,12 @@
                 <p>Comprehensive overview of your business</p>
             </div>
             <div>
-                <a href="{% url 'admin_panel:salse-report'%}" class="btn btn-primary"><i class="material-icons md-post_add"></i>Create report</a>
+                <a href="{% url 'admin_panel:sales-report'%}" class="btn btn-primary"><i class="material-icons md-post_add"></i>Create report</a>
             </div>
         </div>
         
         <!-- Statistics Cards -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 col-sm-6">
-                <div class="card card-body mb-4">
-                    <article class="icontext">
-                        <span class="icon icon-sm rounded-circle bg-primary-light"><i class="text-primary material-icons md-monetization_on"></i></span>
-                        <div class="text">
-                            <h6 class="mb-1 card-title">Revenue</h6>
-                            <span>${{ total_revenue }}</span>
-                            <span class="text-sm">Excluding shipping fees</span>
-                        </div>
-                    </article>
-                </div>
-            </div>
             <div class="col-lg-3 col-md-6 col-sm-6">
                 <div class="card card-body mb-4">
                     <article class="icontext">
@@ -56,18 +44,6 @@
                     </article>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 col-sm-6">
-                <div class="card card-body mb-4">
-                    <article class="icontext">
-                        <span class="icon icon-sm rounded-circle bg-info-light"><i class="text-info material-icons md-shopping_basket"></i></span>
-                        <div class="text">
-                            <h6 class="mb-1 card-title">Monthly Earnings</h6>
-                            <span>${{ monthly_earnings }}</span>
-                            <span class="text-sm">Based on your local time</span>
-                        </div>
-                    </article>
-                </div>
-            </div>
         </div>
 
         <!-- Sales Report -->
@@ -82,23 +58,102 @@
                         <ul class="list-group">
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 Total Sales
-                                <span class="badge bg-primary rounded-pill">${{ total_sales }}</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                Average Order Value
-                                <span class="badge bg-success rounded-pill">${{ avg_order_value }}</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                Conversion Rate
-                                <span class="badge bg-info rounded-pill">{{ conversion_rate }}%</span>
+                                <span class="badge bg-primary rounded-pill">₹{{ total_sales }}</span>
                             </li>
                         </ul>
                     </div>
                 </div>
             </div>
         </div>
+        <!-- Top Selling Items -->
+        <div class="row">
+            <!-- Best Selling Products -->
+            <div class="col-12 col-xl-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Top 10 Best-Selling Products</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Total Sold</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in best_selling_products %}
+                                    <tr>
+                                        <td>{{ product.variant__product__product_name }}</td>
+                                        <td>{{ product.total_sold }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Best Selling Categories -->
+            <div class="col-12 col-xl-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Top 10 Best-Selling Categories</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Total Sold</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for category in best_selling_categories %}
+                                    <tr>
+                                        <td>{{ category.variant__product__product_category__category_name }}</td>
+                                        <td>{{ category.total_sold }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Latest Orders Table -->
+            <!-- Best Selling Brands -->
+            <div class="col-12 col-xl-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Top 10 Best-Selling Brands</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Brand</th>
+                                        <th>Total Sold</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for brand in best_selling_brands %}
+                                    <tr>
+                                        <td>{{ brand.variant__product__product_brand__brand_name }}</td>
+                                        <td>{{ brand.total_sold }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest Orders Table -->
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Latest Orders</h5>
@@ -120,9 +175,9 @@
                                 <td>{{ order.order_id }}</td>
                                 <td>{{ order.user.username }}</td>
                                 <td>{{ order.date|date:"M d, Y" }}</td>
-                                <td>${{ order.total_amount }}</td>
+                                <td>₹{{ order.total_amount }}</td>
                                 <td><span class="badge bg-{{ order.status_color }}">{{ order.order_status }}</span></td>
-                                <td><a href="" class="btn btn-sm btn-outline-primary">View</a></td>
+                                <td><a href="{% url 'order_management:admin-order-detail' order.id%}" class="btn btn-sm btn-outline-primary">View</a></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -130,6 +185,7 @@
                 </div>
             </div>
         </div>
+
     </section>
 </main>
 
