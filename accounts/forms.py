@@ -72,13 +72,20 @@ class LoginForm(AuthenticationForm):
         max_length=254,
         required=True,
         label="Email",
-        widget=forms.EmailInput(attrs={'autofocus': True, 'placeholder': 'Email'})
+        widget=forms.EmailInput(attrs={
+            'autofocus': True,
+            'placeholder': 'Email',
+            'class': 'form-control form-control-lg bg-light'
+        })
     )
 
     password = forms.CharField(
         label="Password",
         strip=False,
-        widget=forms.PasswordInput(attrs={'placeholder': 'Password'})
+        widget=forms.PasswordInput(attrs={
+            'placeholder': 'Password',
+            'class': 'form-control form-control-lg bg-light'
+        })
     )
 
 
@@ -112,3 +119,30 @@ class UserProfileForm(forms.ModelForm):
         if not phone:
             raise forms.ValidationError("This field is required.")
         return phone
+
+
+
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(label="Email", max_length=254)
+
+class CustomPasswordChangeForm(forms.Form):
+    password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        label="New Password"
+    )
+    password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        label="Confirm New Password"
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Passwords do not match")
+
+        # Add more custom validation here if needed
+
+        return cleaned_data

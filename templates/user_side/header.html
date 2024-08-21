@@ -74,56 +74,62 @@
                      </div>
                      <div class="header-action-right">
                          <div class="header-action-2">
-                             <div class="header-action-icon-2">
-                                 <a href="{% url 'wishlist:view-wishlist' %}">
-                                     <img class="svgInject" alt="Evara"
-                                         src="{% static 'user_side/assets/imgs/theme/icons/icon-heart.svg' %}">
-                                     <span class="pro-count blue">{{ wishlist_item_count }}</span>
-                                 </a>
-                             </div>
-                             <div class="header-action-icon-2">
-                                 <a class="mini-cart-icon" href="{% url 'cart_management:cart' %}">
-                                     <img alt="Evara"
-                                         src="{% static 'user_side/assets/imgs/theme/icons/icon-cart.svg' %}">
-                                     <span class="pro-count blue">{{ cart_items.count }}</span>
-                                 </a>
+    <div class="header-action-icon-2">
+        <a href="{% url 'wishlist:view-wishlist' %}">
+            <img class="svgInject" alt="Evara"
+                src="{% static 'user_side/assets/imgs/theme/icons/icon-heart.svg' %}">
+            <!-- Add ID to the wishlist count span -->
+            <span id="wishlist-count" class="pro-count blue">{{ wishlist_item_count }}</span>
+        </a>
+    </div>
+    <div class="header-action-icon-2">
+        <a class="mini-cart-icon" href="{% url 'cart_management:cart' %}">
+            <img alt="Evara"
+                src="{% static 'user_side/assets/imgs/theme/icons/icon-cart.svg' %}">
+            <!-- Add ID to the cart count span -->
+            <span id="cart-count" class="pro-count blue">{{ cart_item_count }}</span>
+        </a>
 
-                                 <div class="cart-dropdown-wrap cart-dropdown-hm2">
-                                     <ul>
-                                         {% for item in cart_items %}
-                                         <li>
-                                             <div class="shopping-cart-img">
-                                                 <a href="{% url 'cart_management:cart'%}"> <img
-                                                         src="{{ item.variant.images.first.image.url }}"
-                                                         alt="{{ item.variant.product.product_name }}"
-                                                         class="img-thumbnail"
-                                                         style="width: 50px; height: 50px; object-fit: cover;"></a>
-                                             </div>
-                                             <div class="shopping-cart-title">
-                                                 <h4><a
-                                                         href="{% url 'cart_management:cart'%}">{{ item.variant.product.product_name }}</a>
-                                                 </h4>
-                                                 <h4><span>{{item.quantity }} × </span>₹
-                                                     {{ item.variant.product.offer_price }}</h4>
-                                             </div>
-                                             <div class="shopping-cart-delete">
-                                                 <a href="#"></i></a>
-                                             </div>
-                                         </li>
-                                         {% endfor  %}
-                                     </ul>
-                                     <div class="shopping-cart-footer">
-                                         <div class="shopping-cart-total">
-                                             <h4>Total <span>₹{{ total_price }}</span></h4>
-                                         </div>
-                                         <div class="shopping-cart-button">
-                                             <a href="{% url 'cart_management:cart'%}" class="outline">View cart</a>
-                                             <a href="{% url 'cart_management:checkout' %}">Checkout</a>
-                                         </div>
-                                     </div>
-                                 </div>
-                             </div>
-                         </div>
+        <div class="cart-dropdown-wrap cart-dropdown-hm2">
+            <ul>
+                {% for item in cart_items %}
+                <li>
+                    <div class="shopping-cart-img">
+                        <a href="{% url 'cart_management:cart' %}">
+                            <img src="{{ item.variant.images.first.image.url }}"
+                                 alt="{{ item.variant.product.product_name }}"
+                                 class="img-thumbnail"
+                                 style="width: 50px; height: 50px; object-fit: cover;">
+                        </a>
+                    </div>
+                    <div class="shopping-cart-title">
+                        <h4>
+                            <a href="{% url 'cart_management:cart' %}">{{ item.variant.product.product_name }}</a>
+                        </h4>
+                        <h4>
+                            <span>{{ item.quantity }} × </span>₹ {{ item.variant.product.offer_price }}
+                        </h4>
+                    </div>
+                    <div class="shopping-cart-delete">
+                        <a href="#"></a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="shopping-cart-footer">
+                <div class="shopping-cart-total">
+                    <!-- Add ID to the total price span -->
+                    <h4>Total <span id="total-price">₹{{ total_price }}</span></h4>
+                </div>
+                <div class="shopping-cart-button">
+                    <a href="{% url 'cart_management:cart' %}" class="outline">View cart</a>
+                    <a href="{% url 'cart_management:checkout' %}">Checkout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
                      </div>
                  </div>
              </div>

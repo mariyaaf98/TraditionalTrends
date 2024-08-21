@@ -3,7 +3,7 @@ from django.contrib import messages
 from .models import Brand
 from django.contrib.auth.decorators import login_required
 
-@login_required
+@login_required(login_url='/admin-panel/login/')
 def add_brand(request):
     if not request.user.is_superuser:
         return redirect('admin_panel:admin_login')
@@ -42,13 +42,15 @@ def add_brand(request):
     return render(request, 'admin_side/add_brand.html')
 
 
+@login_required(login_url='/admin-panel/login/')
 def brand_list(request):
     if not request.user.is_superuser:
-        return render(request,'admin_panel:admin_login')
+        return redirect('admin_panel:admin_login')  
 
-    brands=Brand.objects.filter(is_deleted=False).order_by("id")
-    return render(request,'admin_side/brand_list.html',{"brands":brands})
+    brands = Brand.objects.all().order_by("id")
+    return render(request, 'admin_side/brand_list.html', {"brands": brands})
 
+@login_required(login_url='/admin-panel/login/')
 def edit_brand(request, brand_id):
     if not request.user.is_superuser:
         return redirect('admin_panel:admin_login')
@@ -82,6 +84,8 @@ def edit_brand(request, brand_id):
     else:
         return render(request, 'admin_side/edit_brand.html', {'brand': brand})
     
+
+@login_required(login_url='/admin-panel/login/')
 def delete_brand(request, brand_id):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -95,3 +99,13 @@ def delete_brand(request, brand_id):
         return redirect("brand_management:brand-list")
 
     return render(request, "admin_side/brand_list.html")
+
+def restore_brand(request, brand_id):
+    if request.method == 'POST':
+       
+        brand = get_object_or_404(Brand, id=brand_id, is_deleted=True)
+        brand.is_deleted = False
+        brand.save()
+        messages.success(request, 'Brand restored successfully.')
+
+    return redirect('brand_management:brand-list')

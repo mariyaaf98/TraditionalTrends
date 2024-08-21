@@ -29,60 +29,11 @@ from io import BytesIO
 from django.utils import timezone
 from .models import Order, OrderItem 
 from reportlab.lib.units import inch
+import logging
+logger = logging.getLogger(__name__)
 
 
-# @login_required
-# def order_success(request):
-#     try:
-#         if not request.user.is_authenticated:
-#             messages.error(request, "Please log in to view your order.")
-#             return redirect('login')
-        
-#         # Fetch the most recent order for the logged-in user
-#         order = Order.objects.filter(user=request.user, order_status='Processing').order_by('-date').first()
-#         if not order:
-#             raise Order.DoesNotExist
-
-#         # Fetch order items
-#         order_items = OrderItem.objects.filter(main_order=order)
-#         arrival_date = order.date + timezone.timedelta(days=5)
-#         if order.order_status == 'Cancelled':
-#             arrival_date = None
-
-#         # Calculate total price from order items
-#         total_price = sum(Decimal(item.variant.product.offer_price) * item.quantity for item in order_items)
-
-#         # Check if a coupon was applied to the order
-#         user_coupon = UserCoupon.objects.filter(user=request.user, order=order, used=True).first()
-#         discount = Decimal('0.00')
-#         if user_coupon:
-#             coupon = user_coupon.coupon
-#             if coupon.is_percentage:
-#                 discount = (coupon.discount / Decimal('100')) * total_price
-#             else:
-#                 discount = coupon.discount
-
-#         # Calculate the final amount after applying the discount
-#         final_amount = total_price - discount if user_coupon else total_price
-
-#         context = {
-#             'order': order,
-#             'order_items': order_items,
-#             'arrival_date': arrival_date,
-#             'discount': discount,
-#             'final_amount': final_amount,
-#             'total_price': total_price,
-#             'coupon_applied': user_coupon is not None,
-#         }
-#         return render(request, 'user_side/order_success.html', context)
-
-#     except Order.DoesNotExist:
-#         messages.error(request, "No recent order found.")
-#         return redirect('cart_management:cart')
-
-
-
-@login_required
+login_required
 def order_success(request):
     try:
         if not request.user.is_authenticated:
@@ -90,35 +41,38 @@ def order_success(request):
             return redirect('login')
         
         # Fetch the most recent order for the logged-in user
-        order = Order.objects.filter(user=request.user, order_status='Processing').order_by('-date').first()
+        order = Order.objects.filter(user=request.user).order_by('-date').first()
         if not order:
             raise Order.DoesNotExist
 
-        # Fetch order items
-        order_items = OrderItem.objects.filter(main_order=order)
-        arrival_date = order.date + timezone.timedelta(days=5)
-        if order.order_status == 'Cancelled':
-            arrival_date = None
+        # Check if the order is actually successful
+        if order.payment_status and order.order_status == 'Processing':
+            # Fetch order items
+            order_items = OrderItem.objects.filter(main_order=order)
+            arrival_date = order.date + timezone.timedelta(days=5)
 
-        # Calculate total price from order items
-        total_price = sum(item.variant.product.offer_price * item.quantity for item in order_items)
+            # Calculate total price from order items
+            total_price = sum(item.variant.product.offer_price * item.quantity for item in order_items)
 
-        # Get the applied discount
-        discount = order.coupon_discount or Decimal('0.00')
+            # Get the applied discount
+            discount = order.coupon_discount or Decimal('0.00')
 
-        # Calculate the final amount after applying the discount
-        final_amount = total_price - discount
+            # Calculate the final amount after applying the discount
+            final_amount = total_price - discount
 
-        context = {
-            'order': order,
-            'order_items': order_items,
-            'arrival_date': arrival_date,
-            'discount': discount,
-            'final_amount': final_amount,
-            'total_price': total_price,
-            'coupon_applied': discount > Decimal('0.00'),
-        }
-        return render(request, 'user_side/order_success.html', context)
+            context = {
+                'order': order,
+                'order_items': order_items,
+                'arrival_date': arrival_date,
+                'discount': discount,
+                'final_amount': final_amount,
+                'total_price': total_price,
+                'coupon_applied': discount > Decimal('0.00'),
+            }
+            return render(request, 'user_side/order_success.html', context)
+        else:
+            messages.error(request, "Your order was not completed successfully.")
+            return redirect('cart_management:checkout')
 
     except Order.DoesNotExist:
         messages.error(request, "No recent order found.")
@@ -182,7 +136,7 @@ def user_order_detail(request, order_id):
     }
     return render(request, 'user_side/order_detail.html', context)
 
-@login_required
+@login_required(login_url='user_login')
 @require_POST
 @transaction.atomic
 def cancel_order_item(request, item_id):
@@ -198,7 +152,7 @@ def cancel_order_item(request, item_id):
         user_coupon = UserCoupon.objects.filter(order=order, user=order.user, used=True).first()
         if user_coupon:
             coupon = user_coupon.coupon
-            if coupon.is_valid():  # Ensure the coupon is valid
+            if coupon.is_valid(): 
                 discount_amount = Decimal(coupon.discount)
                 if coupon.is_percentage:
                     discount_amount = refund_amount * (discount_amount / Decimal('100'))
@@ -231,32 +185,6 @@ def cancel_order_item(request, item_id):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
-# @login_required
-# def admin_order_list(request):
-#     all_orders = Order.objects.all().select_related('user').prefetch_related('items', 'items__returns')
-
-#     # Get orders with pending return requests
-#     pending_returns = all_orders.filter(
-#         items__returns__status='REQUESTED',
-#         items__returns__requested_date__isnull=False
-#     ).distinct().order_by('-items__returns__requested_date')[:10]
-
-#     # Get all other orders (including those with non-pending returns)
-#     other_orders = all_orders.exclude(
-#     id__in=pending_returns.values_list('id', flat=True)).order_by('-date')
-
-#     # Update payment status for orders with status 'Delivered'
-#     for order in all_orders:
-#         if order.order_status == 'Delivered':
-#             order.payment_status = True
-#             order.save()
-            
-#     context = {
-#         'pending_returns': pending_returns,
-#         'other_orders': other_orders,
-#     }
-#     return render(request, 'admin_side/orders-list.html', context)
-
 @login_required
 def admin_order_list(request):
     pending_returns = []
@@ -276,9 +204,20 @@ def admin_order_list(request):
         if not has_pending_return:
             other_orders.append(order)
 
+
+    # Paginate pending_returns
+    pending_returns_paginator = Paginator(pending_returns, 10)  # Show 10 pending returns per page
+    pending_returns_page_number = request.GET.get('pending_page')
+    pending_returns_page_obj = pending_returns_paginator.get_page(pending_returns_page_number)
+
+    # Paginate other_orders
+    other_orders_paginator = Paginator(other_orders, 10)  # Show 10 orders per page
+    other_orders_page_number = request.GET.get('orders_page')
+    other_orders_page_obj = other_orders_paginator.get_page(other_orders_page_number)
+
     context = {
-        'pending_returns': pending_returns,
-        'other_orders': other_orders,
+        'pending_returns': pending_returns_page_obj,
+        'other_orders': other_orders_page_obj,
     }
     return render(request, 'admin_side/orders-list.html', context)
 
@@ -435,63 +374,95 @@ def process_return(request, return_id):
     return redirect('order_management:admin-order-list')
 
 
-
-@login_required
 @csrf_exempt
 def razorpay_callback(request):
-    print('hi')
-    razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
     if request.method == "POST":
-        payment_id = request.POST.get('razorpay_payment_id', '')
-        razorpay_order_id = request.POST.get('razorpay_order_id', '')
-        signature = request.POST.get('razorpay_signature', '')
-        
-        params_dict = {
-            'razorpay_order_id': razorpay_order_id,
-            'razorpay_payment_id': payment_id,
-            'razorpay_signature': signature
-        }
-        
         try:
-            order = Order.objects.get(razorpay_order_id=razorpay_order_id)
+            payment_data = request.POST
+            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+            
+            # Verify the payment signature
+            params_dict = {
+                'razorpay_order_id': payment_data['razorpay_order_id'],
+                'razorpay_payment_id': payment_data['razorpay_payment_id'],
+                'razorpay_signature': payment_data['razorpay_signature']
+            }
+            
+            try:
+                client.utility.verify_payment_signature(params_dict)
+            except:
+                messages.error(request, "Payment verification failed. Please try again.")
+                return redirect('order_management:order-failed')
+            
+            # If verification is successful, fetch the order
+            order = Order.objects.get(razorpay_order_id=payment_data['razorpay_order_id'])
+            
+            # Check if the payment was successful
+            razorpay_payment_id = payment_data.get('razorpay_payment_id', None)
+            if razorpay_payment_id:
+                payment_capture_response = client.payment.fetch(razorpay_payment_id)
+                
+                if payment_capture_response['status'] == 'captured':
+                    # Use a transaction to ensure atomicity
+                    with transaction.atomic():
+                        # Reduce stock and update the order status to 'Processing'
+                        for item in order.items.all():
+                            variant = item.variant
+                            if variant.variant_stock < item.quantity:
+                                raise ValueError(f"Insufficient stock for {variant.product.product_name}")
+                            variant.variant_stock -= item.quantity
+                            variant.save()
+                        
+                        order.payment_status = True
+                        order.order_status = 'Processing'
+                        order.save()
+                        
+                        # Clear the cart
+                        cart = Cart.objects.get(user=order.user, is_active=True)
+                        CartItem.objects.filter(cart=cart).delete()
+                        cart.is_active = False
+                        cart.save()
+                    
+                    messages.success(request, "Payment successful. Your order is now processing.")
+                    return redirect('order_management:order-success')
+                else:
+                    messages.error(request, "Payment failed. Please try again.")
+                    return redirect('order_management:order-failed')
+            else:
+                messages.error(request, "Payment ID not found. Please try again.")
+                return redirect('order_management:order-failed')
+        
         except Order.DoesNotExist:
-            return HttpResponse("Order not found", status=400)
-        
-        # Verify the payment signature
-        try:
-            razorpay_client.utility.verify_payment_signature(params_dict)
-        except:
-            return HttpResponse("Invalid signature", status=400)
-        
-        order.payment_status = True
-        order.payment_id = payment_id
-        order.order_status = 'Processing'  # Changed from 'Order Placed' to match other payment methods
-        order.save()
-        
-        cart = Cart.objects.filter(user=order.user, is_active=True).first()
-        if cart:
-            CartItem.objects.filter(cart=cart).delete()
-            cart.is_active = False
-            cart.save()
-        
-        # Remove applied coupon from session
-        if 'applied_coupon' in request.session:
-            del request.session['applied_coupon']
-        
-        # Apply coupon if used
-        coupon = order.coupon_discount and Coupon.objects.filter(discount=order.coupon_discount).first()
-        if coupon:
-            UserCoupon.objects.create(
-                user=order.user,
-                coupon=coupon,
-                used=True,
-                used_at=timezone.now(),
-                order=order
-            )
-        
-        return redirect(reverse('order_management:order-success') + f'?order_id={order.id}')
-    
-    return HttpResponse("Method not allowed", status=405)
+            messages.error(request, "Order not found.")
+            return redirect('order_management:order-failed')
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('order_management:order-failed')
+        except Exception as e:
+            logger.error(f"Error processing Razorpay callback: {str(e)}", exc_info=True)
+            messages.error(request, "An error occurred during payment processing. Please try again.")
+            return redirect('order_management:order-failed')
+    else:
+        # Handle GET request (when user closes the payment window)
+        razorpay_order_id = request.GET.get('razorpay_order_id')
+        if razorpay_order_id:
+            try:
+                order = Order.objects.get(razorpay_order_id=razorpay_order_id)
+                order.order_status = 'Cancelled'
+                order.save()
+                messages.error(request, "Payment cancelled. Your order has been marked as cancelled.")
+            except Order.DoesNotExist:
+                messages.error(request, "Order not found.")
+        else:
+            messages.error(request, "Payment process was interrupted. Please try again.")
+        return redirect('order_management:order-failed')
+
+
+def order_failed(request):
+    messages.error(request, "Your order was not completed successfully.")
+    return render(request, 'user_side/order_failed.html')
+
+
 
 
 @login_required

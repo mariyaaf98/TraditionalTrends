@@ -1,5 +1,6 @@
 {% extends 'admin_side/base.html' %}
 {% load static %}
+
 {% block content %}
 <div class="screen-overlay"></div>
 {% include 'admin_side/sidebar.html' %}
@@ -17,21 +18,20 @@
                 </form>
             </div>
         </div>
-        
+
         {% if pending_returns %}
-        <!-- Orders with Pending Return Requests -->
         <div class="card mb-4">
-         {% for message in messages %}
-            {% if message.tags == 'success' %}
-                <p class="alert alert-success">{{ message }}</p>
-            {% elif message.tags == 'error' %}
-                <p class="alert alert-danger">{{ message }}</p>
-            {% elif message.tags == 'warning' %}
-                <p class="alert alert-warning">{{ message }}</p>
-            {% else %}
-                <p>{{ message }}</p>
-            {% endif %}
-        {% endfor %}
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                    <p class="alert alert-success">{{ message }}</p>
+                {% elif message.tags == 'error' %}
+                    <p class="alert alert-danger">{{ message }}</p>
+                {% elif message.tags == 'warning' %}
+                    <p class="alert alert-warning">{{ message }}</p>
+                {% else %}
+                    <p>{{ message }}</p>
+                {% endif %}
+            {% endfor %}
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">Orders with Pending Return Requests</h5>
             </div>
@@ -60,19 +60,19 @@
                                 <td>{{ return_info.item.quantity }}</td>
                                 <td>
                                     <span class="badge rounded-pill 
-                                {% if return_info.order.order_status == 'Order Placed' %}bg-secondary
-                                {% elif return_info.order.order_status == 'Pending' %}bg-warning
-                                {% elif return_info.order.order_status == 'Processing' %}bg-info
-                                {% elif return_info.order.order_status == 'Shipped' %}bg-primary
-                                {% elif return_info.order.order_status == 'Delivered' %}bg-success
-                                {% elif return_info.order.order_status == 'Cancelled' %}bg-danger{% endif %} 
-                                text-white">
+                                    {% if return_info.order.order_status == 'Order Placed' %}bg-secondary
+                                    {% elif return_info.order.order_status == 'Pending' %}bg-warning
+                                    {% elif return_info.order.order_status == 'Processing' %}bg-info
+                                    {% elif return_info.order.order_status == 'Shipped' %}bg-primary
+                                    {% elif return_info.order.order_status == 'Delivered' %}bg-success
+                                    {% elif return_info.order.order_status == 'Cancelled' %}bg-danger{% endif %} 
+                                    text-white">
                                         {{ return_info.order.order_status }}
                                     </span>
                                 </td>
                                 <td>
                                     <span class="badge 
-                                {% if return_info.order.payment_status %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if return_info.order.payment_status %}bg-success{% else %}bg-danger{% endif %}">
                                         {% if return_info.order.payment_status %}Paid{% else %}Unpaid{% endif %}
                                     </span>
                                 </td>
@@ -101,6 +101,35 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination for Pending Returns -->
+                <div class="pagination-wrapper">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            {% if pending_returns.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?pending_page={{ pending_returns.previous_page_number }}"
+                                    aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% for num in pending_returns.paginator.page_range %}
+                            <li class="page-item {% if pending_returns.number == num %}active{% endif %}">
+                                <a class="page-link" href="?pending_page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endfor %}
+                            {% if pending_returns.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?pending_page={{ pending_returns.next_page_number }}"
+                                    aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -121,7 +150,6 @@
                                 <th>Order Status</th>
                                 <th>Payment Status</th>
                                 <th>Date</th>
-                                {% comment %} <th>Return Status</th> {% endcomment %}
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -150,18 +178,6 @@
                                     </span>
                                 </td>
                                 <td>{{ order.date|date:"M d, Y" }}</td>
-                                {% comment %} <td>
-                                    {% for item in order.items.all %}
-                                    {% for return_request in item.returns.all %}
-                                    <span class="badge 
-                {% if return_request.status == 'APPROVED' %}bg-success
-                {% elif return_request.status == 'REJECTED' %}bg-danger{% endif %}">
-                                        {{ return_request.get_status_display }}
-                                    </span>
-                                    {% endfor %}
-                                    {% endfor %}
-                                </td> {% endcomment %}
-
                                 <td>
                                     <a href="{% url 'order_management:admin-order-detail' order.id %}"
                                         class="btn btn-sm btn-outline-primary">Details</a>
@@ -171,12 +187,39 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination for Other Orders -->
+                <div class="pagination-wrapper">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            {% if other_orders.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?orders_page={{ other_orders.previous_page_number }}"
+                                    aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% for num in other_orders.paginator.page_range %}
+                            <li class="page-item {% if other_orders.number == num %}active{% endif %}">
+                                <a class="page-link" href="?orders_page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endfor %}
+                            {% if other_orders.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?orders_page={{ other_orders.next_page_number }}"
+                                    aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
-
     </section>
 </main>
-
 <!-- Include SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script>
@@ -209,4 +252,4 @@
     });
 </script>
 
-{% endblock content %}
+{% endblock %}

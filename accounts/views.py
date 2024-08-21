@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect,get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib import messages
@@ -6,16 +6,20 @@ import random
 from product_management.models import Products,Product_images
 from category_management.models import Category
 from brand_management.models import Brand
-from .forms import RegisterForm, LoginForm
+from .forms import RegisterForm, LoginForm,PasswordResetRequestForm,CustomPasswordChangeForm
 from .models import User
 from django.contrib.auth import authenticate, login, logout
 from django.utils import timezone
 from dateutil.parser import parse
 from django.contrib.auth.decorators import login_required
 from cart_management.models import Cart, CartItem
-
-
-
+from django.template.loader import render_to_string
+from django.contrib.sites.shortcuts import get_current_site
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.urls import reverse
+from django.contrib.auth import update_session_auth_hash
 
 # Generate a random OTP
 def generate_otp():
@@ -47,6 +51,7 @@ def user_login(request):
         form = LoginForm()
     
     return render(request, 'user_side/accounts/login.html', {'form': form})
+
 
 
 def user_register(request):
@@ -176,3 +181,73 @@ def user_logout(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('accounts:home')
+
+
+
+def password_reset_request(request):
+    if 'email' in request.GET:
+        email = request.GET['email']
+        user = User.objects.filter(email=email).first()
+        
+        if user:
+            # User exists, send reset email
+            subject = "Password Reset Requested"
+            email_template_name = "user_side/accounts/password_reset_email.html"
+            context = {
+                "email": user.email,
+                "domain": get_current_site(request).domain,
+                "site_name": "Your Site Name",
+                "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+                "user": user,
+                "token": default_token_generator.make_token(user),
+                "protocol": "https" if request.is_secure() else "http",
+            }
+            email_body = render_to_string(email_template_name, context)
+            send_mail(subject, email_body, "noreply@yourdomain.com", [user.email], fail_silently=False)
+            messages.success(request, "A link to reset your password has been sent to your email.")
+        else:
+            # User does not exist
+            messages.error(request, "No registered user found with this email address.")
+    else:
+        messages.error(request, "Email address is required.")
+    
+    return redirect("accounts:user_login")
+
+
+
+def generate_password_reset_link(user):
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    reset_link = reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+    return reset_link
+
+
+def password_change_view(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            form = CustomPasswordChangeForm(request.POST)
+            if form.is_valid():
+                user.set_password(form.cleaned_data['password1'])
+                user.save()
+                update_session_auth_hash(request, user)
+
+                messages.success(request, 'Your password has been reset successfully. You can now log in.')
+                return redirect('accounts:user_login')
+        else:
+            form = CustomPasswordChangeForm()
+
+        return render(request, 'user_side/accounts/password_reset_confirm.html', {'form': form})
+    else:
+        messages.error(request, 'The reset link is invalid or has expired.')
+        return redirect('accounts:password_reset_request')
+
+
+def password_reset_done(request):
+    messages.success(request, "Your password has been reset successfully. You can now log in with your new password.")
+    return redirect('accounts:user_login')

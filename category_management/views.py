@@ -9,7 +9,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime
 from django.contrib.auth.decorators import login_required
 
-@login_required
+@login_required(login_url='/admin-panel/login/')
 def add_category(request):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -70,7 +70,7 @@ def add_category(request):
     return render(request,"admin_side/add_category.html",{"parentlist": parentlist,"today": today})
 
 
-@login_required
+@login_required(login_url='/admin-panel/login/')
 def edit_category(request, category_id):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -132,7 +132,7 @@ def edit_category(request, category_id):
     today = datetime.today().date().isoformat()
     return render(request, "admin_side/edit_category.html", {"category": category, "parentlist": parentlist, "today": today})
 
-@login_required
+@login_required(login_url='/admin-panel/login/')
 def category_list(request):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -143,7 +143,7 @@ def category_list(request):
     return render(request, "admin_side/category_list.html", {"categories": categories})
 
 
-@login_required
+@login_required(login_url='/admin-panel/login/')
 def delete_category(request, category_id):
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
@@ -160,10 +160,11 @@ def delete_category(request, category_id):
     return render(request, "admin_side/category_list.html")
 
 
-@login_required
+@login_required(login_url='/admin-panel/login/')
 def restore_category(request, category_id):
     category = get_object_or_404(Category, id=category_id)
     category.is_deleted = False
+    category.is_available=True
     category.save()
     return redirect('category_management:category-list')
 

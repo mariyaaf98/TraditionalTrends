@@ -29,6 +29,21 @@
 <script src="{% static 'js/sweetalert2.all.min.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    function updateCounts() {
+        $.ajax({
+            url: '{% url "cart_management:update-counts" %}',
+            type: 'GET',
+            success: function(data) {
+                $('#cart-count').text(data.cart_item_count);
+                $('#wishlist-count').text(data.wishlist_item_count);
+                $('#total-price').text('₹' + data.total_price); // Update total price
+            }
+        });
+    }
+</script>
+
+
+<script>
     document.addEventListener('DOMContentLoaded', (event) => {
         {% if messages %}
             const messages = [

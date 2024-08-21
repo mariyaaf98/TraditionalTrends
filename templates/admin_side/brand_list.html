@@ -2,183 +2,184 @@
 {% load static %}
 
 {% block content %}
-    <div class="screen-overlay"></div>
-    {% include 'admin_side/sidebar.html'%}
-    <main class="main-wrap">
-        {% include 'admin_side/header.html'%}
-        <section class="content-main">
-            <div class="content-header">
-                <h2 class="content-title">Brand list</h2>
-                <div>
-                    <a href="{% url 'brand_management:add-brand' %}" class="btn btn-primary"><i class="material-icons md-plus"></i> Create new</a>
+<div class="screen-overlay"></div>
+{% include 'admin_side/sidebar.html'%}
+<main class="main-wrap">
+    {% include 'admin_side/header.html'%}
+    <section class="content-main">
+        <div class="content-header">
+            <h2 class="content-title">Brand list</h2>
+            <div>
+                <a href="{% url 'brand_management:add-brand' %}" class="btn btn-primary"><i
+                        class="material-icons md-plus"></i> Create new</a>
+            </div>
+        </div>
+        <div class="card mb-4">
+            <header class="card-header">
+                <div class="row gx-3">
+                    <div class="col-lg-4 col-md-6 me-auto">
+                        <input type="text" placeholder="Search..." class="form-control">
+                    </div>
                 </div>
-            </div>
-            <div class="card mb-4">
-                <header class="card-header">
-                    <div class="row gx-3">
-                        <div class="col-lg-4 col-md-6 me-auto">
-                            <input type="text" placeholder="Search..." class="form-control">
-                        </div>
-                        <div class="col-lg-2 col-md-3 col-6">
-                            <select class="form-select">
-                                <option>Status</option>
-                                <option>Active</option>
-                                <option>Disabled</option>
-                                <option>Show all</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-2 col-md-3 col-6">
-                            <select class="form-select">
-                                <option>Show 20</option>
-                                <option>Show 30</option>
-                                <option>Show 40</option>
-                            </select>
-                        </div>
-                    </div>
-                </header> <!-- card-header end// -->
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <!-- message  -->
+            </header> <!-- card-header end// -->
+            <div class="card-body">
+                <div class="table-responsive">
+                    <!-- message  -->
                     {% for message in messages %}
-                        {% if message.tags == 'success' %}
-                            <p class="alert alert-success">{{ message }}</p>
-                        {% elif message.tags == 'error' %}
-                            <p class="alert alert-danger">{{ message }}</p>
-                        {% elif message.tags == 'warning' %}
-                            <p class="alert alert-warning">{{ message }}</p>
-                        {% else %}
-                         <p>{{ message }}</p>
-                        {% endif %}
+                    {% if message.tags == 'success' %}
+                    <p class="alert alert-success">{{ message }}</p>
+                    {% elif message.tags == 'error' %}
+                    <p class="alert alert-danger">{{ message }}</p>
+                    {% elif message.tags == 'warning' %}
+                    <p class="alert alert-warning">{{ message }}</p>
+                    {% else %}
+                    <p>{{ message }}</p>
+                    {% endif %}
                     {% endfor %}
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Brand Name</th>
-                                        <th>Brand Image</th>
-                                        <th>Status</th>
-                                    <th class="text-end"> Action </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for brand in brands %}
-                                <tr>
-                                  <td width="10%">{{ brand.id }}</td>
-                                    <td width="30%">
-                                        <div class="info pl-3">
-                                            <h6 class="mb-0 title">{{ brand.brand_name }}</h6>
-                                        </div>
-                                    </td>
-                                    <td>
-                                    {% if brand.brand_image %}
-                                        <div class="left">
-                                            <img src="{{ brand.brand_image.url }}" class="img-sm img-avatar" alt="{{ brand.brand_name }}" width="50">
-                                        </div>
-                                    {% else %}
-                                      No image available
-                                    {% endif %}
-                                  </td>
-                                  <td>
-                                    {% if brand.status %}
-                                      <span class="badge rounded-pill alert-success">Active</span>
-                                    {% else %}
-                                      <span class="badge rounded-pill alert-danger">Inactive</span>
-                                    {% endif %}
-                                  </td>
-                                  <td class="text-end">
-                                    <div class="btn-group" role="group">
-                                        <form method="POST" action="{% url 'brand_management:edit-brand' brand.id %}" >
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-light rounded btn-sm font-sm me-3">Edit</button>
-                                        </form>
-                                        
-                                        <form method="POST" action="{% url 'brand_management:delete-brand' brand.id %}" class="delete-form">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger rounded btn-sm font-sm delete-btn">Delete</button>
-                                        </form>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                            <tr>
+                                <th>ID</th>
+                                <th>Brand Name</th>
+                                <th>Brand Image</th>
+                                <th>Status</th>
+                                <th class="text-end"> Action </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for brand in brands %}
+                            <tr>
+                                <td width="10%">{{ brand.id }}</td>
+                                <td width="30%">
+                                    <div class="info pl-3">
+                                        <h6 class="mb-0 title">{{ brand.brand_name }}</h6>
                                     </div>
-                                  </td>
-                                </tr>
-                              {% endfor %}
-                            </tbody>
-                        </table> <!-- table-responsive.// -->
-                    </div>
-                </div> <!-- card-body end// -->
-            </div> <!-- card end// -->
-            <div class="pagination-area mt-15 mb-50">
-                <nav aria-label="Page navigation example">
-                    <ul class="pagination justify-content-start">
-                        <li class="page-item active"><a class="page-link" href="#">01</a></li>
-                        <li class="page-item"><a class="page-link" href="#">02</a></li>
-                        <li class="page-item"><a class="page-link" href="#">03</a></li>
-                        <li class="page-item"><a class="page-link dot" href="#">...</a></li>
-                        <li class="page-item"><a class="page-link" href="#">16</a></li>
-                        <li class="page-item"><a class="page-link" href="#"><i class="material-icons md-chevron_right"></i></a></li>
-                    </ul>
-                </nav>
-            </div>
-        </section> <!-- content-main end// -->
-<!-- CSRF Token Meta Tag -->
-<meta name="csrf-token" content="{{ csrf_token }}">
+                                </td>
+                                <td>
+                                    {% if brand.brand_image %}
+                                    <div class="left">
+                                        <img src="{{ brand.brand_image.url }}" class="img-sm img-avatar"
+                                            alt="{{ brand.brand_name }}" width="50">
+                                    </div>
+                                    {% else %}
+                                    No image available
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if brand.is_deleted %}
+                                    <span class="badge rounded-pill alert-danger">Deleted</span>
+                                    {% elif brand.status %}
+                                    <span class="badge rounded-pill alert-success">Active</span>
+                                    {% else %}
+                                    <span class="badge rounded-pill alert-warning">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group" role="group">
+                                        {% if brand.is_deleted %}
+                                        <!-- Show Restore button only for deleted items -->
+                                        <form method="POST"
+                                            action="{% url 'brand_management:restore-brand' brand.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                class="btn btn-success rounded btn-sm font-sm">Restore</button>
+                                        </form>
+                                        {% else %}
+                                        <!-- Show Edit and Delete buttons for non-deleted items -->
+                                        <form method="POST" action="{% url 'brand_management:edit-brand' brand.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                class="btn btn-light rounded btn-sm font-sm me-3">Edit</button>
+                                        </form>
 
-<!-- JavaScript for delete confirmation with SweetAlert -->
-<!-- JavaScript for delete confirmation with SweetAlert -->
-<script>
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+                                        <form method="POST" action="{% url 'brand_management:delete-brand' brand.id %}"
+                                            class="delete-form">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                class="btn btn-danger rounded btn-sm font-sm delete-btn">Delete</button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table> <!-- table-responsive.// -->
+                </div>
+            </div> <!-- card-body end// -->
+        </div> <!-- card end// -->
+        {% comment %} <div class="pagination-area mt-15 mb-50">
+            <nav aria-label="Page navigation example">
+                <ul class="pagination justify-content-start">
+                    <li class="page-item active"><a class="page-link" href="#">01</a></li>
+                    <li class="page-item"><a class="page-link" href="#">02</a></li>
+                    <li class="page-item"><a class="page-link" href="#">03</a></li>
+                    <li class="page-item"><a class="page-link dot" href="#">...</a></li>
+                    <li class="page-item"><a class="page-link" href="#">16</a></li>
+                    <li class="page-item"><a class="page-link" href="#"><i
+                                class="material-icons md-chevron_right"></i></a></li>
+                </ul>
+            </nav>
+        </div> {% endcomment %}
+    </section> <!-- content-main end// -->
+    <!-- CSRF Token Meta Tag -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
             }
+            return cookieValue;
         }
-        return cookieValue;
-    }
+        const csrftoken = getCookie('csrftoken') || document.querySelector('meta[name="csrf-token"]').content;
 
-    const csrftoken = getCookie('csrftoken') || document.querySelector('meta[name="csrf-token"]').content;
+        function confirmDelete(brandId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/brand/delete/${brandId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(response => {
+                        if (response.ok) {
+                            Swal.fire(
+                                'Deleted!',
+                                'Your brand has been deleted.',
+                                'success'
+                            ).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire(
+                                'Error!',
+                                'There was a problem deleting the brand.',
+                                'error'
+                            );
+                        }
+                    });
+                }
+            });
+        }
+    </script>
 
-    function confirmDelete(brandId) {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`/brand/delete/${brandId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrftoken,
-                        'Content-Type': 'application/json'
-                    }
-                }).then(response => {
-                    if (response.ok) {
-                        Swal.fire(
-                            'Deleted!',
-                            'Your brand has been deleted.',
-                            'success'
-                        ).then(() => {
-                            window.location.reload();
-                        });
-                    } else {
-                        Swal.fire(
-                            'Error!',
-                            'There was a problem deleting the brand.',
-                            'error'
-                        );
-                    }
-                });
-            }
-        });
-    }
-</script>
-
-{% endblock content %}
+    {% endblock content %}

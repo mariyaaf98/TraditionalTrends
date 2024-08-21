@@ -25,7 +25,7 @@ def variant_images_view(request, variant_id):
         return JsonResponse({'error': 'Variant not found'}, status=404)
     
 
-@login_required
+@login_required(login_url='/login/')
 def add_address(request):
 
     addresses = Address.objects.filter(user=request.user)
@@ -71,7 +71,7 @@ def add_address(request):
     return render(request, 'user_side/address_form.html', {'addresses': addresses})
 
 
-@login_required
+@login_required(login_url='/login/')
 def edit_address(request, address_id):
 
     address = get_object_or_404(Address, id=address_id, user=request.user)
@@ -121,7 +121,7 @@ def edit_address(request, address_id):
 
     return render(request, 'user_side/edit_address.html', {'address': address})
 
-@login_required
+@login_required(login_url='/login/')
 def delete_address(request, address_id):
     address = get_object_or_404(Address, id=address_id)
     address.delete()
@@ -159,7 +159,7 @@ def product_details(request, product_id):
     }
     return render(request, 'user_side/product_details.html', context)
 
-@login_required
+@login_required(login_url='/login/')
 def add_review(request, product_id):
     product = get_object_or_404(Products, id=product_id)
     rating = request.POST.get('rating')
@@ -187,7 +187,6 @@ def add_review(request, product_id):
 
 
 
-@login_required
 def shop_list(request):
     products = Products.objects.filter(Q(is_deleted=False) & Q(is_active=True))
     categories = Category.objects.filter(Q(is_deleted=False) & Q(is_available=True))
@@ -261,7 +260,6 @@ def shop_list(request):
 
 
 
-@login_required
 def product_list_by_category(request, category_id=None):
     # Fetch available categories
     categories = Category.objects.filter(Q(is_deleted=False) & Q(is_available=True))
@@ -316,12 +314,12 @@ def product_list_by_category(request, category_id=None):
 
     return render(request, 'user_side/shop_list.html', context)
 
-@login_required
+@login_required(login_url='/login/')
 def user_profile(request):
     return render(request, 'user_side/user_profile.html')
 
 
-@login_required
+@login_required(login_url='/login/')
 def edit_user_profile(request):
     password_form = PasswordChangeForm(user=request.user)
     
@@ -381,7 +379,3 @@ def edit_user_profile(request):
                 messages.error(request, 'Please correct the error below.')
     
     return render(request, 'user_side/edit_user_profile.html', {'password_form': password_form})
-    
-
-
-

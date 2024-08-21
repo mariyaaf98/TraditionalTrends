@@ -9,20 +9,12 @@
 </head>
 <body>
     {% include 'user_side/header.html'%}
+
     {% block content %}
-
-
-
-
 
     {% endblock content %}
 
     {% include 'user_side/footer.html' %}
     {% include 'user_side/scripts.html' %}
-    <!-- Include your custom JavaScript -->
-    <script src="{% static 'user_side/js/update_counts.js' %}"></script>
-    {% block extra_js %}
-    
-    {% endblock %}
 </body>
 </html>
