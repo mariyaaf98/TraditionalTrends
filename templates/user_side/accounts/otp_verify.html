@@ -2,28 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify OTP</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    
 </head>
 <body>
-    <div class="container">
-        <h1>Verify OTP</h1>
-        <form method="post" id="otp-form">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="otp">Enter OTP:</label>
-                <input type="text" id="otp" name="entered_otp" class="form-control" required>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h1 class="card-title text-center h4 mb-4">Verify OTP</h1>
+                        <form method="post" id="otp-form">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="otp" class="font-weight-bold">Enter OTP:</label>
+                                <input type="text" id="otp" name="entered_otp" class="form-control" placeholder="Enter your OTP" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Verify</button>
+                        </form>
+                        <p class="text-center mt-3">Time remaining: <span id="timer" class="font-weight-bold text-danger"></span></p>
+                        <div id="expired-message" class="text-center mt-3" style="display: none;">
+                            <p class="text-danger font-weight-bold">Your OTP has expired. Please <a href="{% url 'accounts:resend_otp' %}" class="btn btn-link p-0">resend OTP</a>.</p>
+                        </div>
+                        {% for message in messages %}
+                            <div class="alert alert-warning mt-3">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Verify</button>
-        </form>
-        <p>Time remaining: <span id="timer"></span></p>
-        <div id="expired-message" style="display: none;">
-            <p>Your OTP has expired. Please <a href="{% url 'accounts:resend_otp' %}" class="btn btn-primary">resend OTP</a>.</p>
         </div>
-        {% for message in messages %}
-            <div class="alert alert-warning">{{ message }}</div>
-        {% endfor %}
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {

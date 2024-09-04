@@ -13,14 +13,11 @@
                 <h2 class="content-title card-title">Dashboard</h2>
                 <p>Comprehensive overview of your business</p>
             </div>
-            <div>
-                <a href="{% url 'admin_panel:sales-report'%}" class="btn btn-primary"><i class="material-icons md-post_add"></i>Create report</a>
-            </div>
         </div>
         
         <!-- Statistics Cards -->
         <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">
                 <div class="card card-body mb-4">
                     <article class="icontext">
                         <span class="icon icon-sm rounded-circle bg-success-light"><i class="text-success material-icons md-local_shipping"></i></span>
@@ -32,7 +29,7 @@
                     </article>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">
                 <div class="card card-body mb-4">
                     <article class="icontext">
                         <span class="icon icon-sm rounded-circle bg-warning-light"><i class="text-warning material-icons md-qr_code"></i></span>
@@ -44,29 +41,74 @@
                     </article>
                 </div>
             </div>
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6">
+                <div class="card card-body mb-4">
+                    <article class="icontext">
+                        <span class="icon icon-sm rounded-circle bg-info-light"><i class="text-info material-icons md-monetization_on"></i></span>
+                        <div class="text">
+                            <h6 class="mb-1 card-title">Total Revenue</h6>
+                            <span>₹{{ total_revenue }}</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
         </div>
 
-        <!-- Sales Report -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Sales Report</h5>
-                <div class="row">
-                    <div class="col-md-8">
-                        <canvas id="salesChart" height="200"></canvas>
-                    </div>
-                    <div class="col-md-4">
-                        <ul class="list-group">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                Total Sales
-                                <span class="badge bg-primary rounded-pill">₹{{ total_sales }}</span>
+        <!-- Sales Reports -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Sales Reports</h5>
+                        <ul class="nav nav-tabs mb-3" id="salesTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily" type="button" role="tab" aria-controls="daily" aria-selected="true">Daily</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab" aria-controls="monthly" aria-selected="false">Monthly</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="yearly-tab" data-bs-toggle="tab" data-bs-target="#yearly" type="button" role="tab" aria-controls="yearly" aria-selected="false">Yearly</button>
                             </li>
                         </ul>
+                        <div class="tab-content" id="salesTabsContent">
+                            <div class="tab-pane fade show active" id="daily" role="tabpanel" aria-labelledby="daily-tab">
+                                <canvas id="dailySalesChart" height="200"></canvas>
+                            </div>
+                            <div class="tab-pane fade" id="monthly" role="tabpanel" aria-labelledby="monthly-tab">
+                                <canvas id="monthlySalesChart" height="200"></canvas>
+                            </div>
+                            <div class="tab-pane fade" id="yearly" role="tabpanel" aria-labelledby="yearly-tab">
+                                <canvas id="yearlySalesChart" height="200"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Additional Charts -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Top 5 Categories</h5>
+                        <canvas id="categoriesChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Top 5 Brands</h5>
+                        <canvas id="brandsChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Top Selling Items -->
-        <div class="row">
+        <div class="row mb-4">
             <!-- Best Selling Products -->
             <div class="col-12 col-xl-4 mb-4">
                 <div class="card h-100">
@@ -123,7 +165,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Best Selling Brands -->
             <div class="col-12 col-xl-4 mb-4">
                 <div class="card h-100">
@@ -143,7 +184,7 @@
                                     {% for brand in best_selling_brands %}
                                     <tr>
                                         <td>{{ brand.variant__product__product_brand__brand_name }}</td>
-                                        <td>{{ brand.total_sold }}</td>
+                                            <td>{{ brand.total_sold }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -152,8 +193,9 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Latest Orders Table -->
+        <!-- Latest Orders Table -->
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Latest Orders</h5>
@@ -185,21 +227,20 @@
                 </div>
             </div>
         </div>
-
     </section>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Sales Chart
-    var ctx = document.getElementById('salesChart').getContext('2d');
-    var salesChart = new Chart(ctx, {
+    // Daily Sales Chart
+    var ctxDaily = document.getElementById('dailySalesChart').getContext('2d');
+    var dailySalesChart = new Chart(ctxDaily, {
         type: 'line',
         data: {
-            labels: {{ sales_labels|safe }},
+            labels: {{ daily_sales_labels|safe }},
             datasets: [{
-                label: 'Sales',
-                data: {{ sales_data }},
+                label: 'Daily Sales',
+                data: {{ daily_sales_data|safe }},
                 borderColor: 'rgb(75, 192, 192)',
                 tension: 0.1
             }]
@@ -209,6 +250,108 @@
             scales: {
                 y: {
                     beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Monthly Sales Chart
+    var ctxMonthly = document.getElementById('monthlySalesChart').getContext('2d');
+    var monthlySalesChart = new Chart(ctxMonthly, {
+        type: 'bar',
+        data: {
+            labels: {{ monthly_sales_labels|safe }},
+            datasets: [{
+                label: 'Monthly Sales',
+                data: {{ monthly_sales_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Yearly Sales Chart
+    var ctxYearly = document.getElementById('yearlySalesChart').getContext('2d');
+    var yearlySalesChart = new Chart(ctxYearly, {
+        type: 'bar',
+        data: {
+            labels: {{ yearly_sales_labels|safe }},
+            datasets: [{
+                label: 'Yearly Sales',
+                data: {{ yearly_sales_data|safe }},
+                backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                borderColor: 'rgb(255, 159, 64)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Categories Chart
+    var ctxCategories = document.getElementById('categoriesChart').getContext('2d');
+    var categoriesChart = new Chart(ctxCategories, {
+        type: 'pie',
+        data: {
+            labels: {{ top_categories_labels|safe }},
+            datasets: [{
+                data: {{ top_categories_data|safe }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+
+    // Brands Chart
+    var ctxBrands = document.getElementById('brandsChart').getContext('2d');
+    var brandsChart = new Chart(ctxBrands, {
+        type: 'doughnut',
+        data: {
+            labels: {{ top_brands_labels|safe }},
+            datasets: [{
+                data: {{ top_brands_data|safe }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
                 }
             }
         }

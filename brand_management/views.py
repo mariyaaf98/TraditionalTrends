@@ -2,6 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Brand
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.core.files.uploadedfile import UploadedFile
+from django.core.exceptions import ValidationError
+from django.utils.datastructures import MultiValueDictKeyError
 
 @login_required(login_url='/admin-panel/login/')
 def add_brand(request):
@@ -13,7 +17,7 @@ def add_brand(request):
         brand_image = request.FILES.get('brand_image')
         status = request.POST.get('status') == 'on'
 
-        # validate all feids
+        # Validate all fields
         if not brand_name:
             messages.warning(request, 'Brand Name Cannot Be Empty')
             return redirect('brand_management:add-brand')
@@ -25,6 +29,12 @@ def add_brand(request):
         if not brand_name.replace(" ", "").isalpha():
             messages.warning(request, 'Brand Name Should Only Contain Alphabetical Characters')
             return redirect('brand_management:add-brand')
+
+        # Validate image file
+        if isinstance(brand_image, UploadedFile):
+            if not brand_image.content_type.startswith('image/'):
+                messages.warning(request, 'Invalid File Type. Only images are allowed.')
+                return redirect('brand_management:add-brand')
 
         try:
             if Brand.objects.filter(brand_name=brand_name).exists():
@@ -48,7 +58,13 @@ def brand_list(request):
         return redirect('admin_panel:admin_login')  
 
     brands = Brand.objects.all().order_by("id")
-    return render(request, 'admin_side/brand_list.html', {"brands": brands})
+    
+    # Pagination
+    paginator = Paginator(brands, 8)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'admin_side/brand_list.html', {"page_obj": page_obj})
 
 @login_required(login_url='/admin-panel/login/')
 def edit_brand(request, brand_id):
@@ -62,6 +78,7 @@ def edit_brand(request, brand_id):
         brand_image = request.FILES.get('brand_image')
         status = request.POST.get('status') == 'on'
 
+        # Validate the brand name
         if not brand_name:
             messages.warning(request, 'Brand Name Cannot Be Empty')
             return redirect('brand_management:edit-brand', brand_id=brand_id)
@@ -69,6 +86,12 @@ def edit_brand(request, brand_id):
         if not brand_name.replace(" ", "").isalpha():
             messages.warning(request, 'Brand Name Should Only Contain Alphabetical Characters')
             return redirect('brand_management:edit-brand', brand_id=brand_id)
+
+        # Validate the image file if provided
+        if brand_image:
+            if not isinstance(brand_image, UploadedFile) or not brand_image.content_type.startswith('image/'):
+                messages.warning(request, 'Invalid File Type. Only images are allowed.')
+                return redirect('brand_management:edit-brand', brand_id=brand_id)
         
         try:
             brand.brand_name = brand_name

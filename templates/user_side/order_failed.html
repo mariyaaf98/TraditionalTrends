@@ -1,26 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Payment Failed</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-5">
-        <div class="text-center">
-            <h1 class="display-4 text-danger">Payment Failed</h1>
-            <p class="lead">Unfortunately, your payment could not be processed.</p>
-            <p>Please try again or choose a different payment method.</p>
+{% extends 'user_side/base.html' %}
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white text-center">
+                    <h3>Order Failed</h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-center">Unfortunately, your order could not be completed successfully. Please review the details below and try again.</p>
+                    
+                    <!-- Order Details -->
+                    <div class="order-details my-4">
+                        <h5 class="text-center">Order Details</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item"><strong>Order ID:</strong> {{ order.order_id }}</li>
+                            <li class="list-group-item"><strong>Order Date:</strong> {{ order.date|date:"d M Y, H:i" }}</li>
+                            <li class="list-group-item"><strong>Total Amount:</strong> ₹{{ order.total_amount }}</li>
+                            <li class="list-group-item"><strong>Payment Status:</strong> Failed</li>
+                        </ul>
+                    </div>
 
-            <div class="mt-4">
-                <a href="{% url 'cart_management:checkout' %}" class="btn btn-primary">Try Again</a>
-                <a href="{% url 'cart_management:cart' %}" class="btn btn-secondary">View Cart</a>
+                    {% if razorpay_payment %}
+                        <!-- Retry Payment -->
+                        <div class="text-center my-4">
+                            <h4 class="text-center">Retry Payment</h4>
+                            <form action="{{ razorpay_payment.callback_url }}" method="POST" class="d-inline-block">
+                                <script
+                                    src="https://checkout.razorpay.com/v1/checkout.js"
+                                    data-key="{{ razorpay_payment.razorpay_key }}"
+                                    data-amount="{{ razorpay_payment.razorpay_amount }}"
+                                    data-currency="{{ razorpay_payment.currency }}"
+                                    data-order_id="{{ razorpay_payment.razorpay_order_id }}"
+                                    data-name="TraditionalTrends"
+                                    data-description="Order Payment">
+                                </script>
+                                <!-- Pay Now Button -->
+                                <button type="submit" class="btn btn-primary btn-lg mt-3">Pay Now</button>
+                            </form>
+
+                        </div>
+                    {% else %}
+                        <p class="text-center text-danger">Unfortunately, there is no retry option available for your order. Please contact support for further assistance.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Bootstrap JS (optional, for any additional interactivity) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<!-- SweetAlert2 Script -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.getElementById('cancel-order-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you really want to cancel this order?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, cancel it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('cancel-order-form').submit();
+            }
+        });
+    });
+</script>
+{% endblock %}

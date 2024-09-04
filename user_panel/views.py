@@ -15,6 +15,10 @@ from django.contrib.auth import update_session_auth_hash
 from .forms import ProductReview
 import re
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from product_management.models import Product_Variant
+from cart_management.models import Cart, CartItem 
+from django.views.decorators.cache import cache_control
+from django.urls import reverse
 
 def variant_images_view(request, variant_id):
     try:
@@ -128,36 +132,42 @@ def delete_address(request, address_id):
     return redirect('user_panel:add-address')
 
 
-
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def product_details(request, product_id):
     product = get_object_or_404(Products, id=product_id)
-
-    variants = Product_Variant.objects.filter(product=product).prefetch_related('images')
+    variants = Product_Variant.objects.filter(product=product, is_deleted=False, variant_status=True).prefetch_related('images')
     selected_variant = variants.first()
     variant_images = selected_variant.images.all() if selected_variant else VariantImage.objects.none()
 
-    # Move selected variant to the beginning of the list
     if selected_variant and selected_variant in variants:
         variants = list(variants)
         variants.remove(selected_variant)
         variants.insert(0, selected_variant)
 
-   # Prepare image URLs for each variant and check stock
     for variant in variants:
         variant.image_urls = [image.image.url for image in variant.images.all()]
         variant.in_stock = variant.variant_stock > 0
+        variant.is_in_cart = False
+        variant.available_stock = variant.variant_stock  # Add this line
+        if request.user.is_authenticated:
+            cart = Cart.objects.filter(user=request.user, is_active=True).first()
+            if cart:
+                variant.is_in_cart = CartItem.objects.filter(cart=cart, variant=variant).exists()
 
     related_products = product.related_products()
+    available_stock = selected_variant.variant_stock if selected_variant else 0
 
-
-    context={
+    context = {
         'product': product,
         'variants': variants,
         'selected_variant': selected_variant,
         'variant_images': variant_images,
         'related_products': related_products,
+        'available_stock': available_stock,
+        'cart_url': reverse('cart_management:cart'),
     }
     return render(request, 'user_side/product_details.html', context)
+
 
 @login_required(login_url='/login/')
 def add_review(request, product_id):
@@ -379,3 +389,7 @@ def edit_user_profile(request):
                 messages.error(request, 'Please correct the error below.')
     
     return render(request, 'user_side/edit_user_profile.html', {'password_form': password_form})
+
+
+def about(request):
+    return render(request,'user_side/about.html')

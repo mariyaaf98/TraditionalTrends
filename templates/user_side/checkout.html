@@ -7,16 +7,16 @@
     <h1 class="h2 mb-4 text-center">Checkout</h1>
 
     <div id="message-container">
-         {% for message in messages %}
-            {% if message.tags == 'success' %}
-                <p class="alert alert-success">{{ message }}</p>
-            {% elif message.tags == 'error' %}
-                <p class="alert alert-danger">{{ message }}</p>
-            {% elif message.tags == 'warning' %}
-                <p class="alert alert-warning">{{ message }}</p>
-            {% else %}
-                <p>{{ message }}</p>
-            {% endif %}
+        {% for message in messages %}
+        {% if message.tags == 'success' %}
+        <p class="alert alert-success">{{ message }}</p>
+        {% elif message.tags == 'error' %}
+        <p class="alert alert-danger">{{ message }}</p>
+        {% elif message.tags == 'warning' %}
+        <p class="alert alert-warning">{{ message }}</p>
+        {% else %}
+        <p>{{ message }}</p>
+        {% endif %}
         {% endfor %}
     </div>
 
@@ -28,16 +28,21 @@
                     <h5 class="card-title mb-4">Cart Items</h5>
                     {% for item in cart_items %}
                     <div class="d-flex mb-3 align-items-center">
-                        <img src="{{ item.variant.images.first.image.url }}" alt="{{ item.variant.product.product_name }}" class="img-thumbnail me-3" style="width: 100px; height: 100px; object-fit: cover;">
+                        <img src="{{ item.variant.images.first.image.url }}"
+                            alt="{{ item.variant.product.product_name }}" class="img-thumbnail me-3"
+                            style="width: 100px; height: 100px; object-fit: cover;">
                         <div class="flex-grow-1">
                             <h6 class="mb-0">{{ item.variant.product.product_name }}</h6>
                             <p class="text-muted mb-0">Colour: {{ item.variant.colour_name }}</p>
                             <p class="text-muted mb-0">Quantity: {{ item.quantity }}</p>
-                            <p class="mb-0">Price: ₹{{ item.variant.product.offer_price }}</p>
+                            <span class="text-muted text-decoration-line-through">Price:
+                                ₹{{ item.variant.product.price }}</span>
+                            <p class="card-text fw-bold">Offer Price: ₹ {{ item.variant.product.offer_price }}</p>
                         </div>
                         <p class="text-danger mb-0 ms-3">Arrives By {{ arrival_date|date:"D, M j, Y" }}</p>
                     </div>
-                    {% if not forloop.last %}<hr>{% endif %}
+                    {% if not forloop.last %}
+                    <hr>{% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -54,8 +59,10 @@
                         Mobile: {{ selected_address.phone_number }}
                     </p>
                     <div class="d-flex justify-content-between mb-3">
-                        <button class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#addressList">Choose Address</button>
-                        <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addAddressForm">Add Address</button>
+                        <button class="btn btn-outline-secondary" data-bs-toggle="collapse"
+                            data-bs-target="#addressList">Choose Address</button>
+                        <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addAddressForm">Add
+                            Address</button>
                     </div>
 
                     <!-- Address List Collapse -->
@@ -64,7 +71,9 @@
                             {% csrf_token %}
                             {% for addr in address_list %}
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="radio" name="address_id" id="address_{{ addr.id }}" value="{{ addr.id }}" {% if addr.id == selected_address.id %}checked{% endif %}>
+                                <input class="form-check-input" type="radio" name="address_id"
+                                    id="address_{{ addr.id }}" value="{{ addr.id }}"
+                                    {% if addr.id == selected_address.id %}checked{% endif %}>
                                 <label class="form-check-label" for="address_{{ addr.id }}">
                                     <p class="mb-0">{{ addr.name }}</p>
                                     <p class="mb-0">{{ addr.house_name }}, {{ addr.street_name }}</p>
@@ -74,7 +83,8 @@
                                 </label>
                             </div>
                             {% endfor %}
-                            <button type="button" class="btn btn-primary btn-sm" onclick="updateDefaultAddress()">Change Address</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="updateDefaultAddress()">Change
+                                Address</button>
                         </form>
                     </div>
 
@@ -93,7 +103,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="street_name" class="form-label">Street Name</label>
-                                    <input type="text" name="street_name" id="street_name" class="form-control" required>
+                                    <input type="text" name="street_name" id="street_name" class="form-control"
+                                        required>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="pin_number" class="form-label">Pin Number</label>
@@ -113,7 +124,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label for="phone_number" class="form-label">Phone Number</label>
-                                    <input type="text" name="phone_number" id="phone_number" class="form-control" required>
+                                    <input type="text" name="phone_number" id="phone_number" class="form-control"
+                                        required>
                                 </div>
                                 <div class="col-12">
                                     <div class="form-check">
@@ -140,20 +152,20 @@
 
                     <div class="d-flex justify-content-between mb-2">
                         <span>Order Total</span>
-                        <span>₹{{ total_price }}</span>
+                        <span>₹{{ original_price }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Delivery Charges</span>
                         <span class="text-success">FREE</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>Coupon Applied</span>
-                        <span id="coupon-discount">₹{{ coupon_discount }}</span>
+                        <span>Coupon Discount</span>
+                        <span id="coupon-discount" class="text-danger">-₹{{ coupon_discount }}</span>
                     </div>
                     <hr>
                     <div class="d-flex justify-content-between">
                         <strong>TOTAL</strong>
-                        <strong id="total-price">₹{{ total_price }}</strong>
+                        <strong id="totalprice">₹{{ total_price }}</strong>
                     </div>
                 </div>
             </div>
@@ -170,7 +182,8 @@
                         </div>
                     </form>
                     <div id="coupon-message"></div>
-                    <button class="btn btn-outline-secondary w-100 mt-2" data-bs-toggle="modal" data-bs-target="#couponsModal">
+                    <button class="btn btn-outline-secondary w-100 mt-2" data-bs-toggle="modal"
+                        data-bs-target="#couponsModal">
                         View Available Coupons
                     </button>
                     <button id="remove-coupon" class="btn btn-outline-secondary w-100 mt-2">Remove Coupon</button>
@@ -179,23 +192,24 @@
 
             <!-- Payment Method -->
             <div class="card mb-4 shadow-sm">
-    <div class="card-body">
-        <h5 class="card-title mb-3">Payment Method</h5>
-        <form method="post" action="{% url 'cart_management:checkout' %}" id="checkout-form">
-            {% csrf_token %}
-            {% for method in payment_methods %}
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="radio" name="payment_method" id="{{ method }}" value="{{ method }}" required>
-                <label class="form-check-label" for="{{ method }}">
-                    {{ method }}
-                </label>
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Payment Method</h5>
+                    <form method="post" action="{% url 'cart_management:checkout' %}" id="checkout-form">
+                        {% csrf_token %}
+                        {% for method in payment_methods %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="payment_method" id="{{ method }}"
+                                value="{{ method }}" required>
+                            <label class="form-check-label" for="{{ method }}">
+                                {{ method }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                        <input type="hidden" name="place_order" value="1">
+                        <button type="submit" class="btn btn-primary w-100 mt-3">Place Order</button>
+                    </form>
+                </div>
             </div>
-            {% endfor %}
-            <input type="hidden" name="place_order" value="1">
-            <button type="submit" class="btn btn-primary w-100 mt-3">Place Order</button>
-        </form>
-    </div>
-</div>
         </div>
     </div>
 </div>
@@ -210,27 +224,29 @@
             </div>
             <div class="modal-body">
                 {% if coupons %}
-                    {% for coupon in coupons %}
-                    <div class="d-flex justify-content-between mb-3">
-                        <div>
-                            <h6 class="mb-1">{{ coupon.code }}</h6>
-                            <p class="mb-0">Discount: {{ coupon.discount }}{% if coupon.is_percentage %}%{% else %}₹{% endif %}</p>
-                            <p class="mb-0">Expires on: {{ coupon.expiration_date|date:"D, M j, Y" }}</p>
-                        </div>
-                        <div>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="applyCoupon('{{ coupon.code }}')">Apply</button>
-                        </div>
+                {% for coupon in coupons %}
+                <div class="d-flex justify-content-between mb-3">
+                    <div>
+                        <h6 class="mb-1">{{ coupon.code }}</h6>
+                        <p class="mb-0">Discount:
+                            {{ coupon.discount }}{% if coupon.is_percentage %}%{% else %}₹{% endif %}</p>
+                        <p class="mb-0">Expires on: {{ coupon.expiration_date|date:"D, M j, Y" }}</p>
                     </div>
-                    {% if not forloop.last %}<hr>{% endif %}
-                    {% endfor %}
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm"
+                            onclick="applyCoupon('{{ coupon.code }}')">Apply</button>
+                    </div>
+                </div>
+                {% if not forloop.last %}
+                <hr>{% endif %}
+                {% endfor %}
                 {% else %}
-                    <p>No available coupons at this time.</p>
+                <p>No available coupons at this time.</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
-
 
 <!-- JavaScript to handle apply coupon -->
 
@@ -258,26 +274,32 @@
                     })
                 })
                 .then(response => {
-    if (!response.ok) {
-        return response.text().then(text => { throw new Error(text); });
-    }
-    return response.json();
-})
-.then(data => {
-    if (data.status === 'success') {
-        document.getElementById('coupon-discount').textContent = '₹' + data.discount;
-        document.getElementById('total-price').textContent = '₹' + data.new_total;
-        couponMessage.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
-    } else {
-        couponMessage.innerHTML = '<div class="alert alert-danger">' + data.message + '</div>';
-    }
-})
-.catch(error => {
-    console.error('Error:', error);
-    couponMessage.innerHTML =
-        '<div class="alert alert-danger">An error occurred while applying the coupon. ' + error.message + '</div>';
-});
-
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(text);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('New total:', data.new_total);
+                        document.getElementById('coupon-discount').textContent = '₹' + data
+                        .discount;
+                        document.getElementById('totalprice').textContent = '₹' + data.new_total;
+                        couponMessage.innerHTML = '<div class="alert alert-success">' + data
+                            .message + '</div>';
+                    } else {
+                        couponMessage.innerHTML = '<div class="alert alert-danger">' + data
+                            .message + '</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    couponMessage.innerHTML =
+                        '<div class="alert alert-danger">An error occurred while applying the coupon. ' +
+                        error.message + '</div>';
+                });
         });
     });
 </script>
@@ -285,40 +307,44 @@
 <!-- JavaScript to handle remove coupon -->
 
 <script>
-    document.getElementById('remove-coupon').addEventListener('click', function() {
-    fetch("{% url 'coupon_management:remove-coupon' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // Update the UI to reflect the original cart total
-                document.getElementById('coupon-discount').textContent = '₹0';
-                document.getElementById('total-price').textContent = '₹' + data.new_total;
-                document.getElementById('coupon-message').innerHTML =
-                    '<div class="alert alert-success">' + data.message + '</div>';
-            } else {
-                document.getElementById('coupon-message').innerHTML =
-                    '<div class="alert alert-danger">' + data.message + '</div>';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('coupon-message').innerHTML =
-                '<div class="alert alert-danger">An error occurred while removing the coupon.</div>';
-        });
+    document.addEventListener('DOMContentLoaded', function() {
+    const removeCouponButton = document.getElementById('remove-coupon');
+    const couponMessage = document.getElementById('coupon-message');
+    const couponDiscountElement = document.getElementById('coupon-discount');
+    
+    removeCouponButton.addEventListener('click', function() {
+        // Check if a coupon is applied (e.g., if the discount is non-zero)
+        if (parseFloat(couponDiscountElement.textContent.replace('₹', '')) > 0) {
+            fetch("{% url 'coupon_management:remove-coupon' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Update the UI to reflect the original cart total
+                        couponDiscountElement.textContent = '₹0';
+                        document.getElementById('totalprice').textContent = '₹' + data.new_total;
+                        couponMessage.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+                    } else {
+                        couponMessage.innerHTML = '<div class="alert alert-danger">' + data.message + '</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    couponMessage.innerHTML = '<div class="alert alert-danger">An error occurred while removing the coupon.</div>';
+                });
+        } else {
+            couponMessage.innerHTML = '<div class="alert alert-info">No coupon is applied to remove.</div>';
+        }
+    });
 });
 
+
 </script>
-
-
-
-
-
 
 <!-- JavaScript to handle address change -->
 <script>
@@ -354,28 +380,26 @@
     }
 </script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const checkoutForm = document.getElementById('checkout-form');
-    checkoutForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        
-        // Check if an address is selected
-        const selectedAddress = document.querySelector('input[name="address_id"]:checked');
-        if (!selectedAddress) {
-            alert('Please select a delivery address.');
-            return;
-        }
-        
-        // Check if a payment method is selected
-        const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked');
-        if (!selectedPaymentMethod) {
-            alert('Please select a payment method.');
-            return;
-        }
-        
-        // If all checks pass, submit the form
-        this.submit();
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkoutForm = document.getElementById('checkout-form');
+        checkoutForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            // Check if an address is selected
+            const selectedAddress = document.querySelector('input[name="address_id"]:checked');
+            if (!selectedAddress) {
+                alert('Please select a delivery address.');
+                return;
+            }
+            // Check if a payment method is selected
+            const selectedPaymentMethod = document.querySelector(
+            'input[name="payment_method"]:checked');
+            if (!selectedPaymentMethod) {
+                alert('Please select a payment method.');
+                return;
+            }
+            // If all checks pass, submit the form
+            this.submit();
+        });
     });
-});
 </script>
 {% endblock %}

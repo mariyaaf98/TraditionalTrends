@@ -3,10 +3,10 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib import messages
 import random
-from product_management.models import Products,Product_images
+from product_management.models import Products
 from category_management.models import Category
 from brand_management.models import Brand
-from .forms import RegisterForm, LoginForm,PasswordResetRequestForm,CustomPasswordChangeForm
+from .forms import RegisterForm, LoginForm,CustomPasswordChangeForm
 from .models import User
 from django.contrib.auth import authenticate, login, logout
 from django.utils import timezone
@@ -20,6 +20,9 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.urls import reverse
 from django.contrib.auth import update_session_auth_hash
+from django.core.mail import send_mail
+from smtplib import SMTPException
+
 
 # Generate a random OTP
 def generate_otp():
@@ -54,30 +57,61 @@ def user_login(request):
 
 
 
+# def user_register(request):
+#     if request.method == 'POST':
+#         form = RegisterForm(request.POST)
+#         if form.is_valid():
+#             user = form.save(commit=False)
+#             user.is_active = False 
+
+#             otp = generate_otp()
+#             send_mail(
+#                 "Your OTP Code",
+#                 f"Your OTP code is {otp}",
+#                 settings.DEFAULT_FROM_EMAIL,
+#                 [user.email],
+#             )
+#             # Store the OTP in the session
+#             request.session['otp'] = str(otp)
+#             request.session['user_data'] = form.cleaned_data
+#             request.session['otp_creation_time'] = timezone.now().isoformat()
+#             return redirect('accounts:verify_otp')
+#     else:
+#         form = RegisterForm()
+#     return render(request, 'user_side/accounts/register.html', {'form': form})
+
 def user_register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False 
+            user.is_active = False  # Set user as inactive until they verify the OTP
 
             otp = generate_otp()
-            send_mail(
-                "Your OTP Code",
-                f"Your OTP code is {otp}",
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-            )
-            # Store the OTP in the session
-            request.session['otp'] = str(otp)
-            request.session['user_data'] = form.cleaned_data
-            request.session['otp_creation_time'] = timezone.now().isoformat()
-            return redirect('accounts:verify_otp')
+
+            try:
+                # Attempt to send the OTP email
+                send_mail(
+                    "Your OTP Code",
+                    f"Your OTP code is {otp}",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                )
+                # Store the OTP and user data in the session
+                request.session['otp'] = str(otp)
+                request.session['user_data'] = form.cleaned_data
+                request.session['otp_creation_time'] = timezone.now().isoformat()
+                return redirect('accounts:verify_otp')
+
+            except SMTPException as e:
+                # Handle the SMTP error gracefully
+                messages.error(request, "There was an error sending the OTP. Please try again later or use a valid email address.")
+                print(f"SMTP error: {e}")
+                
     else:
         form = RegisterForm()
+
     return render(request, 'user_side/accounts/register.html', {'form': form})
-
-
 
 def verify_otp(request):
     otp_creation_time = request.session.get('otp_creation_time')
@@ -122,7 +156,7 @@ def verify_otp(request):
             request.session.pop('otp', None)
             request.session.pop('otp_creation_time', None)
             request.session.pop('user_data', None)
-            return redirect('accounts:home')
+            return redirect('accounts:user_login')
         else:
             messages.error(request, 'Invalid OTP')
     

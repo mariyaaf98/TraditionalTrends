@@ -1,47 +1,6 @@
 ﻿{% extends 'user_side/base.html'%}
 {% load static %}
 {% block content %}
-<div class="mobile-header-active mobile-header-wrapper-style">
-    <div class="mobile-header-wrapper-inner">
-        <div class="mobile-header-top">
-            <div class="mobile-header-logo">
-                <a href="index.html"><img src="{% static 'user_side/assets/imgs/theme/logo.svg' %}" alt="logo"></a>
-            </div>
-            <div class="mobile-menu-close close-style-wrap close-style-position-inherit">
-                <button class="close-style search-close">
-                    <i class="icon-top"></i>
-                    <i class="icon-bottom"></i>
-                </button>
-            </div>
-        </div>
-        <div class="mobile-header-content-area">
-            <div class="mobile-search search-style-3 mobile-header-border">
-                <form action="#">
-                    <input type="text" placeholder="Search for items…">
-                    <button type="submit"><i class="fi-rs-search"></i></button>
-                </form>
-            </div>
-            <div class="mobile-menu-wrap mobile-header-border">
-                <div class="main-categori-wrap mobile-header-border">
-                    <a class="categori-button-active-2" href="#">
-                        <span class="fi-rs-apps"></span> Browse Categories
-                    </a>
-                </div>
-            </div>
-            <div class="mobile-header-info-wrap mobile-header-border">
-                <div class="single-mobile-header-info mt-30">
-                    <a href="page-contact.html"> Our location </a>
-                </div>
-                <div class="single-mobile-header-info">
-                    <a href="page-login-register.html">Log In / Sign Up </a>
-                </div>
-                <div class="single-mobile-header-info">
-                    <a href="#">(+01) - 2345 - 6789 </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 <main class="main">
     <div class="page-header breadcrumb-wrap">
         <div class="container">
@@ -105,13 +64,23 @@
                                         </a>
                                     </div>
                                     <div class="product-action-1">
-                                        <a aria-label="Quick view" class="action-btn hover-up" data-bs-toggle="modal"
-                                            data-bs-target="#quickViewModal">
-                                            <i class="fi-rs-search"></i></a>
-                                        <a aria-label="Add To Wishlist" class="action-btn hover-up"
-                                            href="shop-wishlist.html"><i class="fi-rs-heart"></i></a>
-                                        <a aria-label="Compare" class="action-btn hover-up" href="shop-compare.html"><i
-                                                class="fi-rs-shuffle"></i></a>
+                                         <a aria-label="View Details" class="action-btn hover-up"
+                                            href="{% url 'user_panel:product-details' product.id %}">
+                                            <i class="fi-rs-search"></i>
+                                        </a>
+                                        <form action="{% url 'wishlist:add-to-wishlist' product.id %}" method="post"
+                                            style="display:inline;">
+                                            {% csrf_token %}
+                                            {% with first_variant=product.product_variant_set.first %}
+                                            {% if first_variant %}
+                                            <input type="hidden" name="variant_id" value="{{ first_variant.id }}">
+                                            <button type="submit" class="action-btn hover-up rounded-circle p-1"
+                                                aria-label="Add To Wishlist">
+                                                <i class="fi-rs-heart"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% endwith %}
+                                        </form>
                                     </div>
                                 </div>
                                 <div class="product-content-wrap">
@@ -128,19 +97,15 @@
                                         <span>₹{{ product.offer_price }} </span>
                                         <span class="old-price">₹{{ product.price }}</span>
                                     </div>
-                                    <div class="product-action-1 show">
-                                        <a aria-label="Add To Cart" class="action-btn hover-up" href="shop-cart.html"><i
-                                                class="fi-rs-shopping-bag-add"></i></a>
-                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
                         {% empty %}
                         <p>No results found.</p>
                         {% endfor %}
-
                     </div>
-
+                    
                     <!--pagination-->
                     <div class="pagination-area mt-15 mb-sm-5 mb-lg-0">
                         <nav aria-label="Page navigation example">
@@ -154,7 +119,6 @@
                                     </a>
                                 </li>
                                 {% endif %}
-
                                 {% for num in products.paginator.page_range %}
                                 {% if products.number == num %}
                                 <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
@@ -164,7 +128,6 @@
                                 </li>
                                 {% endif %}
                                 {% endfor %}
-
                                 {% if products.has_next %}
                                 <li class="page-item">
                                     <a class="page-link"
@@ -214,7 +177,6 @@
         </div>
     </section>
 </main>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>

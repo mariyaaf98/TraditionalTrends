@@ -1,12 +1,11 @@
 {% extends 'admin_side/base.html' %}
 {% load static %}
 {% block content %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.26/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 
 {% include 'admin_side/sidebar.html' %}
 <main class="main-wrap">
+{% include 'admin_side/header.html'%}
+<section class="content-main">
     <div class="content-header">
         <div>
             <h2 class="content-title card-title">Sales Report </h2>
@@ -22,23 +21,33 @@
         </div>
     </div>
     <div class="mb-4">
-        <form method="get" action="{% url 'admin_panel:sales-report' %}" class="row g-2">
+        <form method="get" action="{% url 'admin_panel:sales-report' %}" class="row g-2" id="sales-report-form">
+            <div class="col-auto">
+                <select name="report_type" class="form-select" id="report-type">
+                    <option value="daily" {% if report_type == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="monthly" {% if report_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                    <option value="yearly" {% if report_type == 'yearly' %}selected{% endif %}>Yearly</option>
+                </select>
+            </div>
             <div class="col-auto d-flex align-items-center">
                 <h5 class="mb-0">Start Date:</h5>
             </div>
             <div class="col-auto">
-                <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+                <input type="date" name="start_date" id="start-date" class="form-control" value="{{ start_date }}">
             </div>
             <div class="col-auto d-flex align-items-center">
                 <h5 class="mb-0">End Date:</h5>
             </div>
             <div class="col-auto">
-                <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+                <input type="date" name="end_date" id="end-date" class="form-control" value="{{ end_date }}">
             </div>
             <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" class="btn btn-primary" id="search-button">Search</button>
             </div>
         </form>
+        <div id="date-error" class="text-danger mt-2" style="display: none;">
+            End date must be greater than start date.
+        </div>
     </div>
 
     <!-- Table -->
@@ -48,6 +57,11 @@
                 <table class="table" id="sales-table">
                     <thead>
                         <tr>
+                            {% if report_type == 'monthly' %}
+                                <th>Month</th>
+                            {% elif report_type == 'yearly' %}
+                                <th>Year</th>
+                            {% endif %}
                             <th>Date</th>
                             <th>Order ID</th>
                             <th>Customer</th>
@@ -59,6 +73,11 @@
                     <tbody>
                         {% for order in orders %}
                         <tr>
+                            {% if report_type == 'monthly' %}
+                                <td>{{ order.date|date:"F Y" }}</td>
+                            {% elif report_type == 'yearly' %}
+                                <td>{{ order.date|date:"Y" }}</td>
+                            {% endif %}
                             <td>{{ order.date }}</td>
                             <td>{{ order.order_id }}</td>
                             <td>{{ order.user.username }}</td>
@@ -74,7 +93,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6">No orders found</td>
+                            <td colspan="7">No orders found</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -88,14 +107,14 @@
                 {% if page_obj.has_previous %}
                 <li class="page-item">
                     <a class="page-link"
-                        href="?page=1{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}"
+                        href="?page=1{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if report_type %}&report_type={{ report_type }}{% endif %}"
                         aria-label="First">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
                 <li class="page-item">
                     <a class="page-link"
-                        href="?page={{ page_obj.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}"
+                        href="?page={{ page_obj.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if report_type %}&report_type={{ report_type }}{% endif %}"
                         aria-label="Previous">
                         <span aria-hidden="true">&lsaquo;</span>
                     </a>
@@ -107,17 +126,17 @@
                 <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
                 {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
                 <li class="page-item"><a class="page-link"
-                        href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ num }}</a>
+                        href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if report_type %}&report_type={{ report_type }}{% endif %}">{{ num }}</a>
                 </li>
                 {% elif num == 1 %}
                 <li class="page-item"><a class="page-link"
-                        href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ num }}</a>
+                        href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if report_type %}&report_type={{ report_type }}{% endif %}">{{ num }}</a>
                 </li>
                 <li class="page-item"><a class="page-link dot" href="#">...</a></li>
                 {% elif num == page_obj.paginator.num_pages %}
                 <li class="page-item"><a class="page-link dot" href="#">...</a></li>
                 <li class="page-item"><a class="page-link"
-                        href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ num }}</a>
+                        href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if report_type %}&report_type={{ report_type }}{% endif %}">{{ num }}</a>
                 </li>
                 {% endif %}
                 {% endfor %}
@@ -125,14 +144,14 @@
                 {% if page_obj.has_next %}
                 <li class="page-item">
                     <a class="page-link"
-                        href="?page={{ page_obj.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}"
+                        href="?page={{ page_obj.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if report_type %}&report_type={{ report_type }}{% endif %}"
                         aria-label="Next">
                         <span aria-hidden="true">&rsaquo;</span>
                     </a>
                 </li>
                 <li class="page-item">
                     <a class="page-link"
-                        href="?page={{ page_obj.paginator.num_pages }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}"
+                        href="?page={{ page_obj.paginator.num_pages }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if report_type %}&report_type={{ report_type }}{% endif %}"
                         aria-label="Last">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
@@ -141,13 +160,59 @@
             </ul>
         </nav>
     </div>
+</section>
 </main> <!-- main-wrap end// -->
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const reportType = document.getElementById('report-type');
+        const startDate = document.getElementById('start-date');
+        const endDate = document.getElementById('end-date');
+        const form = document.getElementById('sales-report-form');
+        const searchButton = document.getElementById('search-button');
+        const dateError = document.getElementById('date-error');
+
+        function validateDates() {
+            if (startDate.value && endDate.value) {
+                const start = new Date(startDate.value);
+                const end = new Date(endDate.value);
+                if (end <= start) {
+                    dateError.style.display = 'block';
+                    searchButton.disabled = true;
+                    return false;
+                }
+            }
+            dateError.style.display = 'none';
+            searchButton.disabled = false;
+            return true;
+        }
+
+        reportType.addEventListener('change', function() {
+            if (this.value === 'daily') {
+                startDate.type = 'date';
+                endDate.type = 'date';
+            } else if (this.value === 'monthly') {
+                startDate.type = 'month';
+                endDate.type = 'month';
+            } else if (this.value === 'yearly') {
+                startDate.type = 'year';
+                endDate.type = 'year';
+            }
+            validateDates();
+        });
+
+        startDate.addEventListener('change', validateDates);
+        endDate.addEventListener('change', validateDates);
+
+        form.addEventListener('submit', function(e) {
+            if (!validateDates()) {
+                e.preventDefault();
+            }
+        });
+    });
+
     document.getElementById('download-pdf').addEventListener('click', function() {
-        const {
-            jsPDF
-        } = window.jspdf;
+        const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const table = document.getElementById('sales-table');
         doc.text("Sales Report", 20, 20);
@@ -177,6 +242,7 @@
         });
         doc.save('sales_report.pdf');
     });
+
     document.getElementById('download-excel').addEventListener('click', function() {
         const table = document.getElementById('sales-table');
         const ws = XLSX.utils.table_to_sheet(table);

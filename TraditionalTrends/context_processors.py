@@ -27,3 +27,4 @@ def cart_context_processor(request):
         'wishlist_item_count': wishlist_item_count,
         'cart_item_count': cart_item_count,
     }
+

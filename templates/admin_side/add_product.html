@@ -1,4 +1,4 @@
-{% extends 'admin_side/base.html' %}
+Copy{% extends 'admin_side/base.html' %}
 {% load static %}
 {% block content %}
 <div class="screen-overlay"></div>
@@ -66,7 +66,14 @@
                                             <div class="row mb-4">
                                                 <label class="col-lg-3 col-form-label">Offer Price</label>
                                                 <div class="col-lg-4">
-                                                    <input type="text" class="form-control" name="offer_price" value="{{ product_data.offer_price }}">
+                                                    <input type="text" class="form-control" name="offer_price" id="offer_price" value="{{ product_data.offer_price }}">
+                                                </div>
+                                            </div>
+                                            <div class="row mb-4">
+                                                <label class="col-lg-3 col-form-label">Use Percentage</label>
+                                                <div class="col-lg-4">
+                                                    <input type="checkbox" id="use_percentage" name="use_percentage">
+                                                    <input type="number" class="form-control" name="offer_percentage" id="offer_percentage" min="0" max="100" style="display: none;">
                                                 </div>
                                             </div>
                                             <div class="row mb-4">
@@ -81,7 +88,7 @@
                                         </div>
 
                                         <!-- Category Info Section -->
-                                        <div id="category_info" class="section">
+                                        <div id="category_info" class="section" style="display: none;">
                                             <div class="row mb-4">
                                                 <label class="col-lg-4 col-form-label">Product Category</label>
                                                 <div class="col-lg-4">
@@ -107,7 +114,6 @@
                                                 </div>
                                             </div>
                                         </div>
-
 
                                         <!-- Images Section -->
                                         <div id="images" class="section" style="display: none;">
@@ -185,6 +191,21 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     showSection(currentSectionIndex);
+
+    // New code for handling percentage checkbox
+    const usePercentageCheckbox = document.getElementById('use_percentage');
+    const offerPriceInput = document.getElementById('offer_price');
+    const offerPercentageInput = document.getElementById('offer_percentage');
+
+    usePercentageCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            offerPriceInput.style.display = 'none';
+            offerPercentageInput.style.display = 'block';
+        } else {
+            offerPriceInput.style.display = 'block';
+            offerPercentageInput.style.display = 'none';
+        }
+    });
 });
 </script>
 <script>

@@ -2,21 +2,11 @@
 {% load static %}
 {% block content %}
 
-<!-- Bootstrap CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<!-- Custom CSS -->
 <style>
     .product-image-slider img {
         max-height: 400px;
         object-fit: contain;
     }
-
-    .thumbnail-item img {
-        max-height: 100px;
-        object-fit: cover;
-    }
-
     .color-selector {
         width: 30px;
         height: 30px;
@@ -24,7 +14,6 @@
         cursor: pointer;
         position: relative;
     }
-
     .color-selector.active::after {
         content: '\2713';
         position: absolute;
@@ -39,41 +28,34 @@
 <main class="container my-5">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-            <li class="breadcrumb-item"><a href="#">Fashion</a></li>
+            <li class="breadcrumb-item"><a href="{%url 'accounts:home'%}">Home</a></li>
             <li class="breadcrumb-item active" aria-current="page">{{ product.product_name }}</li>
         </ol>
     </nav>
 
     <div class="row">
         <!-- Product Images -->
-        <div class="col-md-6">
+        <div class="col-md-6 mb-4">
             <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
                 <div class="carousel-inner">
                     {% for image in variant_images %}
                     <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                        <img id="myimage-{{ forloop.counter0 }}" src="{{ image.image.url }}" class="d-block w-100"
-                            alt="{{ product.product_name }}">
+                        <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ product.product_name }}">
                     </div>
                     {% endfor %}
                 </div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel"
-                    data-bs-slide="prev">
+                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Previous</span>
                 </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel"
-                    data-bs-slide="next">
+                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Next</span>
                 </button>
             </div>
             <div class="d-flex justify-content-center mt-3">
                 {% for image in variant_images %}
-                <img src="{{ image.image.url }}" class="img-thumbnail mx-1"
-                    style="width: 60px; height: 60px; object-fit: cover;" data-bs-target="#productCarousel"
-                    data-bs-slide-to="{{ forloop.counter0 }}" aria-current="true"
-                    aria-label="Slide {{ forloop.counter }}">
+                <img src="{{ image.image.url }}" class="img-thumbnail mx-1" style="width: 60px; height: 60px; object-fit: cover;" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter0 }}" aria-current="true" aria-label="Slide {{ forloop.counter }}">
                 {% endfor %}
             </div>
         </div>
@@ -98,11 +80,12 @@
                     <label class="form-label">Color</label>
                     <div>
                         {% for variant in variants %}
-                        <button type="button"
-                            class="color-selector btn p-0 me-2 {% if variant.id == selected_variant.id %}active{% endif %}"
-                            data-variant-id="{{ variant.id }}"
-                            data-image-urls="{% for image in variant.images.all %}{{ image.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}"
-                            data-in-stock="{{ variant.in_stock|yesno:'true,false' }}"
+                        <button type="button" class="color-selector btn p-0 me-2 {% if variant.id == selected_variant.id %}active{% endif %}" 
+                            data-variant-id="{{ variant.id }}" 
+                            data-image-urls="{% for image in variant.images.all %}{{ image.image.url }}{% if not forloop.last %},{% endif %}{% endfor %}" 
+                            data-in-stock="{{ variant.in_stock|yesno:'true,false' }}" 
+                            data-available-stock="{{ variant.variant_stock }}"
+                            data-is-in-cart="{{ variant.is_in_cart|yesno:'true,false' }}"
                             style="background-color: {{ variant.colour_code }};">
                         </button>
                         {% endfor %}
@@ -110,12 +93,19 @@
                 </div>
 
                 <div class="mb-3">
+                
                     <label class="form-label">Quantity</label>
-                    <div class="input-group" style="width: 150px;">
-                        <button class="btn btn-outline-secondary qty-down" type="button">-</button>
-                        <input type="text" class="form-control text-center qty-val" value="1" readonly>
-                        <button class="btn btn-outline-secondary qty-up" type="button">+</button>
+                    <div class="input-group input-group-sm" style="width: 130px;">
+                        <button class="btn btn-outline-secondary quantity-minus" type="button">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                        <input type="number" name="quantity" class="form-control text-center quantity-input" value="1" min="1" max="{{ available_stock }}">
+                        <button class="btn btn-outline-secondary quantity-plus" type="button">
+                            <i class="bi bi-plus"></i>
+                        </button>
                     </div>
+                 
+                    <small class="text-muted">Available: <span id="available-stock">{{ available_stock }}</span></small>
                 </div>
 
                 <div id="stock-status" class="mb-3">
@@ -126,12 +116,16 @@
                     {% endif %}
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="add-to-cart-btn"
-                    {% if not selected_variant.in_stock %}disabled{% endif %}>
-                    Add to cart
+                <button type="button" class="btn btn-primary" id="cart-action-btn" 
+                        {% if not selected_variant.in_stock %}disabled{% endif %}
+                        data-in-cart="{{ selected_variant.is_in_cart|yesno:'true,false' }}">
+                    {% if selected_variant.is_in_cart %}
+                        Go to Cart
+                    {% else %}
+                        Add to Cart
+                    {% endif %}
                 </button>
-                <a href="{% url 'wishlist:add-to-wishlist' product.id %}"
-                    class="btn btn-outline-primary ms-2 add-to-wishlist">
+                <a href="{% url 'wishlist:add-to-wishlist' product.id %}" class="btn btn-outline-primary ms-2 add-to-wishlist">
                     <i class="bi bi-heart"></i> Add to Wishlist
                 </a>
             </form>
@@ -143,21 +137,16 @@
         <div class="col-12">
             <ul class="nav nav-tabs" id="productTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="description-tab" data-bs-toggle="tab"
-                        data-bs-target="#description" type="button" role="tab" aria-controls="description"
-                        aria-selected="true">Description</button>
+                    <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Description</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews"
-                        type="button" role="tab" aria-controls="reviews" aria-selected="false">Reviews</button>
+                    <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab" aria-controls="reviews" aria-selected="false">Reviews</button>
                 </li>
             </ul>
             <div class="tab-content" id="productTabsContent">
-                <div class="tab-pane fade show active" id="description" role="tabpanel"
-                    aria-labelledby="description-tab">
+                <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
                     <div class="p-4">
                         <p>{{ product.product_description }}</p>
-                        <!-- Add more product details here -->
                     </div>
                 </div>
                 <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
@@ -171,8 +160,7 @@
                                 <p class="card-text">{{ review.comment }}</p>
                                 <div class="mb-2">
                                     {% for i in "12345"|make_list %}
-                                    <i
-                                        class="bi bi-star{% if forloop.counter <= review.rating %}-fill{% endif %} text-warning"></i>
+                                    <i class="bi bi-star{% if forloop.counter <= review.rating %}-fill{% endif %} text-warning"></i>
                                     {% endfor %}
                                 </div>
                                 <small class="text-muted">{{ review.created_at|date:"F d, Y" }}</small>
@@ -191,8 +179,7 @@
                                 <div>
                                     {% for i in "12345"|make_list %}
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="rating" id="star{{ i }}"
-                                            value="{{ i }}" required>
+                                        <input class="form-check-input" type="radio" name="rating" id="star{{ i }}" value="{{ i }}" required>
                                         <label class="form-check-label" for="star{{ i }}">
                                             {{ i }} <i class="bi bi-star-fill text-warning"></i>
                                         </label>
@@ -219,16 +206,14 @@
         {% for related_product in related_products %}
         <div class="col-md-3 mb-4">
             <div class="card h-100">
-                <img src="{{ related_product.thumbnail.url }}" class="card-img-top"
-                    alt="{{ related_product.product_name }}">
+                <img src="{{ related_product.thumbnail.url }}" class="card-img-top" alt="{{ related_product.product_name }}">
                 <div class="card-body">
                     <h5 class="card-title">{{ related_product.product_name }}</h5>
                     <p class="card-text">
-                        <span class="text-primary">$ {{ related_product.offer_price }}</span>
-                        <small class="text-muted text-decoration-line-through">$ {{ related_product.price }}</small>
+                        <span class="text-primary">₹ {{ related_product.offer_price }}</span>
+                        <small class="text-muted text-decoration-line-through">₹ {{ related_product.price }}</small>
                     </p>
-                    <a href="{% url 'user_panel:product-details' related_product.id %}"
-                        class="btn btn-outline-primary">View Details</a>
+                    <a href="{% url 'user_panel:product-details' related_product.id %}" class="btn btn-outline-primary">View Details</a>
                 </div>
             </div>
         </div>
@@ -239,173 +224,264 @@
     </div>
 </main>
 
-<!-- Bootstrap JS and Popper.js -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
-    $(document).ready(function() {
-        // Color selector functionality
-        $('.color-selector').on('click', function(e) {
-            e.preventDefault();
-            $('.color-selector').removeClass('active');
-            $(this).addClass('active');
-            var selectedVariantId = $(this).data('variant-id');
-            $('#selected-variant-id').val(selectedVariantId);
-            var imageUrls = $(this).data('image-urls').split(',');
-            updateCarouselAndThumbnails(imageUrls);
-            // Update stock status
-            var inStock = $(this).data('in-stock');
-            updateStockStatus(inStock);
-        });
-        // Function to update carousel and thumbnails
-        function updateCarouselAndThumbnails(imageUrls) {
-            var carousel = $('#productCarousel');
-            var carouselInner = carousel.find('.carousel-inner');
-            var thumbnailContainer = $('.d-flex.justify-content-center.mt-3');
-            // Clear existing carousel items and thumbnails
-            carouselInner.empty();
-            thumbnailContainer.empty();
-            // Add new carousel items and thumbnails
-            imageUrls.forEach(function(url, index) {
-                // Add carousel item
-                var item = $('<div class="carousel-item' + (index === 0 ? ' active' : '') + '">');
-                item.append('<img src="' + url + '" class="d-block w-100" alt="Product Image">');
-                carouselInner.append(item);
-                // Add thumbnail
-                var thumbnail = $('<img src="' + url +
-                    '" class="img-thumbnail mx-1" style="width: 60px; height: 60px; object-fit: cover;">'
-                );
-                thumbnail.attr('data-bs-target', '#productCarousel');
-                thumbnail.attr('data-bs-slide-to', index);
-                thumbnail.attr('aria-label', 'Slide ' + (index + 1));
-                if (index === 0) {
-                    thumbnail.attr('aria-current', 'true');
-                }
-                thumbnailContainer.append(thumbnail);
-            });
-            // Reset carousel
-            carousel.carousel(0);
-        }
-        // Function to update stock status
-        function updateStockStatus(inStock) {
-            var stockStatus = $('#stock-status');
-            var addToCartBtn = $('#add-to-cart-btn');
-            if (inStock) {
-                stockStatus.html('<span class="text-success">In Stock</span>');
-                addToCartBtn.prop('disabled', false);
-            } else {
-                stockStatus.html('<span class="text-danger">Out of Stock</span>');
-                addToCartBtn.prop('disabled', true);
+$(document).ready(function() {
+    // Color selector functionality
+    $('.color-selector').on('click', function(e) {
+        e.preventDefault();
+        $('.color-selector').removeClass('active');
+        $(this).addClass('active');
+        var selectedVariantId = $(this).data('variant-id');
+        $('#selected-variant-id').val(selectedVariantId);
+        var imageUrls = $(this).data('image-urls').split(',');
+        updateCarouselAndThumbnails(imageUrls);
+        
+        // Update stock status and cart button
+        var inStock = $(this).data('in-stock');
+        var availableStock = $(this).data('available-stock');
+        var isInCart = $(this).data('is-in-cart');
+        updateStockStatus(inStock, availableStock, isInCart);
+    });
+    // Function to update carousel and thumbnails
+    function updateCarouselAndThumbnails(imageUrls) {
+        var carousel = $('#productCarousel');
+        var carouselInner = carousel.find('.carousel-inner');
+        var thumbnailContainer = $('.d-flex.justify-content-center.mt-3');
+        
+        carouselInner.empty();
+        thumbnailContainer.empty();
+        
+        imageUrls.forEach(function(url, index) {
+            var item = $('<div class="carousel-item' + (index === 0 ? ' active' : '') + '">');
+            item.append('<img src="' + url + '" class="d-block w-100" alt="Product Image">');
+            carouselInner.append(item);
+            
+            var thumbnail = $('<img src="' + url + '" class="img-thumbnail mx-1" style="width: 60px; height: 60px; object-fit: cover;">');
+            thumbnail.attr('data-bs-target', '#productCarousel');
+            thumbnail.attr('data-bs-slide-to', index);
+            thumbnail.attr('aria-label', 'Slide ' + (index + 1));
+            if (index === 0) {
+                thumbnail.attr('aria-current', 'true');
             }
-        }
-        // Thumbnail click functionality
-        $(document).on('click', '.d-flex.justify-content-center.mt-3 img', function() {
-            var slideIndex = $(this).data('bs-slide-to');
-            $('#productCarousel').carousel(slideIndex);
+            thumbnailContainer.append(thumbnail);
         });
-        // Function to update stock status
-        function updateStockStatus(inStock) {
-            var stockStatus = $('#stock-status');
-            var addToCartBtn = $('#add-to-cart-btn');
-            if (inStock) {
-                stockStatus.html('<span class="text-success">In Stock</span>');
-                addToCartBtn.prop('disabled', false);
-            } else {
-                stockStatus.html('<span class="text-danger">Out of Stock</span>');
-                addToCartBtn.prop('disabled', true);
-            }
+        
+        carousel.carousel(0);
+    }
+
+    // Function to update stock status and cart button
+    function updateStockStatus(inStock, availableStock, isInCart) {
+        var stockStatus = $('#stock-status');
+        var cartActionBtn = $('#cart-action-btn');
+        var quantityInput = $('.quantity-input');
+        var quantityContainer = quantityInput.closest('.mb-3');
+        
+        $('#available-stock').text(availableStock);
+        quantityInput.attr('max', availableStock);
+        
+        if (inStock && !isInCart) {
+            stockStatus.html('<span class="text-success">In Stock</span>');
+            cartActionBtn.prop('disabled', false);
+            cartActionBtn.text('Add to Cart');
+            cartActionBtn.data('in-cart', false);
+            quantityContainer.show(); // Show quantity field
+        } else if (inStock && isInCart) {
+            stockStatus.html('<span class="text-success">In Stock</span>');
+            cartActionBtn.prop('disabled', false);
+            cartActionBtn.text('Go to Cart');
+            cartActionBtn.data('in-cart', true);
+            quantityContainer.hide(); // Hide quantity field when item is in cart
+        } else {
+            stockStatus.html('<span class="text-danger">Out of Stock</span>');
+            cartActionBtn.prop('disabled', true);
+            cartActionBtn.text('Out of Stock');
+            quantityContainer.hide(); // Hide quantity field when out of stock
         }
-        // Quantity control
-        $('.qty-up, .qty-down').on('click', function(e) {
-            e.preventDefault();
-            var qtyInput = $('.qty-val');
-            var currentQty = parseInt(qtyInput.val());
-            if ($(this).hasClass('qty-up')) {
-                qtyInput.val(currentQty + 1);
-            } else if (currentQty > 1) {
-                qtyInput.val(currentQty - 1);
-            }
-        });
-        // Add to cart AJAX
-        $('#add-to-cart-form').on('submit', function(event) {
-            event.preventDefault();
-            var formData = $(this).serializeArray();
-            var quantity = $('.qty-val').val();
-            // Add quantity to form data
-            formData.push({
-                name: 'quantity',
-                value: quantity
-            });
+        
+        // Reset quantity to 1 if current quantity is more than available stock
+        var currentQuantity = parseInt(quantityInput.val());
+        if (currentQuantity > availableStock) {
+            quantityInput.val(1);
+        }
+    }
+
+    // Initialize the stock status when the page loads
+    var initialInStock = $('.color-selector.active').data('in-stock');
+    var initialAvailableStock = $('.color-selector.active').data('available-stock');
+    var initialIsInCart = $('.color-selector.active').data('is-in-cart');
+    updateStockStatus(initialInStock, initialAvailableStock, initialIsInCart);
+
+    // Quantity control
+    $('.quantity-minus, .quantity-plus').on('click', function() {
+        var $input = $('.quantity-input');
+        var currentVal = parseInt($input.val());
+        var availableStock = parseInt($('#available-stock').text());
+        
+        if ($(this).hasClass('quantity-minus')) {
+            if (currentVal > 1) $input.val(currentVal - 1);
+        } else {
+            if (currentVal < availableStock) $input.val(currentVal + 1);
+        }
+    });
+
+    $('.quantity-input').on('change', function() {
+        var $input = $(this);
+        var currentVal = parseInt($input.val());
+        var availableStock = parseInt($('#available-stock').text());
+        
+        if (isNaN(currentVal) || currentVal < 1) {
+            $input.val(1);
+        } else if (currentVal > availableStock) {
+            $input.val(availableStock);
+        }
+    });
+
+    // Add to cart / Go to cart button functionality
+    $('#cart-action-btn').on('click', function(event) {
+        event.preventDefault();
+        if ($(this).data('in-cart')) {
+            // If the item is in the cart, go to the cart page
+            window.location.href = "{% url 'cart_management:cart' %}";
+        } else {
+            // If the item is not in the cart, add it to the cart
+            var formData = $('#add-to-cart-form').serialize();
             $.ajax({
                 type: 'POST',
-                url: $(this).attr('action'),
-                data: $.param(formData),
+                url: $('#add-to-cart-form').attr('action'),
+                data: formData,
                 success: function(response) {
-                    alert(response.message);
-                    updateCounts();
+                    Swal.fire({
+                        title: 'Success',
+                        text: response.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                        
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $('#cart-action-btn').text('Go to Cart');
+                            $('#cart-action-btn').data('in-cart', true);
+                            // Update cart counts after successful addition
+                            updateCounts();
+                        }
+                    });
                 },
                 error: function(response) {
-                    alert(response.responseJSON.error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: response.responseJSON.error,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 }
             });
-        });
-        // Add to wishlist AJAX
-        $('.add-to-wishlist').on('click', function(e) {
-            e.preventDefault();
-            var url = $(this).attr('href');
-            var variantId = $('#selected-variant-id').val();
-            $.ajax({
-                url: url,
-                type: 'POST',
-                data: {
-                    'variant_id': variantId,
-                    'csrfmiddlewaretoken': '{{ csrf_token }}'
-                },
-                success: function(response) {
-                    if (response.status === 'success') {
-                        alert(response.message);
-                        updateCounts();
-                    } else {
-                        alert('Error: ' + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    alert('Error adding item to wishlist. Please try again.');
-                    console.log(xhr.responseText);
-                }
-            });
-        });
-        // Function to update carousel images
-        function updateCarousel(imageUrls) {
-            var carousel = $('#productCarousel');
-            var carouselInner = carousel.find('.carousel-inner');
-            carouselInner.empty();
-            imageUrls.forEach(function(url, index) {
-                var item = $('<div class="carousel-item' + (index === 0 ? ' active' : '') + '">');
-                item.append('<img src="' + url + '" class="d-block w-100" alt="Product Image">');
-                carouselInner.append(item);
-            });
-            // Reset carousel
-            carousel.carousel(0);
         }
-        // Initialize star rating display
-        $('.star-rating[data-rating]').each(function() {
-            var rating = $(this).data('rating');
-            $(this).find('.bi-star').each(function(index) {
-                if (index < rating) {
-                    $(this).removeClass('bi-star').addClass('bi-star-fill');
-                }
+    });
+
+    // Add to wishlist AJAX
+    $('.add-to-wishlist').on('click', function(e) {
+        e.preventDefault();
+        var url = $(this).attr('href');
+        var variantId = $('#selected-variant-id').val();
+        if (!variantId) {
+            Swal.fire({
+                title: 'Error',
+                text: 'Please select a variant before adding to the wishlist.',
+                icon: 'error',
+                confirmButtonText: 'OK'
             });
+            return;
+        }
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: {
+                'variant_id': variantId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    Swal.fire({
+                        title: 'Success',
+                        text: response.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Update counts after adding to wishlist
+                        updateCounts();
+                    }
+                });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error: ' + response.message,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                if (xhr.status === 401) {
+                    Swal.fire({
+                        title: 'Please Log In',
+                        text: 'You need to log in to add items to your wishlist.',
+                        icon: 'warning',
+                        confirmButtonText: 'Log In'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = "{% url 'accounts:user_login' %}";
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error adding item to wishlist. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                    console.log('Error:', xhr.responseText);
+                }
+            }
         });
     });
-</script>
 
-{% comment %} zoom {% endcomment %}
-<script>
+    // Initialize star rating display for existing reviews
+    $('.star-rating[data-rating]').each(function() {
+        var rating = $(this).data('rating');
+        $(this).find('.bi').each(function(index) {
+            if (index < rating) {
+                $(this).removeClass('bi-star').addClass('bi-star-fill');
+            }
+        });
+    });
+
+    // Handle star rating selection for new review
+    $('.star-rating input').on('change', function() {
+        var $stars = $(this).closest('.star-rating').find('label i');
+        var selectedRating = $(this).val();
+        $stars.removeClass('bi-star-fill').addClass('bi-star');
+        $stars.slice(0, selectedRating).removeClass('bi-star').addClass('bi-star-fill');
+    });
+
+    // Handle hover effect for star rating
+    $('.star-rating label').on('mouseenter', function() {
+        var $stars = $(this).closest('.star-rating').find('label i');
+        var hoveredRating = $(this).prev('input').val();
+        $stars.removeClass('bi-star-fill').addClass('bi-star');
+        $stars.slice(0, hoveredRating).removeClass('bi-star').addClass('bi-star-fill');
+    }).on('mouseleave', function() {
+        var $container = $(this).closest('.star-rating');
+        var $stars = $container.find('label i');
+        var selectedRating = $container.find('input:checked').val() || 0;
+        $stars.removeClass('bi-star-fill').addClass('bi-star');
+        $stars.slice(0, selectedRating).removeClass('bi-star').addClass('bi-star-fill');
+    });
+
+    // Image zoom functionality
     function enableZoom(imgElement) {
         const container = imgElement.parentElement;
         let zoom = 2;
@@ -430,10 +506,11 @@
             isZoomed = false;
             imgElement.style.transform = 'scale(1)';
         }
+
         container.addEventListener('mousemove', handleMouseMove);
         container.addEventListener('mouseenter', handleMouseEnter);
         container.addEventListener('mouseleave', handleMouseLeave);
-        // Return a function to remove event listeners
+
         return () => {
             container.removeEventListener('mousemove', handleMouseMove);
             container.removeEventListener('mouseenter', handleMouseEnter);
@@ -453,49 +530,16 @@
         const carousel = document.getElementById('productCarousel');
         applyZoomToActiveImage();
         carousel.addEventListener('slid.bs.carousel', applyZoomToActiveImage);
-        // Event listener for variant color buttons
+        
         const variantButtons = document.querySelectorAll('.color-selector');
         variantButtons.forEach(button => {
             button.addEventListener('click', function() {
-                // Wait for the images to be updated before reapplying zoom
                 setTimeout(applyZoomToActiveImage, 100);
             });
         });
     }
-    document.addEventListener('DOMContentLoaded', initializeZoom);
-</script>
 
-<script>
-    $(document).ready(function() {
-        // Initialize star rating display for existing reviews
-        $('.star-rating[data-rating]').each(function() {
-            var rating = $(this).data('rating');
-            $(this).find('.bi').each(function(index) {
-                if (index < rating) {
-                    $(this).removeClass('bi-star').addClass('bi-star-fill');
-                }
-            });
-        });
-        // Handle star rating selection for new review
-        $('.star-rating input').on('change', function() {
-            var $stars = $(this).closest('.star-rating').find('label i');
-            var selectedRating = $(this).val();
-            $stars.removeClass('bi-star-fill').addClass('bi-star');
-            $stars.slice(0, selectedRating).removeClass('bi-star').addClass('bi-star-fill');
-        });
-        // Handle hover effect
-        $('.star-rating label').on('mouseenter', function() {
-            var $stars = $(this).closest('.star-rating').find('label i');
-            var hoveredRating = $(this).prev('input').val();
-            $stars.removeClass('bi-star-fill').addClass('bi-star');
-            $stars.slice(0, hoveredRating).removeClass('bi-star').addClass('bi-star-fill');
-        }).on('mouseleave', function() {
-            var $container = $(this).closest('.star-rating');
-            var $stars = $container.find('label i');
-            var selectedRating = $container.find('input:checked').val() || 0;
-            $stars.removeClass('bi-star-fill').addClass('bi-star');
-            $stars.slice(0, selectedRating).removeClass('bi-star').addClass('bi-star-fill');
-        });
-    });
+    initializeZoom();
+});
 </script>
 {% endblock %}

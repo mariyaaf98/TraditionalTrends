@@ -6,10 +6,15 @@ from product_management.models import Product_Variant,Products
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib import messages
+from django.http import JsonResponse, HttpResponseRedirect
+from django.urls import reverse
 
 @login_required
 @require_POST
 def add_to_wishlist(request, product_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Please log in to add items to your wishlist.'}, status=401)
+    
     variant_id = request.POST.get('variant_id')
     if not variant_id:
         return JsonResponse({'status': 'error', 'message': 'No variant selected'}, status=400)
@@ -28,10 +33,19 @@ def add_to_wishlist(request, product_id):
         else:
             message = f"{product.product_name} - {variant.colour_name} is already in your wishlist."
         
-        return JsonResponse({'status': 'success', 'message': message})
+        # Check if it's an AJAX request
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'success', 'message': message})
+        else:
+            # For non-AJAX requests, redirect back to the referring page or to the product detail page
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER') or reverse('product_detail', args=[product_id]))
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        else:
+            # Handle the error for non-AJAX requests
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER') or reverse('product_detail', args=[product_id]))
+    
 @login_required
 def remove_from_wishlist(request, wishlist_item_id):
     if request.method == 'POST':

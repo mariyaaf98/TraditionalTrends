@@ -76,27 +76,44 @@
                                     </button>
                                     {% endif %}
                                     {% else %}
+                                    {% if order.payment_status %}
                                     <p class="mb-0">
                                         Expected Delivery:
                                         <span class="text-danger fs-6">{{ arrival_date|date:"jS F Y" }}</span>
                                     </p>
                                     <button class="btn btn-danger btn-sm mt-2 cancel-order-item"
                                         data-item-id="{{ item.id }}">Cancel</button>
-                                    {% endif %}
                                     {% else %}
-                                    <p class="text-danger mt-2">Canceled</p>
-                                    {% endif %}
+                                    {% comment %} <button class="btn btn-primary btn-sm mt-2 pay-order-item"
+                                        data-item-id="{{ item.id }}">Pay Now</button> {% endcomment %}
+                                        <br>
+                                    <h6>payment not completed</h6>
+
+                                        {% endif %}
+                                        {% endif %}
+                                        {% else %}
+                                        <p class="text-danger mt-2">Canceled</p>
+                                        {% endif %}
                                 </div>
                             </div>
                             {% if not forloop.last %}
                             <hr>{% endif %}
                             {% endfor %}
                         </div>
-                        <div class="card-footer d-flex justify-content-between align-items-center">
-                            <a href="{% url 'order_management:order-detail' order.order_id %}"
-                                class="btn btn-primary btn-sm">View Order Details</a>
-                            <strong>Total: ₹{{ order.total_amount }}</strong>
+                        <div class="card-footer d-flex justify-content-between align-items-center bg-light border-top">
+                            <!-- Conditional Payment Button and View Order Details Button -->
+                            <div class="d-flex align-items-center">
+                                <!-- View Order Details Button -->
+                                <a href="{% url 'order_management:order-detail' order.order_id %}"
+                                    class="btn btn-primary btn-sm">
+                                    View Order Details
+                                </a>
+                            </div>
+
+                            <!-- Total Amount -->
+                            <strong class="text-dark ml-auto">Total: ₹{{ order.total_amount }}</strong>
                         </div>
+
                     </div>
                     {% empty %}
                     <p class="text-center">No orders found.</p>
@@ -170,7 +187,6 @@
         </div>
     </div>
 </div>
-
 <script>
     // Order cancellation script
     document.addEventListener('DOMContentLoaded', function() {
@@ -210,7 +226,7 @@
                             canceledText.className = 'text-danger mt-2';
                             canceledText.textContent = 'Canceled';
                             itemElement.querySelector('.col-md-9').appendChild(
-                            canceledText);
+                                canceledText);
                         } else {
                             alert('Failed to cancel the item.');
                         }

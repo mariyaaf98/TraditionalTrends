@@ -31,7 +31,9 @@
                                 {% for item in wishlist_items %}
                                 <tr id="wishlist-item-{{ item.id }}">
                                     <td class="image product-thumbnail">
-                                         <img src="{% if item.variant and item.variant.images.first %}{{ item.variant.images.first.image.url }}{% else %}{{ item.product.thumbnail.url }}{% endif %}" alt="{{ item.variant.product.product_name }}" class="img-fluid rounded-start">
+                                        <img src="{% if item.variant and item.variant.images.first %}{{ item.variant.images.first.image.url }}{% else %}{{ item.product.thumbnail.url }}{% endif %}"
+                                            alt="{{ item.variant.product.product_name }}"
+                                            class="img-fluid rounded-start">
                                     </td>
                                     <td class="product-des product-name">
                                         <h5 class="product-name">
@@ -46,19 +48,24 @@
                                         <span>₹{{ item.variant.product.offer_price }}</span>
                                     </td>
                                     <td class="text-center" data-title="Stock">
-                                        <span class="{% if item.variant.variant_stock > 0 %}color3{% else %}text-danger{% endif %} font-weight-bold">
-                                            {% if item.variant.variant_stock > 0 %}In Stock{% else %}Out of Stock{% endif %}
+                                        <span
+                                            class="{% if item.variant.variant_stock > 0 %}color3{% else %}text-danger{% endif %} font-weight-bold">
+                                            {% if item.variant.variant_stock > 0 %}In Stock{% else %}Out of
+                                            Stock{% endif %}
                                         </span>
                                     </td>
                                     <td class="text-right" data-title="Cart">
-                                        <button onclick="addToCartFromWishlist({{ item.variant.product.id }}, {{ item.variant.id }}, {{ item.id }})" class="btn btn-sm">
+                                        <button
+                                            onclick="addToCartFromWishlist({{ item.variant.product.id }}, {{ item.variant.id }}, {{ item.id }})"
+                                            class="btn btn-sm">
                                             <i class="fi-rs-shopping-bag mr-5"></i>Add to cart
                                         </button>
                                     </td>
                                     <td class="action" data-title="Remove">
-                                        <a href="#" onclick="removeFromWishlist({{ item.id }}); return false;" class="text-muted">
-    <i class="fi-rs-trash"></i>
-</a>
+                                        <a href="#" onclick="removeFromWishlist({{ item.id }}); return false;"
+                                            class="text-muted">
+                                            <i class="fi-rs-trash"></i>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -75,94 +82,122 @@
     </section>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function addToCartFromWishlist(productId, variantId, wishlistItemId) {
-    const csrftoken = getCookie('csrftoken');
-    
-    // Add to cart
-    fetch('{% url 'cart_management:add-to-cart' %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrftoken
-        },
-        body: `product_id=${productId}&variant_id=${variantId}&quantity=1`
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            alert(data.message);
-            // Remove from wishlist
-            removeFromWishlist(wishlistItemId);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while adding the item to the cart.');
-    });
-}
-
-function removeFromWishlist(wishlistItemId) {
-    const csrftoken = getCookie('csrftoken');
-    fetch(`{% url 'wishlist:remove-from-wishlist' 0 %}`.replace('0', wishlistItemId), {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrftoken,
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: `id=${wishlistItemId}`
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.status === 'success') {
-            removeItemFromUI(wishlistItemId);
-        } else {
-            console.error('Error:', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        removeItemFromUI(wishlistItemId);
-    });
-}
-
-
-
-
-function removeItemFromUI(wishlistItemId) {
-    const itemRow = document.querySelector(`#wishlist-item-${wishlistItemId}`);
-    if (itemRow) {
-        itemRow.remove();
-        // Check if the wishlist is empty after removal
-        if (document.querySelectorAll('table.shopping-summery tbody tr').length === 0) {
-            const tbody = document.querySelector('table.shopping-summery tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Your wishlist is empty.</td></tr>';
-        }
+    function addToCartFromWishlist(productId, variantId, wishlistItemId) {
+        const csrftoken = getCookie('csrftoken');
+        // Add to cart
+        fetch('{% url 'cart_management:add-to-cart' %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `product_id=${productId}&variant_id=${variantId}&quantity=1`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.error,
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Added to Cart',
+                        text: data.message,
+                    }).then(() => {
+                        // Remove from wishlist
+                        removeFromWishlist(wishlistItemId);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'An error occurred while adding the item to the cart.',
+                });
+            });
     }
-}
 
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    function removeFromWishlist(wishlistItemId) {
+        const csrftoken = getCookie('csrftoken');
+        fetch(`{% url 'wishlist:remove-from-wishlist' 0 %}`.replace('0', wishlistItemId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `id=${wishlistItemId}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Removed from Wishlist',
+                        text: 'Item successfully removed from your wishlist.',
+                    }).then(() => {
+                        removeItemFromUI(wishlistItemId);
+                    });
+                } else {
+                    console.error('Error:', data.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message,
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'An error occurred while removing the item from the wishlist.',
+                }).then(() => {
+                    removeItemFromUI(wishlistItemId);
+                });
+            });
+    }
+
+    function removeItemFromUI(wishlistItemId) {
+        const itemRow = document.querySelector(`#wishlist-item-${wishlistItemId}`);
+        if (itemRow) {
+            itemRow.remove();
+            // Check if the wishlist is empty after removal
+            if (document.querySelectorAll('table.shopping-summery tbody tr').length === 0) {
+                const tbody = document.querySelector('table.shopping-summery tbody');
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">Your wishlist is empty.</td></tr>';
             }
         }
     }
-    return cookieValue;
-}
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 </script>
+
 
 {% endblock content %}

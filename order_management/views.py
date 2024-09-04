@@ -16,7 +16,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from coupon_management.models import Coupon,UserCoupon
+from coupon_management.models import UserCoupon
 from decimal import Decimal
 from django.http import HttpResponse
 from django.http import FileResponse, HttpResponse
@@ -29,24 +29,22 @@ from io import BytesIO
 from django.utils import timezone
 from .models import Order, OrderItem 
 from reportlab.lib.units import inch
-import logging
-logger = logging.getLogger(__name__)
+from decimal import Decimal
+import razorpay
 
-
-login_required
+@login_required
 def order_success(request):
     try:
-        if not request.user.is_authenticated:
-            messages.error(request, "Please log in to view your order.")
-            return redirect('login')
-        
         # Fetch the most recent order for the logged-in user
         order = Order.objects.filter(user=request.user).order_by('-date').first()
+
         if not order:
-            raise Order.DoesNotExist
+            messages.error(request, "No recent order found.")
+            return redirect('cart_management:cart')
 
         # Check if the order is actually successful
-        if order.payment_status and order.order_status == 'Processing':
+        if (order.payment_status and order.order_status == 'Order Placed') or \
+           (not order.payment_status and order.payment_option == 'Cash on Delivery' and order.order_status == 'Order Placed'):
             # Fetch order items
             order_items = OrderItem.objects.filter(main_order=order)
             arrival_date = order.date + timezone.timedelta(days=5)
@@ -72,15 +70,17 @@ def order_success(request):
             return render(request, 'user_side/order_success.html', context)
         else:
             messages.error(request, "Your order was not completed successfully.")
-            return redirect('cart_management:checkout')
+            return redirect('order_management:order-failed')
 
-    except Order.DoesNotExist:
-        messages.error(request, "No recent order found.")
+    except Exception as e:
+        logger.error(f"Error while processing order success for user {request.user.id}: {str(e)}", exc_info=True)
+        messages.error(request, "An unexpected error occurred. Please try again.")
         return redirect('cart_management:cart')
+
 
 @login_required
 def order_list(request):
-    orders = Order.objects.filter(user=request.user).order_by('-date')
+    orders = Order.objects.filter(user=request.user).exclude(payment_status__isnull=True).exclude(payment_status='False').order_by('-date')
     paginator = Paginator(orders, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -185,12 +185,13 @@ def cancel_order_item(request, item_id):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
+
 @login_required
 def admin_order_list(request):
     pending_returns = []
     other_orders = []
 
-    for order in Order.objects.all().order_by('-date'):
+    for order in Order.objects.exclude(payment_status__isnull=True).exclude(payment_status='False').order_by('-date'):
         has_pending_return = False
         for item in order.items.all():
             for return_request in item.returns.filter(status='REQUESTED'):
@@ -250,7 +251,7 @@ def admin_order_detail(request, order_id):
 
     # Fetch return information for each order item
     for item in order_items:
-        item.return_info = item.returns.first()  # Assumes one return per item
+        item.return_info = item.returns.first()
 
     item_quantity = order_items.aggregate(total_quantity=Sum('quantity'))['total_quantity']
     total_price = sum(item.total_cost() for item in order_items)
@@ -403,9 +404,7 @@ def razorpay_callback(request):
                 payment_capture_response = client.payment.fetch(razorpay_payment_id)
                 
                 if payment_capture_response['status'] == 'captured':
-                    # Use a transaction to ensure atomicity
                     with transaction.atomic():
-                        # Reduce stock and update the order status to 'Processing'
                         for item in order.items.all():
                             variant = item.variant
                             if variant.variant_stock < item.quantity:
@@ -414,10 +413,9 @@ def razorpay_callback(request):
                             variant.save()
                         
                         order.payment_status = True
-                        order.order_status = 'Processing'
+                        order.order_status = 'Order Placed'
                         order.save()
-                        
-                        # Clear the cart
+
                         cart = Cart.objects.get(user=order.user, is_active=True)
                         CartItem.objects.filter(cart=cart).delete()
                         cart.is_active = False
@@ -458,11 +456,38 @@ def razorpay_callback(request):
         return redirect('order_management:order-failed')
 
 
+
+
 def order_failed(request):
-    messages.error(request, "Your order was not completed successfully.")
-    return render(request, 'user_side/order_failed.html')
+    razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    order = Order.objects.filter(user=request.user).order_by('-date').first()
 
+    if order:
+        order.order_status = 'Pending'
+        order.save()
 
+    if order and order.payment_option == 'Online Payment':
+        razorpay_order = razorpay_client.order.create(dict(
+            amount=int(order.total_amount * 100),
+            currency='INR',
+            payment_capture='1'
+        ))
+
+        order.razorpay_order_id = razorpay_order['id']
+        order.save()
+
+        razorpay_payment = {
+            'razorpay_key': settings.RAZORPAY_KEY_ID,
+            'razorpay_order_id': razorpay_order['id'],
+            'razorpay_amount': int(order.total_amount * 100),
+            'currency': 'INR',
+            'callback_url': request.build_absolute_uri(reverse('order_management:razorpay-callback'))
+        }
+    else:
+        razorpay_payment = None
+
+    messages.error(request, "Your order was not completed successfully12334.")
+    return render(request, 'user_side/order_failed.html', {'order': order, 'razorpay_payment': razorpay_payment})
 
 
 @login_required
@@ -577,3 +602,32 @@ def download_invoice(request, order_id):
 
     except Exception as e:
         return HttpResponse(f'Error generating PDF: {str(e)}', status=500)
+
+
+razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+def create_razorpay_order(request, order_id):
+    try:
+        order = Order.objects.get(pk=order_id)
+        amount = int(order.total_amount * 100)  # Convert to paisa (smallest unit)
+
+        # Create a Razorpay order
+        razorpay_order = razorpay_client.order.create({
+            "amount": amount,
+            "currency": "INR",
+            "payment_capture": "1"
+        })
+
+        # Save the Razorpay order ID in your database
+        order.razorpay_order_id = razorpay_order['id']
+        order.save()
+
+        return JsonResponse({
+            'razorpay_order_id': razorpay_order['id'],
+            'razorpay_amount': amount,
+            'razorpay_key': settings.RAZORPAY_KEY_ID,
+            'user_email': request.user.email,
+            'user_name': request.user.get_full_name(),
+        })
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Order not found'}, status=404)

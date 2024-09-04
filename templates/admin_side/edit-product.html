@@ -66,7 +66,14 @@
                                             <div class="row mb-4">
                                                 <label class="col-lg-3 col-form-label">Offer Price</label>
                                                 <div class="col-lg-4">
-                                                    <input type="text" class="form-control" name="offer_price" value="{{ products.offer_price }}">
+                                                    <input type="text" class="form-control" name="offer_price" id="offer_price" value="{{ products.offer_price }}">
+                                                </div>
+                                            </div>
+                                            <div class="row mb-4">
+                                                <label class="col-lg-3 col-form-label">Use Percentage</label>
+                                                <div class="col-lg-4">
+                                                    <input type="checkbox" id="use_percentage" name="use_percentage">
+                                                    <input type="number" class="form-control" name="offer_percentage" id="offer_percentage" min="0" max="100" style="display: none;">
                                                 </div>
                                             </div>
                                             <div class="row mb-4">
@@ -109,7 +116,11 @@
                                             <div class="row mb-4">
                                                 <label for="thumbnail">Thumbnail</label>
                                                 <input type="file" id="thumbnail" name="thumbnail_image" accept="image/*" onchange="showThumbnailPreview(event)">
-                                                <img id="thumbnail-preview" src="{{ products.thumbnail.url }}" style="width: 50%; height: 40%;">
+                                                {% if products.thumbnail %}
+                                                    <img id="thumbnail-preview" src="{{ products.thumbnail.url }}" style="width: 50%; height: 40%;">
+                                                {% else %}
+                                                    <img id="thumbnail-preview" src="{% static 'placeholder-image.png' %}" style="width: 50%; height: 40%;">
+                                                {% endif %}
                                             </div>
                                             <div class="row mb-4" id="images-row">
                                                 <label class="col-lg-3 col-form-label">Images</label>
@@ -132,10 +143,10 @@
                                         <button class="btn btn-primary" type="submit" id="save-btn" style="display: none;">Update</button>
                                     </form>
 
-                                    <form method="POST" action="{% url 'product_management:delete-product' products.id %}" class="delete-form" style="display: inline-block;">
+                                    {% comment %} <form method="POST" action="{% url 'product_management:delete-product' products.id %}" class="delete-form" style="display: inline-block;">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-danger rounded btn-sm font-sm">Delete</button>
-                                    </form>
+                                    </form> {% endcomment %}
                                 </section>
                             </div>
                         </div>
@@ -182,18 +193,36 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     showSection(currentSectionIndex);
+
+    // New code for handling percentage checkbox
+    const usePercentageCheckbox = document.getElementById('use_percentage');
+    const offerPriceInput = document.getElementById('offer_price');
+    const offerPercentageInput = document.getElementById('offer_percentage');
+
+    usePercentageCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            offerPriceInput.style.display = 'none';
+            offerPercentageInput.style.display = 'block';
+        } else {
+            offerPriceInput.style.display = 'block';
+            offerPercentageInput.style.display = 'none';
+        }
+    });
 });
 
 function showThumbnailPreview(event) {
     const file = event.target.files[0];
+    const imgElement = document.getElementById('thumbnail-preview');
+
     if (file) {
         const reader = new FileReader();
         reader.onload = function (e) {
-            const imgElement = document.getElementById('thumbnail-preview');
             imgElement.src = e.target.result;
             imgElement.style.display = 'block';
         };
         reader.readAsDataURL(file);
+    } else {
+        imgElement.style.display = 'none';  // Hide the preview if no file is selected
     }
 }
 
@@ -202,15 +231,14 @@ function showNextImagePreview(event) {
     if (file) {
         const reader = new FileReader();
         reader.onload = function (e) {
-            const container = document.getElementById('multiple-images-container');
-            const imgWrapper = document.createElement('div');
+            const imageContainer = document.createElement('div');
+            imageContainer.classList.add('col-lg-4');
             const imgElement = document.createElement('img');
             imgElement.src = e.target.result;
             imgElement.style.width = '100%';
             imgElement.style.height = 'auto';
-            imgWrapper.appendChild(imgElement);
-            container.appendChild(imgWrapper);
-            addNewImageInput();
+            imageContainer.appendChild(imgElement);
+            document.getElementById('multiple-images-container').appendChild(imageContainer);
         };
         reader.readAsDataURL(file);
     }

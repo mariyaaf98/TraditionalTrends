@@ -1,0 +1,172 @@
+{% extends 'user_side/base.html' %}
+{% load static %}
+{% load cart_filters %}
+
+{% block content %}
+<style>
+    .card-img-top {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+    }
+    .collection-card {
+        height: 100%;
+    }
+    .collection-card .card-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+</style>
+
+<header class="bg-primary text-white text-center py-5">
+    <div class="container">
+        <h1 class="display-4">About TraditionalTrends</h1>
+        <p class="lead">Bringing the beauty of traditional Indian craftsmanship to your wardrobe</p>
+    </div>
+</header>
+
+<main class="py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <h2>Our Story</h2>
+                <p>Founded in 2015, TraditionalTrends began with a passion for preserving and promoting the rich heritage of Indian textiles. Our journey started in the vibrant streets of Varanasi, where we fell in love with the intricate artistry of handwoven sarees.</p>
+                <p>Today, we pride ourselves on offering a curated collection of sarees that blend traditional craftsmanship with contemporary designs, catering to the modern woman who appreciates both style and cultural significance.</p>
+            </div>
+            <div class="col-lg-6">
+                <img src="{% static 'user_side/assets/imgs/about_image-1.jpg' %}" alt="Colorful display of sarees" class="img-fluid rounded">
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="card-title">Our Mission</h3>
+                        <p class="card-text">To empower artisans, celebrate Indian craftsmanship, and make exquisite sarees accessible to women worldwide.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="card-title">Our Vision</h3>
+                        <p class="card-text">To become the premier destination for authentic, high-quality sarees, bridging tradition with modern fashion sensibilities.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="card-title">Our Values</h3>
+                        <ul class="list-unstyled">
+                            <li>Authenticity</li>
+                            <li>Artisan Support</li>
+                            <li>Quality Assurance</li>
+                            <li>Customer Satisfaction</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-12 text-center">
+                <h2>What Sets Us Apart</h2>
+                <p class="lead mb-5">Discover the TraditionalTrends difference</p>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Handpicked Collection</h5>
+                        <p class="card-text">Each saree in our collection is carefully selected for its unique design, quality, and craftsmanship.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Artisan Partnerships</h5>
+                        <p class="card-text">We work directly with skilled artisans, ensuring fair wages and preserving traditional weaving techniques.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Customer Experience</h5>
+                        <p class="card-text">From personalized styling advice to seamless delivery, we ensure a delightful shopping experience.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-12 text-center">
+                <h2>Our Collections</h2>
+                <p class="lead mb-5">Explore our diverse range of sarees</p>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                <div class="col">
+                    <div class="card collection-card">
+                        <img src="{% static 'user_side/assets/imgs/banarasi.jpg' %}" alt="Banarasi Saree" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">Banarasi Silk</h5>
+                            <p class="card-text">Timeless elegance woven in gold and silver zari</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card collection-card">
+                        <img src="{% static 'user_side/assets/imgs/kanjipuram.jpg' %}" alt="Kanjivaram Saree" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">Kanjivaram</h5>
+                            <p class="card-text">Rich silk sarees with intricate temple designs</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card collection-card">
+                        <img src="{% static 'user_side/assets/imgs/chandari.jpg' %}" alt="Chanderi Saree" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">Chanderi</h5>
+                            <p class="card-text">Lightweight sarees with a royal sheen</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card collection-card">
+                        <img src="{% static 'user_side/assets/imgs/Contemporary.jpg' %}" alt="Contemporary Saree" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">Contemporary</h5>
+                            <p class="card-text">Modern designs for the urban fashionista</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<section class="bg-light py-5">
+    <div class="container text-center">
+        <h2>Join Our Saree Journey</h2>
+        <p class="lead mb-4">Subscribe to our newsletter for the latest collections, styling tips, and exclusive offers.</p>
+        <form class="row justify-content-center">
+            <div class="col-auto">
+                <input type="email" class="form-control" placeholder="Enter your email">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Subscribe</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<footer class="bg-dark text-white text-center py-4 mt-5">
+    <div class="container">
+        <p>&copy; 2024 TraditionalTrends. All rights reserved.</p>
+    </div>
+</footer>
+{% endblock content %}

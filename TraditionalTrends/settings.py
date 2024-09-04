@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 import os
-
+from decouple import config, Csv
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -21,13 +21,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-prk1zo9ydgr0#%j&$e(dfpi)dxywh-&2^*#47&2=cpp85vs+z3'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+SECRET_KEY = config('SECRET_KEY')
 
-ALLOWED_HOSTS = []
+# Toggle DEBUG mode using the .env file
+DEBUG = config('DEBUG', default=True, cast=bool)
+
+# Load allowed hosts from the .env file
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 
 
 # Application definition
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'social_django',
     'accounts',
     'admin_panel',
     'category_management',
@@ -51,6 +53,12 @@ INSTALLED_APPS = [
     'coupon_management',
 ]
 
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -59,6 +67,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'admin_panel.middleware.ActiveUserMiddleware',
+    'admin_panel.middleware.SocialAuthExceptionMiddleware',
+    'admin_panel.middleware.Custom404Middleware',
 ]
 
 ROOT_URLCONF = 'TraditionalTrends.urls'
@@ -74,6 +87,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
                 'TraditionalTrends.context_processors.cart_context_processor',
             ],
         },
@@ -86,14 +101,15 @@ WSGI_APPLICATION = 'TraditionalTrends.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# Database configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'db_Ttrends',
-        'USER': 'postgres',
-        'PASSWORD': 'mariya',
-        'HOST': 'localhost',
-        'PORT': '5432'
+        'NAME': config('DATABASE_NAME'),
+        'USER': config('DATABASE_USER'),
+        'PASSWORD': config('DATABASE_PASSWORD'),
+        'HOST': config('DATABASE_HOST'),
+        'PORT': config('DATABASE_PORT'),
     }
 }
 
@@ -146,32 +162,65 @@ AUTH_USER_MODEL = 'accounts.User'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
+SOCIAL_AUTH_EMAIL_REQUIRED = True
+
+
+LOGIN_URL = 'login'
+LOGOUT_URL = 'logout'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+
+
+
+# Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'mariyachristy69@gmail.com'
-EMAIL_HOST_PASSWORD = 'pdxvojisqxitgkfy'
-DEFAULT_FROM_EMAIL = 'mariyachristy69@gmail.com'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
 
 
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# for messge
 
-from django.contrib.messages import constants as message_constants
-
-MESSAGE_TAGS = {
-    message_constants.DEBUG: 'debug',
-    message_constants.INFO: 'info',
-    message_constants.SUCCESS: 'success',
-    message_constants.WARNING: 'warning',
-    message_constants.ERROR: 'error',
-}
+# Razorpay configuration
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
 
 
+# SOCIAL_AUTH_PIPELINE = (
+#     'social_core.pipeline.social_auth.social_details',
+#     'social_core.pipeline.social_auth.social_uid',
+#     'social_core.pipeline.social_auth.auth_allowed',
+#     'social_core.pipeline.social_auth.social_user',
+#     'social_core.pipeline.user.get_username',
+#     'accounts.pipeline.save_user_details',
+#     'accounts.pipeline.activate_user',
+#     'social_core.pipeline.social_auth.associate_user',
+#     'social_core.pipeline.social_auth.load_extra_data',
+#     'social_core.pipeline.user.user_details',
+# )
 
-RAZORPAY_KEY_ID = 'rzp_test_atDMV07p8I1XuT'
-RAZORPAY_KEY_SECRET = 'yIrDxoivXEqMMEmUINTo8yyV'
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',  # Fetches user details from the provider
+    'social_core.pipeline.social_auth.social_uid',  # Fetches the unique user id from the provider
+    'social_core.pipeline.social_auth.auth_allowed',  # Checks if the user is allowed to authenticate
+    'social_core.pipeline.social_auth.social_user',  # Tries to associate an existing user with the provider
+    'social_core.pipeline.user.get_username',  # Suggests a username for the user
+    'social_core.pipeline.user.create_user',  # Creates a user object if none exists
+    'accounts.pipeline.save_user_details',  # Saves user details like email, full_name, etc.
+    'accounts.pipeline.activate_user',  # Activates the user account
+    'social_core.pipeline.social_auth.associate_user',  # Associates the social account with the user
+    'social_core.pipeline.social_auth.load_extra_data',  # Loads any extra data from the provider
+    'social_core.pipeline.user.user_details',  # Updates user details with the final data
+)

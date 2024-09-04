@@ -20,14 +20,17 @@ from django.urls import reverse
 import logging
 from decimal import Decimal
 from django.http import JsonResponse
-from wishlist.models import WishlistItem
+from django.views.decorators.cache import cache_control
 from TraditionalTrends.context_processors import cart_context_processor
 logger = logging.getLogger(__name__)
 
-
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @login_required(login_url='/login/')
 @require_POST
 def add_to_cart(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'status': 'error', 'message': 'Please log in to add items to your Cart.'}, status=401)
+
     product_id = request.POST.get('product_id')
     variant_id = request.POST.get('variant_id', None)
     quantity = int(request.POST.get('quantity', 1))
@@ -38,13 +41,20 @@ def add_to_cart(request):
         variant = get_object_or_404(Product_Variant, id=variant_id, product_id=product_id)
         if not variant.variant_status or variant.is_deleted:
             return JsonResponse({'error': 'Variant is not available'}, status=400)
-        if quantity > variant.variant_stock:
-            return JsonResponse({'error': 'Currectly Unavilable'}, status=400)
+
+        available_stock = variant.variant_stock
+
+        # Check if the quantity requested exceeds available stock
+        if quantity > available_stock:
+            return JsonResponse({'error': 'Quantity exceeds available stock', 'availableStock': available_stock}, status=400)
     else:
         variant = None
+        available_stock = None
 
+    # Create or get the cart for the user
     cart, created = Cart.objects.get_or_create(user=request.user, is_active=True)
 
+    # Create or get the cart item for the variant or product
     if variant:
         cart_item, created = CartItem.objects.get_or_create(cart=cart, variant=variant)
     else:
@@ -53,19 +63,21 @@ def add_to_cart(request):
     if not created:
         new_quantity = cart_item.quantity + quantity
         if variant and new_quantity > variant.variant_stock:
-            return JsonResponse({'error': 'Quantity exceeds available stock'}, status=400)
+            return JsonResponse({'error': 'Quantity exceeds available stock', 'availableStock': variant.variant_stock}, status=400)
         cart_item.quantity = new_quantity
     else:
         cart_item.quantity = quantity
 
     cart_item.save()
 
+    # Prepare the response data
     response_data = {
         'message': 'Product added to cart!',
         'product_name': product.product_name,
         'quantity': cart_item.quantity,
         'price': str(product.price),
-        'offer_price': str(product.offer_price)
+        'offer_price': str(product.offer_price),
+        'availableStock': available_stock
     }
 
     if variant:
@@ -74,6 +86,7 @@ def add_to_cart(request):
     return JsonResponse(response_data, status=200)
 
 
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @login_required(login_url='/login/')
 def cart_view(request):
     cart_items = CartItem.objects.filter(cart__user=request.user).select_related('variant__product')
@@ -142,7 +155,7 @@ def update_cart_item(request, item_id):
 @require_POST
 def delete_cart_item(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
-    print(f"Deleting cart item: {cart_item.id}")  # Debugging statement
+    print(f"Deleting cart item: {cart_item.id}") 
     cart_item.delete()
 
     cart_items = CartItem.objects.filter(cart__user=request.user)
@@ -160,11 +173,13 @@ def clear_cart(request):
 
 
 @login_required(login_url='/login/')
-@transaction.atomic
 def checkout(request):
     razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
     cart, created = Cart.objects.get_or_create(user=request.user, is_active=True)
     cart_items = CartItem.objects.filter(cart=cart)
+
+    discount = Decimal('0.00')
+    original_price = Decimal('0.00')
 
     today = timezone.now().date()
     coupons = Coupon.objects.filter(
@@ -179,6 +194,7 @@ def checkout(request):
         return redirect('cart_management:cart')
 
     total_price = sum(item.variant.product.offer_price * item.quantity for item in cart_items)
+    original_price = total_price
     
     # check stock and product availabilities
     for item in cart_items:
@@ -194,6 +210,7 @@ def checkout(request):
 
     estimated_delivery_days = 5  
     arrival_date = now() + timedelta(days=estimated_delivery_days)
+    
 
     if request.method == 'POST':
         if 'place_order' in request.POST:
@@ -309,7 +326,7 @@ def checkout(request):
                                         variant.save()
 
                                     order.payment_status = True
-                                    order.order_status = 'Processing' 
+                                    order.order_status = 'Order Placed' 
                                     order.save()
 
                                     # Apply coupon if used
@@ -343,37 +360,49 @@ def checkout(request):
                                 messages.error(request, "Insufficient wallet balance. Please choose another payment method.")
                                 return redirect('cart_management:checkout')
                         
-                        else:  # Cash on Delivery
-                            # Update stock for COD orders
-                            for item in cart_items:
-                                variant = item.variant
-                                variant.variant_stock -= item.quantity
-                                variant.save()
+                        elif payment_method == 'Cash on Delivery':
+                            try:
+                                with transaction.atomic():
+                                    # Apply coupon if used
+                                    if coupon:
+                                        UserCoupon.objects.create(
+                                            user=request.user,
+                                            coupon=coupon,
+                                            used=True,
+                                            used_at=now(),
+                                            order=order
+                                        )
 
-                            order.order_status = 'Processing'
-                            order.save()
+                                    # Clear coupon session data
+                                    if 'applied_coupon' in request.session:
+                                        del request.session['applied_coupon']
 
-                            # Apply coupon if used
-                            if coupon:
-                                UserCoupon.objects.create(
-                                    user=request.user,
-                                    coupon=coupon,
-                                    used=True,
-                                    used_at=now(),
-                                    order=order
-                                )
+                                    order.order_status = 'Order Placed'
+                                    order.save()
 
-                            CartItem.objects.filter(cart=cart).delete()
-                            cart.is_active = False
-                            cart.save()
+                                    # Reduce stock only after order is successfully placed
+                                    for item in cart_items:
+                                        variant = item.variant
+                                        variant.variant_stock -= item.quantity
+                                        variant.save()
 
-                            if 'applied_coupon' in request.session:
-                                del request.session['applied_coupon']
+                                    # Clear cart items only after the order is placed
+                                    CartItem.objects.filter(cart=cart).delete()
+                                    cart.is_active = False
+                                    cart.save()
 
-                            messages.success(request, "Your order has been placed successfully!")
-                            return redirect('order_management:order-success')
+                                    messages.success(request, "Your order has been placed successfully!")
+                                    return redirect('order_management:order-success')
+                                
+                            except Exception as e:
+                                # If an error occurs, ensure no changes are committed
+                                order.delete()
+                                logger.error(f"Order placement failed for user {request.user.id} (Cash on Delivery): {str(e)}", exc_info=True)
+                                messages.error(request, "Failed to place the order. Please try again later.")
+                                return redirect('cart_management:checkout')
 
                 except Exception as e:
+                    print('payment failed')
                     logger.error(f"Order placement failed for user {request.user.id}: {str(e)}", exc_info=True)
                     messages.error(request, "Failed to place the order. Please try again later.")
                     return redirect('cart_management:checkout')
@@ -384,6 +413,8 @@ def checkout(request):
     context = {
         'cart_items': cart_items,
         'total_price': total_price,
+        'original_price': original_price,
+        'discount': discount,
         'address_list': address_list,
         'selected_address': selected_address,
         'payment_methods': ['Cash on Delivery', 'Online Payment', 'Wallet'],

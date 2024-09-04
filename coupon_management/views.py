@@ -5,14 +5,12 @@ from django.views.decorators.http import require_POST
 from . models import Coupon,UserCoupon
 from cart_management . models import Cart
 from .forms import CouponForm
-import logging
 import random
 import string
 from django.core.paginator import Paginator
-from django.core.exceptions import ObjectDoesNotExist
 from decimal import Decimal
 import json
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse
 
 
 def generate_coupon_code(length=8):
@@ -38,7 +36,7 @@ def create_coupon(request):
 
 def coupon_list(request):
     coupons = Coupon.objects.filter(is_active=True)  
-    paginator = Paginator(coupons, 20)  # Show 20 coupons per page
+    paginator = Paginator(coupons, 20) 
 
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -62,10 +60,10 @@ def edit_coupon(request, coupon_id):
 def delete_coupon(request, coupon_id):
     coupon = get_object_or_404(Coupon, id=coupon_id)
     if request.method == 'POST':
-        coupon.is_active = False  # Mark as inactive
+        coupon.is_active = False 
         coupon.save()
         messages.success(request, 'Coupon delete successfully!')
-        return redirect(request.META.get('HTTP_REFERER'))  # Redirect to the same page
+        return redirect(request.META.get('HTTP_REFERER'))  
     return redirect('coupon_management:coupon_list')
 
 
@@ -77,6 +75,8 @@ def apply_coupon(request):
             'status': 'error',
             'message': 'User not authenticated.'
         })
+    
+    
 
     data = json.loads(request.body)
     coupon_code = data.get('coupon_code')
@@ -105,9 +105,7 @@ def apply_coupon(request):
         discount = coupon.discount
         if coupon.is_percentage:
             discount = (discount / Decimal('100')) * total_price
-
         new_total = total_price - discount
-
         # Convert Decimal objects to float 
         new_total = float(new_total)  
         discount = float(discount)  
@@ -134,22 +132,37 @@ def apply_coupon(request):
             'status': 'error',
             'message': 'Invalid or expired coupon.'
         })
+
+
+
+@require_POST
 @require_POST
 def remove_coupon(request):
     try:
         cart = Cart.objects.get(user=request.user, is_active=True)
         original_total = cart.get_total_price()
         
-        # Remove the applied coupon from session
-        if 'applied_coupon' in request.session:
-            del request.session['applied_coupon']
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Coupon removed successfully!',
-            'new_total': str(original_total)
-        })
-        
+        user_coupon = UserCoupon.objects.filter(user=request.user, used=False, order__isnull=True).first()
+
+        if user_coupon:
+            user_coupon.used = True
+            user_coupon.order = None
+            user_coupon.save()
+
+            if 'applied_coupon' in request.session:
+                del request.session['applied_coupon']
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Coupon removed successfully!',
+                'new_total': str(original_total)
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No coupon was applied to your cart.'
+            })
+
     except Cart.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'No active cart found.'})
     except Exception as e:

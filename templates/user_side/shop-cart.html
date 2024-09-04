@@ -28,7 +28,8 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ item.variant.product.product_name }}</h5>
                             <p class="card-text"><small class="text-muted">Colour: {{ item.variant.colour_name }}</small></p>
-                            <p class="card-text fw-bold">₹ {{ item.variant.product.offer_price }}</p>
+                            <span class="text-muted text-decoration-line-through">Price: ₹{{ item.variant.product.price }}</span>
+                            <p class="card-text fw-bold">Offer Price: ₹ {{ item.variant.product.offer_price }}</p>
                             <div class="input-group input-group-sm mb-3" style="max-width: 150px;">
                                 <button class="btn btn-outline-secondary qty-btn" type="button" data-action="decrease" data-id="{{ item.id }}">-</button>
                                 <input type="text" class="form-control text-center qty-input" value="{{ item.quantity }}" readonly>

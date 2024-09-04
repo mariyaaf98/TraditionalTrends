@@ -166,46 +166,51 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var statusSelect = document.getElementById('order-status');
-        var updateBtn = document.getElementById('update-btn');
-        var initialStatus = statusSelect.value;
-        statusSelect.addEventListener('change', function() {
-            var selectedStatus = statusSelect.value;
-            // Enable all options initially
-            var options = statusSelect.querySelectorAll('option');
-            options.forEach(function(option) {
-                option.disabled = false;
-            });
-            // Disable previous statuses based on selected status
-            if (selectedStatus === 'Shipped') {
-                options.forEach(function(option) {
-                    if (option.value === 'Processing') {
-                        option.disabled = true;
-                    }
-                });
-            } else if (selectedStatus === 'Delivered') {
-                options.forEach(function(option) {
-                    if (option.value === 'Processing' || option.value === 'Shipped') {
-                        option.disabled = true;
-                    }
-                });
-            } else if (selectedStatus === 'Cancelled') {
-                options.forEach(function(option) {
-                    if (option.value === 'Processing' || option.value === 'Shipped' || option
-                        .value === 'Delivered') {
-                        option.disabled = true;
-                    }
-                });
-            }
-            // Disable the button if no status can be selected
-            if ([...options].every(option => option.disabled)) {
-                updateBtn.disabled = true;
-            } else {
-                updateBtn.disabled = false;
-            }
+    var statusSelect = document.getElementById('order-status');
+    var updateBtn = document.getElementById('update-btn');
+    
+    statusSelect.addEventListener('change', function() {
+        var selectedStatus = statusSelect.value;
+        var options = statusSelect.querySelectorAll('option');
+
+        // Enable and disable options based on the current selection
+        options.forEach(function(option) {
+            option.disabled = true; // Disable all options initially
         });
-        // Initial state adjustment
-        statusSelect.dispatchEvent(new Event('change'));
+
+        // Enable the next valid option in the sequence
+        if (selectedStatus === 'Processing') {
+            options.forEach(function(option) {
+                if (option.value === 'Processing' || option.value === 'Shipped'  || option.value === 'Cancelled') {
+                    option.disabled = false;
+                }
+            });
+        } else if (selectedStatus === 'Shipped') {
+            options.forEach(function(option) {
+                if (option.value === 'Shipped' || option.value === 'Delivered' || option.value === 'Cancelled') {
+                    option.disabled = false;
+                }
+            });
+        } else if (selectedStatus === 'Delivered') {
+            options.forEach(function(option) {
+                if (option.value === 'Delivered') {
+                    option.disabled = false;
+                }
+            });
+        } else if (selectedStatus === 'Cancelled') {
+            options.forEach(function(option) {
+                if (option.value === 'Cancelled') {
+                    option.disabled = false;
+                }
+            });
+        }
+
+        // Enable the update button if a valid option is selected
+        updateBtn.disabled = false;
     });
+
+    // Initial state adjustment
+    statusSelect.dispatchEvent(new Event('change'));
+});
 </script>
 {% endblock content %}
