@@ -1,0 +1,32 @@
+<!-- product_detail.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ product.product_name }}</title>
+    <!-- Add any additional CSS or JS links here -->
+</head>
+<body>
+    <h1>{{ product.product_name }}</h1>
+    <p>{{ product.product_description }}</p>
+    <p>Price: ${{ product.price }}</p>
+    {% if product.offer_price %}
+        <p>Offer Price: ${{ product.offer_price }}</p>
+        <p>Discount: {{ product.percentage_discount }}%</p>
+    {% endif %}
+    <p>Category: {{ product.product_category }}</p>
+    <p>Brand: {{ product.product_brand }}</p>
+
+    {% if product_images %}
+        <h2>Product Images</h2>
+        <div>
+            {% for image in product_images %}
+                <img src="{{ image.images.url }}" alt="{{ image.images.name }}" width="200">
+            {% endfor %}
+        </div>
+    {% endif %}
+
+
+</body>
+</html>

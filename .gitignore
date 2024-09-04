@@ -1,1 +1,56 @@
 .env
+# Ignore virtual environment directory
+env/
+
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Ignore cache files and folders
+*.cache
+*.log
+*.pot
+*.py[co]
+
+# Ignore IDE/editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore environment variable files
+.env
+*.env
+
+# Ignore coverage reports
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Ignore test and build directories
+.tox/
+.nox/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore SQLite database files
+*.sqlite3
+
+# Ignore macOS files
+.DS_Store
+
+# Ignore Windows files
+Thumbs.db
