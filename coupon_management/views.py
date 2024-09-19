@@ -35,7 +35,7 @@ def create_coupon(request):
     return render(request, 'admin_side/create_coupon.html', {'form': form})
 
 def coupon_list(request):
-    coupons = Coupon.objects.filter(is_active=True)  
+    coupons = Coupon.objects.filter(is_active=True).order_by('-id')  
     paginator = Paginator(coupons, 20) 
 
     page_number = request.GET.get('page')

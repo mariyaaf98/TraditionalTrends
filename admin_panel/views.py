@@ -53,7 +53,7 @@ def users_list(request):
     user_details = User.objects.filter(is_superuser=False)
     
     # Pagination
-    paginator = Paginator(user_details, 10)  # Show 10 users per page
+    paginator = Paginator(user_details, 10) 
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -81,7 +81,7 @@ def block_unblock_user(request, id):
 
 
 
-
+@login_required(login_url='/admin-panel/login/')
 @user_passes_test(is_admin)
 def admin_dashboard(request):
     # Basic metrics

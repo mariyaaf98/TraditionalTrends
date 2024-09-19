@@ -2,14 +2,15 @@ from django.db import models
 from django.utils import timezone
 from accounts.models import User
 from order_management.models import Order
+from django.core.validators import MinValueValidator
 
 class Coupon(models.Model):
     code = models.CharField(max_length=50, unique=True)
-    discount = models.DecimalField(max_digits=5, decimal_places=2)
+    discount = models.DecimalField(max_digits=7, decimal_places=2,validators=[MinValueValidator(0.01)])
     is_percentage = models.BooleanField(default=False)
     expiration_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
-    minimum_purchase_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    minimum_purchase_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
 
     def __str__(self):
         return self.code

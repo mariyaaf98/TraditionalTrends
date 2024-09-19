@@ -10,7 +10,6 @@
         <div class="content-header">
             <div>
                 <h2 class="content-title card-title">Categories</h2>
-                <p>Add, edit or delete a category</p>
             </div>
             <div>
                 <input type="text" placeholder="Search Categories" class="form-control bg-white" style="width: 500px;">
@@ -72,7 +71,7 @@
                                 </div>
                                 <div class="mb-4">
                                     <label class="form-label">Expiry Date:</label>
-                                    <input class="form-control" type="date" id="expirydate" name="date" value="{{ category.expirydate|date:'Y-m-d' }}" min="{{ today }}">
+                                    <input class="form-control" type="date" id="expirydate" name="date" value="{{ category.expirydate|date:'Y-m-d' }}" min="{{today}}">
                                 </div>
                             </div>
                             <div class="d-grid">

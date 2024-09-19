@@ -1,6 +1,7 @@
 {% extends 'admin_side/base.html' %}
 {% load static %}
 {% block content %}
+
 <body>
     <div class="screen-overlay"></div>
     {% include 'admin_side/sidebar.html' %}
@@ -10,7 +11,8 @@
             <div class="content-header">
                 <h2 class="content-title">Product list</h2>
                 <div>
-                    <a href="{% url 'product_management:add-product' %}" class="btn btn-primary"><i class="material-icons md-plus"></i> Create new</a>
+                    <a href="{% url 'product_management:add-product' %}" class="btn btn-primary"><i
+                            class="material-icons md-plus"></i> Create new</a>
                 </div>
             </div>
             <div class="card mb-4">
@@ -21,15 +23,15 @@
                 </header>
                 <div class="card-body">
                     {% for message in messages %}
-                        {% if message.tags == 'success' %}
-                            <p class="alert alert-success">{{ message }}</p>
-                        {% elif message.tags == 'error' %}
-                            <p class="alert alert-danger">{{ message }}</p>
-                        {% elif message.tags == 'warning' %}
-                            <p class="alert alert-warning">{{ message }}</p>
-                        {% else %}
-                            <p>{{ message }}</p>
-                        {% endif %}
+                    {% if message.tags == 'success' %}
+                    <p class="alert alert-success">{{ message }}</p>
+                    {% elif message.tags == 'error' %}
+                    <p class="alert alert-danger">{{ message }}</p>
+                    {% elif message.tags == 'warning' %}
+                    <p class="alert alert-warning">{{ message }}</p>
+                    {% else %}
+                    <p>{{ message }}</p>
+                    {% endif %}
                     {% endfor %}
                     <div class="table-responsive">
                         <table class="table table-hover custom-table">
@@ -49,42 +51,62 @@
                                 <tr>
                                     <td style="width: 10%;">
                                         {% if product.thumbnail %}
-                                            <img src="{{ product.thumbnail.url }}" alt="{{ product.product_name }}" style="width: 60px;">
+                                        <img src="{{ product.thumbnail.url }}" alt="{{ product.product_name }}"
+                                            style="width: 60px;">
                                         {% else %}
-                                            No Thumbnail
+                                        No Thumbnail
                                         {% endif %}
                                     </td>
-                                    <td style="width: 16%;"><h6 class="mb-0 title">{{ product.product_name }}</h6></td>
+                                    <td style="width: 16%;">
+                                        <h6 class="mb-0 title">{{ product.product_name }}</h6>
+                                    </td>
                                     <td style="width: 30%;">{{ product.product_description }}</td>
                                     <td style="width: 15%;">
                                         {% if not product.is_deleted %}
-                                            <span class="badge rounded-pill alert-success">Available</span>
+                                        <span class="badge rounded-pill alert-success">Available</span>
                                         {% else %}
-                                            <span class="badge rounded-pill alert-danger">Not Available</span>
+                                        <span class="badge rounded-pill alert-danger">Not Available</span>
                                         {% endif %}
                                     </td>
                                     <td style="width: 10%;">{{ product.price }}</td>
-                                    <td style="width: 10%;">{{ product.offer_price }}</td>
+                                    <td style="width: 10%;">
+                                        {% if product.offer_price != product.price %}
+                                        {{ product.offer_price }}
+                                        {% endif %}
+                                    </td>
+
                                     <td style="width: 30%;" class="text-end">
                                         <div class="btn-group" role="group">
                                             {% if not product.is_deleted %}
-                                                <a href="{% url 'product_management:variant-list' product.id %}" class="btn btn-warning rounded btn-sm font-sm mb-4 me-2">Variants</a>
-                                                {% comment %} <form method="POST" action="{% url 'product_management:edit-product' product.id %}" class="d-inline-block">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-light rounded btn-sm font-sm me-2">Edit</button>
-                                                </form> {% endcomment %}
-                                                <a href="{% url 'product_management:edit-product' product.id %}" type="submit" class="btn btn-light rounded btn-sm font-sm mb-4 me-2">Edit</a>
+                                            <a href="{% url 'product_management:variant-list' product.id %}"
+                                                class="btn btn-warning rounded btn-sm font-sm mb-4 me-2">Variants</a>
+                                            {% comment %} <form method="POST"
+                                                action="{% url 'product_management:edit-product' product.id %}"
+                                                class="d-inline-block">
+                                                {% csrf_token %}
+                                                <button type="submit"
+                                                    class="btn btn-light rounded btn-sm font-sm me-2">Edit</button>
+                                            </form> {% endcomment %}
+                                            <a href="{% url 'product_management:edit-product' product.id %}"
+                                                type="submit"
+                                                class="btn btn-light rounded btn-sm font-sm mb-4 me-2">Edit</a>
                                             {% endif %}
                                             {% if product.is_deleted %}
-                                                <form method="POST" action="{% url 'product_management:restore-product' product.id %}" class="restore-form d-inline-block">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-success rounded btn-sm font-sm restore-btn">Restore</button>
-                                                </form>
+                                            <form method="POST"
+                                                action="{% url 'product_management:restore-product' product.id %}"
+                                                class="restore-form d-inline-block">
+                                                {% csrf_token %}
+                                                <button type="submit"
+                                                    class="btn btn-success rounded btn-sm font-sm restore-btn">Restore</button>
+                                            </form>
                                             {% else %}
-                                                <form method="POST" action="{% url 'product_management:delete-product' product.id %}" class="delete-form d-inline-block">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-danger rounded btn-sm font-sm delete-btn">Delete</button>
-                                                </form>
+                                            <form method="POST"
+                                                action="{% url 'product_management:delete-product' product.id %}"
+                                                class="delete-form d-inline-block">
+                                                {% csrf_token %}
+                                                <button type="submit"
+                                                    class="btn btn-danger rounded btn-sm font-sm delete-btn">Delete</button>
+                                            </form>
                                             {% endif %}
                                         </div>
                                     </td>
@@ -95,23 +117,25 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Pagination -->
             <div class="pagination-area mt-15 mb-50">
                 <nav aria-label="Page navigation example">
                     <ul class="pagination justify-content-start">
                         {% if page_obj.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                        <li class="page-item"><a class="page-link"
+                                href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
                         {% endif %}
                         {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                                <li class="page-item active"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                            {% endif %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        {% endif %}
                         {% endfor %}
                         {% if page_obj.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
                         {% endif %}
                     </ul>
                 </nav>
@@ -120,11 +144,10 @@
     </main>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const deleteForms = document.querySelectorAll('.delete-form');
-
             deleteForms.forEach(form => {
-                form.querySelector('.delete-btn').addEventListener('click', function (event) {
+                form.querySelector('.delete-btn').addEventListener('click', function(event) {
                     event.preventDefault();
                     Swal.fire({
                         title: 'Are you sure?',
@@ -143,4 +166,4 @@
             });
         });
     </script>
-{% endblock content %}
+    {% endblock content %}

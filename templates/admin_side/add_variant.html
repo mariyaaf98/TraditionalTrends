@@ -79,38 +79,63 @@ function handleMultipleImages(event) {
     const files = event.target.files;
     const previewsContainer = document.getElementById('image-previews');
     previewsContainer.innerHTML = '';
+    previewsContainer.style.display = 'grid';
+    previewsContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+    previewsContainer.style.gap = '20px';
+    previewsContainer.style.padding = '20px';
+    previewsContainer.style.backgroundColor = '#f0f0f0';
+    previewsContainer.style.borderRadius = '8px';
 
     Array.from(files).forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = function (e) {
+            const previewWrapper = document.createElement('div');
+            previewWrapper.className = 'preview-wrapper';
+            previewWrapper.style.backgroundColor = 'white';
+            previewWrapper.style.borderRadius = '8px';
+            previewWrapper.style.padding = '10px';
+            previewWrapper.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+
             const imgElement = document.createElement('img');
             imgElement.src = e.target.result;
             imgElement.style.display = 'block';
+            imgElement.style.width = '100%';
+            imgElement.style.height = '150px';
+            imgElement.style.objectFit = 'cover';
+            imgElement.style.borderRadius = '4px';
             imgElement.id = `image-preview-${index}`;
-            previewsContainer.appendChild(imgElement);
+            previewWrapper.appendChild(imgElement);
 
             const cropperContainer = document.createElement('div');
             cropperContainer.id = `cropper-container-${index}`;
-            cropperContainer.style.display = 'block';
-            previewsContainer.appendChild(cropperContainer);
+            cropperContainer.style.display = 'flex';
+            cropperContainer.style.justifyContent = 'space-between';
+            cropperContainer.style.marginTop = '10px';
 
             const cropButton = document.createElement('button');
             cropButton.innerText = 'Crop';
-            cropButton.className = 'btn btn-secondary';
+            cropButton.className = 'btn btn-primary btn-sm';
+            cropButton.style.flex = '1';
+            cropButton.style.marginRight = '5px';
             cropButton.onclick = (event) => {
-                event.preventDefault(); // Prevent the form from submitting
+                event.preventDefault();
                 cropImage(index);
             };
             cropperContainer.appendChild(cropButton);
 
             const cancelButton = document.createElement('button');
             cancelButton.innerText = 'Cancel';
-            cancelButton.className = 'btn btn-secondary';
+            cancelButton.className = 'btn btn-secondary btn-sm';
+            cancelButton.style.flex = '1';
+            cancelButton.style.marginLeft = '5px';
             cancelButton.onclick = (event) => {
-                event.preventDefault(); // Prevent the form from submitting
+                event.preventDefault();
                 cancelImageCrop(index);
             };
             cropperContainer.appendChild(cancelButton);
+
+            previewWrapper.appendChild(cropperContainer);
+            previewsContainer.appendChild(previewWrapper);
 
             const cropper = new Cropper(imgElement, {
                 viewMode: 1,
@@ -159,8 +184,10 @@ function cancelImageCrop(index) {
     const cropper = imageCroppers[index];
     if (cropper) {
         cropper.destroy();
-        document.getElementById(`image-preview-${index}`).style.display = 'none';
-        document.getElementById(`cropper-container-${index}`).style.display = 'none';
+        const previewWrapper = document.getElementById(`image-preview-${index}`).closest('.preview-wrapper');
+        if (previewWrapper) {
+            previewWrapper.remove();
+        }
     }
 }
 </script>

@@ -21,59 +21,49 @@
             <div class="card-body">
                 <div class="row justify-content-center">
                     <div class="col-md-8">
-                        <div>
+                        {% if messages %}
                             {% for message in messages %}
-                                {% if message.tags == 'success' %}
-                                    <p class="alert alert-success">{{ message }}</p>
-                                {% elif message.tags == 'error' %}
-                                    <p class="alert alert-danger">{{ message }}</p>
-                                {% elif message.tags == 'warning' %}
-                                    <p class="alert alert-warning">{{ message }}</p>
-                                {% else %}
-                                    <p>{{ message }}</p>
-                                {% endif %}
+                                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
                             {% endfor %}
+                        {% endif %}
+                        
+                        <div id="form-errors" class="alert alert-danger" style="display: none;">
+                            <strong>Errors:</strong>
+                            <ul id="error-list"></ul>
                         </div>
-                        <form method="POST">
+
+                        <form method="POST" id="couponForm">
                             {% csrf_token %}
                             <div class="row mb-3 align-items-center">
                                 <div class="col">
                                     {{ form.code.label_tag }}
-                                    <input type="text" name="code" class="form-control" placeholder="Type here" value="{{ form.code.value }}">
+                                    {{ form.code }}
                                 </div>
                                 <div class="col-auto">
                                     <button type="button" class="btn btn-outline-primary btn-sm mt-3" onclick="generateCouponCode()">Auto Generate</button>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                {{ form.discount.label_tag }}
-                                <input type="number" name="discount" class="form-control" placeholder="Enter discount amount" value="{{ form.discount.value }}" min="0" step="any">
-                            </div>
-                            <div class="mb-3">
-                                {{ form.is_percentage.label_tag }}
-                                {{ form.is_percentage }}
-                            </div>
-                            <div class="mb-3">
-                                {{ form.expiration_date.label_tag }}
-                                <input type="datetime-local" name="expiration_date" class="form-control" value="{{ form.expiration_date.value }}" id="expiration-date-input" required>
-                            </div>
-                            <div class="mb-3">
-                                {{ form.is_active.label_tag }}
-                                {{ form.is_active }}
-                            </div>
-                            <div class="mb-3">
-                                {{ form.minimum_purchase_amount.label_tag }}
-                                <input type="number" name="minimum_purchase_amount" class="form-control" placeholder="Enter minimum amount" value="{{ form.minimum_purchase_amount.value }}" min="0">
-                            </div>
+                            {% for field in form %}
+                                {% if field.name != 'code' %}
+                                    <div class="mb-3">
+                                        {{ field.label_tag }}
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                                        {% endif %}
+                                        <p class="text-danger error-message" id="{{ field.name }}-error" style="display: none;"></p>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
                             <div class="d-flex">
                                 <button type="submit" class="btn btn-primary">Save Coupon</button>
                             </div>
                         </form>
                     </div>
-                </div> <!-- .row // -->
-            </div> <!-- card body .// -->
-        </div> <!-- card .// -->
-    </section> <!-- content-main end// -->
+                </div>
+            </div>
+        </div>
+    </section>
 </main>
 
 <script>
@@ -86,9 +76,62 @@ function generateCouponCode() {
     document.querySelector('input[name="code"]').value = couponCode;
 }
 
+function showError(fieldName, message) {
+    const errorElement = document.getElementById(`${fieldName}-error`);
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    } else {
+        const errorList = document.getElementById('error-list');
+        const listItem = document.createElement('li');
+        listItem.textContent = `${fieldName}: ${message}`;
+        errorList.appendChild(listItem);
+    }
+    document.getElementById('form-errors').style.display = 'block';
+}
+
+function clearErrors() {
+    document.querySelectorAll('.error-message').forEach(el => {
+        el.textContent = '';
+        el.style.display = 'none';
+    });
+    document.getElementById('error-list').innerHTML = '';
+    document.getElementById('form-errors').style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    const today = new Date().toISOString().slice(0, 16); // Current date and time in YYYY-MM-DDTHH:MM format
-    document.getElementById('expiration-date-input').setAttribute('min', today);
+    const expirationDateInput = document.querySelector('input[name="expiration_date"]');
+    if (expirationDateInput) {
+        const today = new Date().toISOString().slice(0, 16); // Current date and time in YYYY-MM-DDTHH:MM format
+        expirationDateInput.setAttribute('min', today);
+    }
+
+    document.getElementById('couponForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        clearErrors();
+
+        var discount = document.querySelector('input[name="discount"]').value;
+        var isPercentage = document.querySelector('input[name="is_percentage"]').checked;
+        
+        if (!discount) {
+            showError('discount', 'Please enter a discount value.');
+            return;
+        }
+
+        discount = parseFloat(discount);
+        if (isNaN(discount) || discount <= 0) {
+            showError('discount', 'Please enter a valid discount value greater than 0.');
+            return;
+        }
+
+        if (isPercentage && discount > 70) {
+            showError('discount', 'Percentage discount cannot be greater than 70%.');
+            return;
+        }
+
+        // If all validations pass, submit the form
+        this.submit();
+    });
 });
 </script>
 {% endblock content %}

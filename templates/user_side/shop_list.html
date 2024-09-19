@@ -64,7 +64,7 @@
                                         </a>
                                     </div>
                                     <div class="product-action-1">
-                                         <a aria-label="View Details" class="action-btn hover-up"
+                                        <a aria-label="View Details" class="action-btn hover-up"
                                             href="{% url 'user_panel:product-details' product.id %}">
                                             <i class="fi-rs-search"></i>
                                         </a>
@@ -89,15 +89,20 @@
                                     </div>
                                     <h2><a href="shop-product-right.html">{{ product.product_name }}</a></h2>
                                     <div class="rating-result" title="90%">
+                                        {% if product.percentage_discount > 0 %}
                                         <span>
                                             <span>{{ product.percentage_discount }}%</span>
                                         </span>
+                                        {% endif %}
                                     </div>
+
                                     <div class="product-price">
                                         <span>₹{{ product.offer_price }} </span>
+                                        {% if product.percentage_discount > 0 %}
                                         <span class="old-price">₹{{ product.price }}</span>
+                                        {% endif %}
                                     </div>
-                                    
+
                                 </div>
                             </div>
                         </div>
@@ -105,7 +110,7 @@
                         <p>No results found.</p>
                         {% endfor %}
                     </div>
-                    
+
                     <!--pagination-->
                     <div class="pagination-area mt-15 mb-sm-5 mb-lg-0">
                         <nav aria-label="Page navigation example">
@@ -162,11 +167,11 @@
                         <div class="price-filter mb-5">
                             <div class="price-filter-wrap text-center mt-15">
                                 <div class="price-input d-flex align-items-center">
-                                    <input type="number" id="min_price" name="min_price" placeholder="Min price"  class="form-control w-75"
-                                        value="{{ min_price|default:'' }}">
+                                    <input type="number" id="min_price" name="min_price" placeholder="Min price"
+                                        class="form-control w-75" value="{{ min_price|default:'' }}" min="0">
                                     <span class="mx-2">-</span>
-                                    <input type="number" id="max_price" name="max_price" placeholder="Max price" class="form-control w-75"
-                                        value="{{ max_price|default:'' }}">
+                                    <input type="number" id="max_price" name="max_price" placeholder="Max price"
+                                        class="form-control w-75" value="{{ max_price|default:'' }}" min="0">
                                 </div><br><br>
                                 <button class="btn btn-outline-secondary" id="price-filter-btn">Filter</button>
                             </div>

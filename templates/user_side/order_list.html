@@ -35,85 +35,70 @@
                                 </div>
                                 <div class="col-md-9">
                                     <h5 class="mb-2">{{ item.variant.product.product_name }}</h5>
-                                    <p class="mb-1">Category: {{ item.variant.product.product_category.category_name }}
-                                    </p>
+                                    <p class="mb-1">Category: {{ item.variant.product.product_category.category_name }}</p>
                                     <p class="mb-1">Product Price: ₹{{ item.unit_price }}</p>
                                     <p class="mb-0">
                                         Status:
-                                        <span class="badge {% if order.order_status == 'Order Placed' %}bg-secondary
-                                        {% elif order.order_status == 'Pending' %}bg-warning
-                                        {% elif order.order_status == 'Processing' %}bg-info
-                                        {% elif order.order_status == 'Shipped' %}bg-primary
-                                        {% elif order.order_status == 'Delivered' %}bg-success
-                                        {% elif order.order_status == 'Cancelled' %}bg-danger{% endif %} 
+                                        <span class="badge {% if item.item_status == 'Order Placed' %}bg-secondary
+                                        {% elif item.item_status == 'Processing' %}bg-info
+                                        {% elif item.item_status == 'Shipped' %}bg-primary
+                                        {% elif item.item_status == 'Delivered' %}bg-success
+                                        {% elif item.item_status == 'Cancelled' %}bg-danger{% endif %} 
                                         text-white">
-                                            {% if item.is_active %}
-                                            {{ order.order_status }}
-                                            {% else %}
-                                            Order Canceled
-                                            {% endif %}
+                                            {{ item.item_status }}
                                         </span>
                                     </p>
                                     {% if item.is_active %}
-                                    {% if order.order_status == 'Delivered' %}
-                                    {% if item.returns.exists %}
-                                    {% if item.returns.first.status == 'REQUESTED' %}
-                                    <p class="text-danger">Return Requested</p>
-                                    {% elif item.returns.first.status == 'APPROVED' %}
-                                    <p class="text-success">Return Approved</p>
-                                    {% elif item.returns.first.status == 'REJECTED' %}
-                                    <p class="text-danger">Return Rejected</p>
+                                        {% if item.item_status == 'Delivered' %}
+                                            {% if item.returns.exists %}
+                                                {% if item.returns.first.status == 'REQUESTED' %}
+                                                    <p class="text-danger">Return Requested</p>
+                                                {% elif item.returns.first.status == 'APPROVED' %}
+                                                    <p class="text-success">Return Approved</p>
+                                                {% elif item.returns.first.status == 'REJECTED' %}
+                                                    <p class="text-danger">Return Rejected</p>
+                                                {% else %}
+                                                    <button class="btn btn-outline-primary btn-sm mt-2 return-order-item"
+                                                        data-item-id="{{ item.id }}">
+                                                        <i class="bi bi-arrow-return-left"></i> Return
+                                                    </button>
+                                                {% endif %}
+                                            {% else %}
+                                                <button class="btn btn-outline-primary btn-sm mt-2 return-order-item"
+                                                    data-item-id="{{ item.id }}">
+                                                    <i class="bi bi-arrow-return-left"></i> Return
+                                                </button>
+                                            {% endif %}
+                                        {% elif item.item_status != 'Cancelled' %}
+                                            {% if order.payment_status %}
+                                                <p class="mb-0">
+                                                    Expected Delivery:
+                                                    <span class="text-danger fs-6">{{ arrival_date|date:"jS F Y" }}</span>
+                                                </p>
+                                                <button class="btn btn-danger btn-sm mt-2 cancel-order-item"
+                                                    data-item-id="{{ item.id }}">Cancel</button>
+                                            {% else %}
+                                                <br>
+                                                <h6>Payment not completed</h6>
+                                            {% endif %}
+                                        {% endif %}
                                     {% else %}
-                                    <button class="btn btn-outline-primary btn-sm mt-2 return-order-item"
-                                        data-item-id="{{ item.id }}">
-                                        <i class="bi bi-arrow-return-left"></i> Return
-                                    </button>
+                                        <p class="text-danger mt-2">Cancelled</p>
                                     {% endif %}
-                                    {% else %}
-                                    <button class="btn btn-outline-primary btn-sm mt-2 return-order-item"
-                                        data-item-id="{{ item.id }}">
-                                        <i class="bi bi-arrow-return-left"></i> Return
-                                    </button>
-                                    {% endif %}
-                                    {% else %}
-                                    {% if order.payment_status %}
-                                    <p class="mb-0">
-                                        Expected Delivery:
-                                        <span class="text-danger fs-6">{{ arrival_date|date:"jS F Y" }}</span>
-                                    </p>
-                                    <button class="btn btn-danger btn-sm mt-2 cancel-order-item"
-                                        data-item-id="{{ item.id }}">Cancel</button>
-                                    {% else %}
-                                    {% comment %} <button class="btn btn-primary btn-sm mt-2 pay-order-item"
-                                        data-item-id="{{ item.id }}">Pay Now</button> {% endcomment %}
-                                        <br>
-                                    <h6>payment not completed</h6>
-
-                                        {% endif %}
-                                        {% endif %}
-                                        {% else %}
-                                        <p class="text-danger mt-2">Canceled</p>
-                                        {% endif %}
                                 </div>
                             </div>
-                            {% if not forloop.last %}
-                            <hr>{% endif %}
+                            {% if not forloop.last %}<hr>{% endif %}
                             {% endfor %}
                         </div>
                         <div class="card-footer d-flex justify-content-between align-items-center bg-light border-top">
-                            <!-- Conditional Payment Button and View Order Details Button -->
                             <div class="d-flex align-items-center">
-                                <!-- View Order Details Button -->
                                 <a href="{% url 'order_management:order-detail' order.order_id %}"
                                     class="btn btn-primary btn-sm">
                                     View Order Details
                                 </a>
                             </div>
-
-                            <!-- Total Amount -->
                             <strong class="text-dark ml-auto">Total: ₹{{ order.total_amount }}</strong>
                         </div>
-
                     </div>
                     {% empty %}
                     <p class="text-center">No orders found.</p>
@@ -187,6 +172,7 @@
         </div>
     </div>
 </div>
+
 <script>
     // Order cancellation script
     document.addEventListener('DOMContentLoaded', function() {
@@ -194,72 +180,61 @@
             button.addEventListener('click', function() {
                 var itemId = this.getAttribute('data-item-id');
                 var csrftoken = '{{ csrf_token }}';
-                var url = '{% url "order_management:cancel-order-item" 0 %}'.replace('0',
-                    itemId);
+                var url = '{% url "order_management:cancel-order-item" 0 %}'.replace('0', itemId);
                 fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrftoken,
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            var itemElement = document.getElementById('order-item-' +
-                                itemId);
-                            var statusBadge = itemElement.querySelector('.badge');
-                            statusBadge.classList.remove('bg-warning', 'bg-success');
-                            statusBadge.classList.add('bg-danger');
-                            statusBadge.textContent = 'Canceled';
-                            var expectedDelivery = itemElement.querySelector(
-                                '.text-danger.fs-6').parentElement;
-                            if (expectedDelivery) {
-                                expectedDelivery.remove();
-                            }
-                            var cancelButton = itemElement.querySelector(
-                                '.cancel-order-item');
-                            if (cancelButton) {
-                                cancelButton.remove();
-                            }
-                            var canceledText = document.createElement('p');
-                            canceledText.className = 'text-danger mt-2';
-                            canceledText.textContent = 'Canceled';
-                            itemElement.querySelector('.col-md-9').appendChild(
-                                canceledText);
-                        } else {
-                            alert('Failed to cancel the item.');
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken,
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        var itemElement = document.getElementById('order-item-' + itemId);
+                        var statusBadge = itemElement.querySelector('.badge');
+                        statusBadge.classList.remove('bg-secondary', 'bg-info', 'bg-primary', 'bg-success');
+                        statusBadge.classList.add('bg-danger');
+                        statusBadge.textContent = 'Cancelled';
+                        var expectedDelivery = itemElement.querySelector('.text-danger.fs-6');
+                        if (expectedDelivery) {
+                            expectedDelivery.parentElement.remove();
                         }
-                    });
+                        var cancelButton = itemElement.querySelector('.cancel-order-item');
+                        if (cancelButton) {
+                            cancelButton.remove();
+                        }
+                        var canceledText = document.createElement('p');
+                        canceledText.className = 'text-danger mt-2';
+                        canceledText.textContent = 'Cancelled';
+                        itemElement.querySelector('.col-md-9').appendChild(canceledText);
+                    } else {
+                        alert('Failed to cancel the item.');
+                    }
+                });
             });
         });
     });
+
     // Return functionality script
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM fully loaded');
-        // Add event listeners for return buttons
         document.querySelectorAll('.return-order-item').forEach(function(button) {
             button.addEventListener('click', function() {
-                console.log('Return button clicked');
                 var itemId = this.getAttribute('data-item-id');
                 showReturnModal(itemId);
             });
         });
-        // Handle return form submission
+
         var returnForm = document.getElementById('returnForm');
         if (returnForm) {
             returnForm.addEventListener('submit', function(e) {
-                console.log('Form submitted');
                 e.preventDefault();
                 submitReturnRequest(e);
             });
-        } else {
-            console.error('Return form not found');
         }
     });
 
     function showReturnModal(itemId) {
-        console.log('Showing modal for item:', itemId);
         document.getElementById('returnItemId').value = itemId;
         var returnModal = new bootstrap.Modal(document.getElementById('returnModal'));
         returnModal.show();
@@ -271,25 +246,20 @@
         var reason = document.getElementById('returnReason').value;
         var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         var url = '{% url "order_management:request-return" 0 %}'.replace('0', itemId);
-        console.log('Submitting return request for item:', itemId);
-        console.log('Reason:', reason);
-        console.log('CSRF Token:', csrftoken);
+
         fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrftoken,
-                },
-                body: JSON.stringify({
-                    reason: reason
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Response:', data);
-                handleReturnResponse(data, itemId);
-            })
-            .catch(error => console.error('Error:', error));
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            handleReturnResponse(data, itemId);
+        })
+        .catch(error => console.error('Error:', error));
     }
 
     function handleReturnResponse(data, itemId) {
@@ -310,9 +280,14 @@
     function updateUIAfterReturn(itemId) {
         var itemElement = document.getElementById('order-item-' + itemId);
         var returnButton = itemElement.querySelector('.return-order-item');
-        returnButton.textContent = 'Return Requested';
-        returnButton.disabled = true;
-        // You can add more UI updates here if needed
+        if (returnButton) {
+            returnButton.textContent = 'Return Requested';
+            returnButton.disabled = true;
+        }
+        var statusText = document.createElement('p');
+        statusText.className = 'text-danger';
+        statusText.textContent = 'Return Requested';
+        itemElement.querySelector('.col-md-9').appendChild(statusText);
     }
 </script>
 {% endblock %}

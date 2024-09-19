@@ -31,6 +31,8 @@ from .models import Order, OrderItem
 from reportlab.lib.units import inch
 from decimal import Decimal
 import razorpay
+from django.db.models import Q
+
 
 @login_required
 def order_success(request):
@@ -73,7 +75,6 @@ def order_success(request):
             return redirect('order_management:order-failed')
 
     except Exception as e:
-        logger.error(f"Error while processing order success for user {request.user.id}: {str(e)}", exc_info=True)
         messages.error(request, "An unexpected error occurred. Please try again.")
         return redirect('cart_management:cart')
 
@@ -136,16 +137,99 @@ def user_order_detail(request, order_id):
     }
     return render(request, 'user_side/order_detail.html', context)
 
-@login_required(login_url='user_login')
+# @login_required(login_url='user_login')
+# @require_POST
+# @transaction.atomic
+# def cancel_order_item(request, item_id):
+#     try:
+#         order_item = OrderItem.objects.select_for_update().get(id=item_id)
+#         variant = order_item.variant
+#         order = order_item.main_order
+
+#         # Calculate refund amount
+#         refund_amount = order_item.total_cost()
+
+#         # Check if a coupon was used for the order
+#         user_coupon = UserCoupon.objects.filter(order=order, user=order.user, used=True).first()
+#         if user_coupon:
+#             coupon = user_coupon.coupon
+#             if coupon.is_valid(): 
+#                 discount_amount = Decimal(coupon.discount)
+#                 if coupon.is_percentage:
+#                     discount_amount = refund_amount * (discount_amount / Decimal('100'))
+#                 refund_amount -= discount_amount
+
+#         # Ensure refund amount is not negative
+#         refund_amount = max(refund_amount, Decimal('0.00'))
+
+#         # Update variant stock and order item status
+#         variant.variant_stock += order_item.quantity
+#         variant.save()
+
+#         order_item.is_active = False
+#         order_item.save()
+
+#         # Check if all items in the order are canceled
+#         if not OrderItem.objects.filter(main_order=order, is_active=True).exists():
+#             order.order_status = 'Cancelled'
+#             order.save()
+
+#         # Refund to wallet
+#         if (order.payment_option == 'Online Payment' or order.payment_option == 'Wallet') and refund_amount > 0:
+#             wallet, created = Wallet.objects.get_or_create(user=order.user)
+#             wallet.credit(refund_amount)
+
+#         return JsonResponse({'success': True, 'refunded_amount': float(refund_amount)})
+#     except OrderItem.DoesNotExist:
+#         return JsonResponse({'success': False, 'error': 'Order item does not exist.'})
+#     except Exception as e:
+#         return JsonResponse({'success': False, 'error': str(e)})
+
+# @login_required(login_url='/admin-panel/login/')
+# @require_POST
+# def cancel_order_item(request, item_id):
+#     try:
+#         order_item = OrderItem.objects.get(id=item_id)
+#         if order_item.item_status not in ['Delivered', 'Cancelled']:
+#             order_item.item_status = 'Cancelled'
+#             order_item.is_active = False
+#             order_item.save()
+
+#             # Update the stock
+#             variant = order_item.variant
+#             variant.variant_stock += order_item.quantity
+#             variant.save()
+
+#             # Check if all items are cancelled and update the order status if necessary
+#             active_items = order_item.main_order.items.filter(is_active=True)
+#             if not active_items.exists():
+#                 order_item.main_order.order_status = 'Cancelled'
+#                 order_item.main_order.save()
+
+#             return JsonResponse({'success': True})
+#         else:
+#             return JsonResponse({'success': False, 'error': 'Item cannot be cancelled'})
+#     except OrderItem.DoesNotExist:
+#         return JsonResponse({'success': False, 'error': 'Order item not found'})
+
+
+
+@login_required(login_url='/admin-panel/login/')
 @require_POST
 @transaction.atomic
 def cancel_order_item(request, item_id):
     try:
+        # Fetch the order item with locking to prevent race conditions
         order_item = OrderItem.objects.select_for_update().get(id=item_id)
+
+        # Ensure the item can be cancelled
+        if order_item.item_status in ['Delivered', 'Cancelled']:
+            return JsonResponse({'success': False, 'error': 'Item cannot be cancelled'})
+
         variant = order_item.variant
         order = order_item.main_order
 
-        # Calculate refund amount
+        # Calculate the refund amount
         refund_amount = order_item.total_cost()
 
         # Check if a coupon was used for the order
@@ -161,68 +245,124 @@ def cancel_order_item(request, item_id):
         # Ensure refund amount is not negative
         refund_amount = max(refund_amount, Decimal('0.00'))
 
-        # Update variant stock and order item status
+        # Update the variant stock
         variant.variant_stock += order_item.quantity
         variant.save()
 
+        # Mark the order item as cancelled and inactive
+        order_item.item_status = 'Cancelled'
         order_item.is_active = False
         order_item.save()
 
-        # Check if all items in the order are canceled
-        if not OrderItem.objects.filter(main_order=order, is_active=True).exists():
+        # Check if all items in the order are cancelled and update the order status
+        active_items = order.items.filter(is_active=True)
+        if not active_items.exists():
             order.order_status = 'Cancelled'
             order.save()
 
-        # Refund to wallet
+        # Process refund to wallet if necessary
         if (order.payment_option == 'Online Payment' or order.payment_option == 'Wallet') and refund_amount > 0:
             wallet, created = Wallet.objects.get_or_create(user=order.user)
             wallet.credit(refund_amount)
 
         return JsonResponse({'success': True, 'refunded_amount': float(refund_amount)})
+    
     except OrderItem.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Order item does not exist.'})
+        return JsonResponse({'success': False, 'error': 'Order item not found'})
+    
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
 
 
-@login_required
+
+# @login_required
+# def admin_order_list(request):
+#     pending_returns = []
+#     other_orders = []
+
+#     for order in Order.objects.exclude(payment_status__isnull=True).exclude(payment_status='False').order_by('-date'):
+#         has_pending_return = False
+#         for item in order.items.all():
+#             for return_request in item.returns.filter(status='REQUESTED'):
+#                 pending_returns.append({
+#                     'order': order,
+#                     'item': item,
+#                     'return_request': return_request
+#                 })
+#                 has_pending_return = True
+        
+#         if not has_pending_return:
+#             other_orders.append(order)
+
+
+#     # Paginate pending_returns
+#     pending_returns_paginator = Paginator(pending_returns, 10)  # Show 10 pending returns per page
+#     pending_returns_page_number = request.GET.get('pending_page')
+#     pending_returns_page_obj = pending_returns_paginator.get_page(pending_returns_page_number)
+
+#     # Paginate other_orders
+#     other_orders_paginator = Paginator(other_orders, 10)  # Show 10 orders per page
+#     other_orders_page_number = request.GET.get('orders_page')
+#     other_orders_page_obj = other_orders_paginator.get_page(other_orders_page_number)
+
+#     context = {
+#         'pending_returns': pending_returns_page_obj,
+#         'other_orders': other_orders_page_obj,
+#     }
+#     return render(request, 'admin_side/orders-list.html', context)
+
+@login_required(login_url='/admin-panel/login/')
 def admin_order_list(request):
+    search_query = request.GET.get('search', '')
+
     pending_returns = []
     other_orders = []
 
-    for order in Order.objects.exclude(payment_status__isnull=True).exclude(payment_status='False').order_by('-date'):
+    orders = Order.objects.exclude(payment_status__isnull=True).exclude(payment_status='False').order_by('-date')
+
+    if search_query:
+        orders = orders.filter(
+            Q(order_id__icontains=search_query) |
+            Q(user__username__icontains=search_query) |
+            Q(user__email__icontains=search_query) |
+            Q(items__variant__product__product_name__icontains=search_query)
+        ).distinct()
+
+    for order in orders:
         has_pending_return = False
         for item in order.items.all():
             for return_request in item.returns.filter(status='REQUESTED'):
-                pending_returns.append({
-                    'order': order,
-                    'item': item,
-                    'return_request': return_request
-                })
-                has_pending_return = True
+                if not search_query or search_query.lower() in item.variant.product.product_name.lower():
+                    pending_returns.append({
+                        'order': order,
+                        'item': item,
+                        'return_request': return_request
+                    })
+                    has_pending_return = True
         
         if not has_pending_return:
             other_orders.append(order)
 
-
     # Paginate pending_returns
-    pending_returns_paginator = Paginator(pending_returns, 10)  # Show 10 pending returns per page
+    pending_returns_paginator = Paginator(pending_returns, 10) 
     pending_returns_page_number = request.GET.get('pending_page')
     pending_returns_page_obj = pending_returns_paginator.get_page(pending_returns_page_number)
 
     # Paginate other_orders
-    other_orders_paginator = Paginator(other_orders, 10)  # Show 10 orders per page
+    other_orders_paginator = Paginator(other_orders, 10)  
     other_orders_page_number = request.GET.get('orders_page')
     other_orders_page_obj = other_orders_paginator.get_page(other_orders_page_number)
 
     context = {
         'pending_returns': pending_returns_page_obj,
         'other_orders': other_orders_page_obj,
+        'search_query': search_query,
     }
     return render(request, 'admin_side/orders-list.html', context)
 
 
+@login_required(login_url='/admin-panel/login/')
 def return_order_list(request):
     # Fetch orders that have return requests, ordering by date
     orders = Order.objects.filter(items__returns__isnull=False).distinct().order_by('-date').prefetch_related('items__variant__product')
@@ -242,48 +382,126 @@ def return_order_list(request):
     return render(request, 'admin_side/return_orders.html', context)
 
 
-@login_required
+# @login_required(login_url='/admin-panel/login/')
+# def admin_order_detail(request, order_id):
+#     order = get_object_or_404(Order, id=order_id)
+#     order_items = OrderItem.objects.filter(main_order=order,is_active=True).select_related('main_order').prefetch_related('returns')
+
+#     order.is_paid = (order.order_status == 'Delivered' or order.payment_status or order.payment_option in ['Wallet', 'Online Payment'])
+
+#     # Fetch return information for each order item
+#     for item in order_items:
+#         item.return_info = item.returns.first()
+
+#     item_quantity = order_items.aggregate(total_quantity=Sum('quantity'))['total_quantity']
+#     total_price = sum(item.total_cost() for item in order_items)
+    
+#     context = {
+#         'order': order,
+#         'order_items': order_items,
+#         'item_quantity': item_quantity,
+#         'total_price': total_price,
+#     }
+
+#     return render(request, 'admin_side/order_detail.html', context)
+
+
+@login_required(login_url='/admin-panel/login/')
 def admin_order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id)
-    order_items = OrderItem.objects.filter(main_order=order).select_related('main_order').prefetch_related('returns')
+    
+    # Fetch only active and non-cancelled order items
+    order_items = OrderItem.objects.filter(
+        main_order=order).select_related('main_order', 'variant__product').prefetch_related('returns')
 
-    order.is_paid = (order.order_status == 'Delivered' or order.payment_status or order.payment_option in ['Wallet', 'Online Payment'])
+    # Check if the order is paid
+    order.is_paid = (
+        order.order_status == 'Delivered' or 
+        order.payment_status or 
+        order.payment_option in ['Wallet', 'Online Payment']
+    )
 
     # Fetch return information for each order item
     for item in order_items:
         item.return_info = item.returns.first()
 
-    item_quantity = order_items.aggregate(total_quantity=Sum('quantity'))['total_quantity']
+    # Calculate totals excluding cancelled items
+    item_quantity = sum(item.quantity for item in order_items)
     total_price = sum(item.total_cost() for item in order_items)
+
+    # Fetch UserCoupon (if any) associated with the order
+    user_coupon = UserCoupon.objects.filter(order=order, user=order.user).first()
     
+    # Update the total amount in context (if order.total_amount includes cancelled items)
     context = {
         'order': order,
         'order_items': order_items,
         'item_quantity': item_quantity,
         'total_price': total_price,
+        'updated_total_amount': total_price,  # Reflects the new total excluding cancelled items
+        'user_coupon': user_coupon  # Add the coupon information to the context
     }
 
     return render(request, 'admin_side/order_detail.html', context)
 
 
-@login_required
+
+
+
+# @login_required(login_url='/admin-panel/login/')
+# def admin_update_order_status(request, order_id):
+#     order = get_object_or_404(Order, id=order_id)
+    
+#     if request.method == 'POST':
+#         new_status = request.POST.get('order_status')
+
+#         if order.order_status not in ['Delivered', 'Cancelled']:
+#             if new_status in ['Processing', 'Shipped', 'Delivered', 'Cancelled']:
+#                 if new_status == 'Cancelled':
+#                     # If the new status is 'Cancelled', update the stock of each item
+#                     order_items = OrderItem.objects.filter(main_order=order)
+#                     for order_item in order_items:
+#                         variant = order_item.variant
+#                         variant.variant_stock += order_item.quantity
+#                         variant.save()
+#                 order.order_status = new_status
+#                 order.save()
+    
+#     return redirect('order_management:admin-order-detail', order_id=order.id)
+
+@login_required(login_url='/admin-panel/login/')
 def admin_update_order_status(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     
     if request.method == 'POST':
         new_status = request.POST.get('order_status')
 
-        if order.order_status not in ['Delivered', 'Cancelled']:
-            if new_status in ['Processing', 'Shipped', 'Delivered', 'Cancelled']:
-                if new_status == 'Cancelled':
-                    # If the new status is 'Cancelled', update the stock of each item
-                    order_items = OrderItem.objects.filter(main_order=order)
-                    for order_item in order_items:
+        if new_status in ['Processing', 'Shipped', 'Delivered', 'Cancelled']:
+            # Update the order status
+            order.order_status = new_status
+            order.save()
+
+            # Update status of active items only
+            active_items = order.items.filter(is_active=True)
+            for item in active_items:
+                if item.item_status != 'Cancelled':
+                    item.item_status = new_status
+                    item.save()
+
+            if new_status == 'Cancelled':
+                # If the new status is 'Cancelled', update the stock of each active item
+                for order_item in active_items:
+                    if order_item.item_status != 'Cancelled':
                         variant = order_item.variant
                         variant.variant_stock += order_item.quantity
                         variant.save()
-                order.order_status = new_status
-                order.save()
+                        order_item.item_status = 'Cancelled'
+                        order_item.is_active = False
+                        order_item.save()
+
+            messages.success(request, f"Order status updated to {new_status}")
+        else:
+            messages.error(request, "Invalid order status")
     
     return redirect('order_management:admin-order-detail', order_id=order.id)
 
@@ -317,7 +535,7 @@ def request_return(request, item_id):
         return JsonResponse({'success': False, 'error': str(e)})
     
 
-@login_required
+@login_required(login_url='/admin-panel/login/')
 @require_POST
 def process_return(request, return_id):
     action = request.POST.get('action')
@@ -437,7 +655,6 @@ def razorpay_callback(request):
             messages.error(request, str(e))
             return redirect('order_management:order-failed')
         except Exception as e:
-            logger.error(f"Error processing Razorpay callback: {str(e)}", exc_info=True)
             messages.error(request, "An error occurred during payment processing. Please try again.")
             return redirect('order_management:order-failed')
     else:
@@ -486,7 +703,7 @@ def order_failed(request):
     else:
         razorpay_payment = None
 
-    messages.error(request, "Your order was not completed successfully12334.")
+    messages.error(request, "Your order was not completed successfully.")
     return render(request, 'user_side/order_failed.html', {'order': order, 'razorpay_payment': razorpay_payment})
 
 

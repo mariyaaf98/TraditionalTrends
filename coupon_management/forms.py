@@ -16,27 +16,25 @@ class CouponForm(forms.ModelForm):
         widgets = {
             'expiration_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type here'}),
-            'discount': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter discount amount'}),
+            'discount': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter discount amount', 'step': '0.01'}),
             'is_percentage': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'minimum_purchase_amount': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter minimum amount'}),
+            'minimum_purchase_amount': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter minimum amount', 'step': '0.01'}),
         }
-
-    def clean_expiration_date(self):
-        expiration_date = self.cleaned_data.get('expiration_date')
-        if expiration_date and expiration_date < timezone.now():
-            raise forms.ValidationError('Expiration date cannot be in the past.')
-        return expiration_date
 
     def clean(self):
         cleaned_data = super().clean()
         is_percentage = cleaned_data.get('is_percentage')
         discount = cleaned_data.get('discount')
 
-        # Validate discount based on percentage or fixed amount
-        if is_percentage and (discount <= 0 or discount > 100):
-            self.add_error('discount', 'Discount percentage must be between 1 and 100.')
-        elif not is_percentage and discount <= 0:
-            self.add_error('discount', 'Discount amount must be greater than 0.')
+        if discount is not None:
+            if discount <= 0:
+                self.add_error('discount', 'Discount must be greater than 0.')
+            elif is_percentage and discount > 65:
+                self.add_error('discount', 'Discount percentage cannot be greater than 65.')
+            elif not is_percentage and discount > 9999999.99:  # Max allowed by DecimalField(max_digits=8, decimal_places=2)
+                self.add_error('discount', 'Discount amount cannot be greater than 9,999,999.99.')
+        else:
+            self.add_error('discount', 'Discount is required.')
 
         return cleaned_data

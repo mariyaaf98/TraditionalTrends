@@ -92,7 +92,9 @@ def edit_category(request, category_id):
             discount = request.POST.get("discount") or '0'
             discount = Decimal(discount) if discount else None
             expirydate = request.POST.get("date", None)
-            if expirydate or minimum_amount:
+
+            # Check if expirydate is provided and not empty
+            if expirydate:
                 expirydate = datetime.strptime(expirydate, "%Y-%m-%d").date()
             else:
                 expirydate = None
@@ -130,6 +132,7 @@ def edit_category(request, category_id):
     
     today = date.today().isoformat()
     return render(request, "admin_side/edit_category.html", {"category": category, "parentlist": parentlist, "today": today})
+
 
 
 @login_required(login_url='/admin-panel/login/')

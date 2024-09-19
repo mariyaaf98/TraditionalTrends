@@ -48,17 +48,27 @@ class Order(models.Model):
         return f"Order {self.order_id} by {self.user.username}"
 
 class OrderItem(models.Model):
+    ORDER_STATUS_CHOICES = [
+        ('Order Placed', 'Order Placed'),
+        ('Processing', 'Processing'),
+        ('Shipped', 'Shipped'),
+        ('Delivered', 'Delivered'),
+        ('Cancelled', 'Cancelled'),
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     main_order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     variant = models.ForeignKey(Product_Variant, on_delete=models.CASCADE)
     quantity = models.IntegerField(null=False, default=1)
     is_active = models.BooleanField(default=True)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-
+    item_status = models.CharField(max_length=100, choices=Order.ORDER_STATUS_CHOICES, default="Order Placed")
+    
     def save(self, *args, **kwargs):
         # Ensure unit_price is set to the current offer price when creating an OrderItem
         if self.unit_price is None:
             self.unit_price = self.variant.product.offer_price
+         # Update is_active based on item_status
+        self.is_active = (self.item_status != 'Cancelled')
         super(OrderItem, self).save(*args, **kwargs)
 
     def total_cost_coupon(self):
@@ -71,8 +81,8 @@ class OrderItem(models.Model):
         return unit_price * self.quantity
 
     def total_cost(self):
-        # Calculate cost without applying coupon discount
-        return self.unit_price * self.quantity
+        return self.quantity * self.unit_price  # Adjust depending on any discounts, taxes, etc.
+
 
     def __str__(self):
         return f"{self.quantity} of {self.variant.product.product_name} in order {self.main_order.order_id}"

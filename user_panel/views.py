@@ -199,8 +199,12 @@ def add_review(request, product_id):
 
 def shop_list(request):
     products = Products.objects.filter(Q(is_deleted=False) & Q(is_active=True))
-    categories = Category.objects.filter(Q(is_deleted=False) & Q(is_available=True))
-
+    # Fetch only categories that have active products
+    categories = Category.objects.filter(
+        Q(is_deleted=False) & 
+        Q(is_available=True) &
+        Q(products__is_active=True)
+    ).distinct()
     sort_by = request.GET.get('sort_by', 'featured')
     query = request.GET.get('query')
     category_id = request.GET.get('category')
@@ -271,8 +275,14 @@ def shop_list(request):
 
 
 def product_list_by_category(request, category_id=None):
-    # Fetch available categories
-    categories = Category.objects.filter(Q(is_deleted=False) & Q(is_available=True))
+
+     # Fetch only categories that have active products
+    categories = Category.objects.filter(
+        Q(is_deleted=False) & 
+        Q(is_available=True) &
+        Q(products__is_active=True)
+    ).distinct()
+
 
     # Get sorting preference
     sort_by = request.GET.get('sort_by', 'featured')

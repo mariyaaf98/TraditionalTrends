@@ -1,86 +1,101 @@
 {% extends 'admin_side/base.html' %}
 {% load static %}
 {% block content %}
-    {% include 'admin_side/sidebar.html' %}
-    <main class="main-wrap">
-        {% include 'admin_side/header.html' %}
-        <section class="content-main">
-            <div class="row g-3 align-items-center justify-content-between mb-4">
-                <div class="col-auto">
-                    <h1 class="h3 mb-0 text-gray-800">Order #{{ order.order_id }}</h1>
-                </div>
-                <div class="col-auto">
-                    <a href="{% url 'order_management:admin-order-list' %}"
-                        class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-arrow-left"></i> Back to List
-                    </a>
-                    <button type="button" class="btn btn-primary btn-sm">
-                        <i class="bi bi-printer"></i> Print Order
-                    </button>
-                </div>
+{% include 'admin_side/sidebar.html' %}
+<main class="main-wrap">
+    {% include 'admin_side/header.html' %}
+    <section class="content-main">
+        <div class="row g-3 align-items-center justify-content-between mb-4">
+            <div class="col-auto">
+                <h1 class="h3 mb-0 text-gray-800">Order #{{ order.order_id }}</h1>
             </div>
-            <div class="card shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">Update Order Status</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{% url 'order_management:order-update-status' order.id %}">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <select id="order-status" class="form-select" name="order_status">
-                                <option value="Processing"
-                                    {% if order.order_status == "Processing" %}selected{% endif %}>Processing
-                                </option>
-                                <option value="Shipped" {% if order.order_status == "Shipped" %}selected{% endif %}>
-                                    Shipped</option>
-                                <option value="Delivered" {% if order.order_status == "Delivered" %}selected{% endif %}>
-                                    Delivered
-                                </option>
-                                <option value="Cancelled" {% if order.order_status == "Cancelled" %}selected{% endif %}>
-                                    Cancelled
-                                </option>
-                            </select>
-                        </div>
-                        <button type="submit" id="update-btn" class="btn btn-primary btn-sm w-100">Update
-                            Status</button>
-                    </form>
-                </div>
+            <div class="col-auto">
+                <a href="{% url 'order_management:admin-order-list' %}" class="btn btn-outline-secondary btn-sm me-2">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+                <button type="button" class="btn btn-primary btn-sm">
+                    <i class="bi bi-printer"></i> Print Order
+                </button>
             </div>
-            <div class="row g-4">
-                <div class="col-md-8">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-light">
-                            <h5 class="card-title mb-0">Order Details</h5>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">Update Order Status</h5>
+            </div>
+            <div class="card-body">
+             {% for message in messages %}
+                        {% if message.tags == 'success' %}
+                            <p class="alert alert-success">{{ message }}</p>
+                        {% elif message.tags == 'error' %}
+                            <p class="alert alert-danger">{{ message }}</p>
+                        {% elif message.tags == 'warning' %}
+                            <p class="alert alert-warning">{{ message }}</p>
+                        {% else %}
+                            <p>{{ message }}</p>
+                        {% endif %}
+                    {% endfor %}
+                <form method="POST" action="{% url 'order_management:order-update-status' order.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <select id="order-status" class="form-select" name="order_status">
+                            <option value="Processing" {% if order.order_status == "Processing" %}selected{% endif %}>
+                                Processing
+                            </option>
+                            <option value="Shipped" {% if order.order_status == "Shipped" %}selected{% endif %}>
+                                Shipped</option>
+                            <option value="Delivered" {% if order.order_status == "Delivered" %}selected{% endif %}>
+                                Delivered
+                            </option>
+                            <option value="Cancelled" {% if order.order_status == "Cancelled" %}selected{% endif %}>
+                                Cancelled
+                            </option>
+                        </select>
+                    </div>
+                    <button type="submit" id="update-btn" class="btn btn-primary btn-sm w-100">Update
+                        Status</button>
+                </form>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Order Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Order Date:</strong></div>
+                            <div class="col-sm-8">{{ order.date|date:"Y-m-d H:i" }}</div>
                         </div>
-                        <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-sm-4"><strong>Order Date:</strong></div>
-                                <div class="col-sm-8">{{ order.date|date:"Y-m-d H:i" }}</div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-sm-4"><strong>Status:</strong></div>
-                                <div class="col-sm-8">
-                                    <span class="badge rounded-pill 
-                                {% if order.order_status == 'Pending' %}bg-warning text-dark
-                                {% elif order.order_status == 'Processing' %}bg-info text-white
-                                {% elif order.order_status == 'Shipped' %}bg-primary text-white
-                                {% elif order.order_status == 'Delivered' %}bg-success text-white
-                                {% elif order.order_status == 'Cancelled' %}bg-danger text-white{% endif %}">
-                                        {{ order.order_status }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-sm-4"><strong>Payment Method:</strong></div>
-                                <div class="col-sm-8">{{ order.payment_option|title }}</div>
-                            </div>
-                            <div class="row">
-                                <div class="col-sm-4"><strong>Total Amount:</strong></div>
-                                <div class="col-sm-8">₹{{ order.total_amount }}</div>
-                            </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Status:</strong></div>
+                            <div class="col-sm-8">
+        <span class="badge rounded-pill 
+        {% if order.order_status == 'Pending' %}bg-warning text-dark
+        {% elif order.order_status == 'Processing' %}bg-info text-white
+        {% elif order.order_status == 'Shipped' %}bg-primary text-white
+        {% elif order.order_status == 'Delivered' %}bg-success text-white
+        {% elif order.order_status == 'Cancelled' %}bg-danger text-white
+        {% else %}bg-secondary text-white{% endif %}">
+            {{ order.order_status }}
+        </span>
+    </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>Payment Method:</strong></div>
+                            <div class="col-sm-8">{{ order.payment_option|title }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Total Amount:</strong></div>
+                            <div class="col-sm-8">₹{{ order.total_amount }}</div>
                         </div>
                     </div>
+                </div>
 
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Order Items</h5>
+                    </div>
                     <div class="card shadow-sm mt-4">
                         <div class="card-header bg-light">
                             <h5 class="card-title mb-0">Order Items</h5>
@@ -95,10 +110,11 @@
                                             <th>Quantity</th>
                                             <th>Unit Price</th>
                                             <th>Total</th>
+                                            <th>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for item in order.items.all %}
+                                        {% for item in order_items %}
                                         <tr>
                                             <td>
                                                 <img src="{% if item.variant.images.exists %}{{ item.variant.images.first.image.url }}{% else %}{{ item.variant.product.thumbnail.url }}{% endif %}"
@@ -109,11 +125,22 @@
                                             <td>{{ item.quantity }}</td>
                                             <td>₹{{ item.unit_price }}</td>
                                             <td>₹{{ item.total_cost|floatformat:2 }}</td>
+                                            <td>
+                                                <span class="badge rounded-pill      
+                                {% if item.item_status == 'Pending' %}bg-warning text-white
+                                {% elif item.item_status == 'Order Placed' %}bg-info text-white
+                                {% elif item.item_status == 'Shipped' %}bg-primary text-white
+                                {% elif item.item_status == 'Delivered' %}bg-success text-white
+                                {% elif item.item_status == 'Cancelled' %}bg-danger text-white{% endif %}">
+                                                    {{ item.item_status }}
+                                                </span>
+                                            </td>
+                                           
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                     <tfoot>
-                                        <tr>
+                                       <tr>
                                             <td colspan="4" class="text-end"><strong>Sub Total:</strong></td>
                                             <td>₹{{ total_price|floatformat:2 }}</td>
                                         </tr>
@@ -127,90 +154,176 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-4">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light">
-                            <h5 class="card-title mb-0">Customer Information</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="mb-1"><strong>Name:</strong> {{ order.user.full_name }}</p>
-                            <p class="mb-1"><strong>Email:</strong> {{ order.user.email }}</p>
-                            <p class="mb-3"><strong>Phone:</strong> {{ order.phone_number }}</p>
-
-                        </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Customer Information</h5>
                     </div>
-
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light">
-                            <h5 class="card-title mb-0">Shipping Address</h5>
-                        </div>
-                        <div class="card-body">
-                            <address class="mb-0">
-                                {{ order.name }}<br>
-                                {{ order.house_name }}<br>
-                                {{ order.street_name }}<br>
-                                {{ order.pin_number }}<br>
-                                {{ order.district }}, {{ order.state }}<br>
-                                {{ order.country }}<br>
-                                Phone: {{ order.phone_number }}
-                            </address>
-                        </div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Name:</strong> {{ order.user.full_name }}</p>
+                        <p class="mb-1"><strong>Email:</strong> {{ order.user.email }}</p>
+                        <p class="mb-3"><strong>Phone:</strong> {{ order.phone_number }}</p>
                     </div>
+                </div>
 
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Shipping Address</h5>
+                    </div>
+                    <div class="card-body">
+                        <address class="mb-0">
+                            {{ order.name }}<br>
+                            {{ order.house_name }}<br>
+                            {{ order.street_name }}<br>
+                            {{ order.pin_number }}<br>
+                            {{ order.district }}, {{ order.state }}<br>
+                            {{ order.country }}<br>
+                            Phone: {{ order.phone_number }}
+                        </address>
+                    </div>
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </section>
+</main>
 
-
+{% comment %} <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var statusSelect = document.getElementById('order-status');
+        var updateBtn = document.getElementById('update-btn');
+        statusSelect.addEventListener('change', function() {
+            var selectedStatus = statusSelect.value;
+            var options = statusSelect.querySelectorAll('option');
+            // Enable and disable options based on the current selection
+            options.forEach(function(option) {
+                option.disabled = true; // Disable all options initially
+            });
+            // Enable the next valid option in the sequence
+            if (selectedStatus === 'Processing') {
+                options.forEach(function(option) {
+                    if (option.value === 'Processing' || option.value === 'Shipped' || option
+                        .value === 'Cancelled') {
+                        option.disabled = false;
+                    }
+                });
+            } else if (selectedStatus === 'Shipped') {
+                options.forEach(function(option) {
+                    if (option.value === 'Shipped' || option.value === 'Delivered' || option
+                        .value === 'Cancelled') {
+                        option.disabled = false;
+                    }
+                });
+            } else if (selectedStatus === 'Delivered') {
+                options.forEach(function(option) {
+                    if (option.value === 'Delivered') {
+                        option.disabled = false;
+                    }
+                });
+            } else if (selectedStatus === 'Cancelled') {
+                options.forEach(function(option) {
+                    if (option.value === 'Cancelled') {
+                        option.disabled = false;
+                    }
+                });
+            }
+            // Enable the update button if a valid option is selected
+            updateBtn.disabled = false;
+        });
+        // Initial state adjustment
+        statusSelect.dispatchEvent(new Event('change'));
+    });
+</script> {% endcomment %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-    var statusSelect = document.getElementById('order-status');
-    var updateBtn = document.getElementById('update-btn');
-    
-    statusSelect.addEventListener('change', function() {
-        var selectedStatus = statusSelect.value;
-        var options = statusSelect.querySelectorAll('option');
-
-        // Enable and disable options based on the current selection
-        options.forEach(function(option) {
-            option.disabled = true; // Disable all options initially
+        var statusSelect = document.getElementById('order-status');
+        var updateBtn = document.getElementById('update-btn');
+        statusSelect.addEventListener('change', function() {
+            var selectedStatus = statusSelect.value;
+            var options = statusSelect.querySelectorAll('option');
+            // Enable and disable options based on the current selection
+            options.forEach(function(option) {
+                option.disabled = true; // Disable all options initially
+            });
+            // Enable the next valid option in the sequence
+            if (selectedStatus === 'Processing') {
+                options.forEach(function(option) {
+                    if (option.value === 'Processing' || option.value === 'Shipped' || option
+                        .value === 'Cancelled') {
+                        option.disabled = false;
+                    }
+                });
+            } else if (selectedStatus === 'Shipped') {
+                options.forEach(function(option) {
+                    if (option.value === 'Shipped' || option.value === 'Delivered' || option
+                        .value === 'Cancelled') {
+                        option.disabled = false;
+                    }
+                });
+            } else if (selectedStatus === 'Delivered') {
+                options.forEach(function(option) {
+                    if (option.value === 'Delivered') {
+                        option.disabled = false;
+                    }
+                });
+            } else if (selectedStatus === 'Cancelled') {
+                options.forEach(function(option) {
+                    if (option.value === 'Cancelled') {
+                        option.disabled = false;
+                    }
+                });
+            }
+            // Enable the update button if a valid option is selected
+            updateBtn.disabled = false;
         });
-
-        // Enable the next valid option in the sequence
-        if (selectedStatus === 'Processing') {
-            options.forEach(function(option) {
-                if (option.value === 'Processing' || option.value === 'Shipped'  || option.value === 'Cancelled') {
-                    option.disabled = false;
+        // Initial state adjustment
+        statusSelect.dispatchEvent(new Event('change'));
+        // Handle individual item cancellations
+        document.querySelectorAll('.cancel-item').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var itemId = this.getAttribute('data-item-id');
+                if (confirm('Are you sure you want to cancel this item?')) {
+                    // Send AJAX request to cancel the item
+                    fetch(`/admin/cancel-order-item/${itemId}/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': getCookie('csrftoken'),
+                                'Content-Type': 'application/json',
+                            },
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Update the UI to reflect the cancellation
+                                var row = this.closest('tr');
+                                row.querySelector('td:nth-child(6) span').className =
+                                    'badge rounded-pill bg-danger text-white';
+                                row.querySelector('td:nth-child(6) span').textContent =
+                                    'Cancelled';
+                                this.remove(); // Remove the cancel button
+                            } else {
+                                alert('Failed to cancel the item. Please try again.');
+                            }
+                        });
                 }
             });
-        } else if (selectedStatus === 'Shipped') {
-            options.forEach(function(option) {
-                if (option.value === 'Shipped' || option.value === 'Delivered' || option.value === 'Cancelled') {
-                    option.disabled = false;
-                }
-            });
-        } else if (selectedStatus === 'Delivered') {
-            options.forEach(function(option) {
-                if (option.value === 'Delivered') {
-                    option.disabled = false;
-                }
-            });
-        } else if (selectedStatus === 'Cancelled') {
-            options.forEach(function(option) {
-                if (option.value === 'Cancelled') {
-                    option.disabled = false;
-                }
-            });
-        }
-
-        // Enable the update button if a valid option is selected
-        updateBtn.disabled = false;
+        });
     });
-
-    // Initial state adjustment
-    statusSelect.dispatchEvent(new Event('change'));
-});
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 </script>
 {% endblock content %}

@@ -8,6 +8,96 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse,HttpResponseRedirect
 from django.core.paginator import Paginator
 
+# @login_required
+# def add_product(request):
+#     if not request.user.is_superuser:
+#         return redirect("admin_panel:admin_login")
+    
+#     if request.method == 'POST':
+#         product_name = request.POST.get('product_name')
+#         product_description = request.POST.get('product_description')
+#         product_category_id = request.POST.get('product_category')
+#         product_brand_id = request.POST.get('product_brand')
+#         price = request.POST.get('price')
+#         use_percentage = request.POST.get('use_percentage') == 'on'
+#         offer_price = request.POST.get('offer_price')
+#         offer_percentage = request.POST.get('offer_percentage')
+#         is_active = request.POST.get('is_active') == 'on'
+#         thumbnail = request.FILES.get('thumbnail')
+#         images = request.FILES.getlist('images')
+
+#         try:
+#             if not product_name:
+#                 raise ValidationError("Product name is required.")
+#             if not price:
+#                 raise ValidationError("Price is required.")
+           
+#             price = Decimal(price)
+            
+#             if use_percentage:
+#                 if not offer_percentage:
+#                     raise ValidationError("Offer percentage is required when using percentage.")
+#                 offer_percentage = Decimal(offer_percentage)
+#                 if offer_percentage < 1 or offer_percentage > 70:
+#                     raise ValidationError("Offer percentage must be between 1 and 70.")
+#                 offer_price = price * (1 - offer_percentage / 100)
+#             elif offer_price:
+#                 offer_price = Decimal(offer_price)
+#             else:
+#                 offer_price = None
+
+#             if offer_price is not None:
+#                 if offer_price < 0:
+#                     messages.warning(request, "Offer price cannot be negative.")
+#                     return redirect('product_management:add-product')
+#                 if offer_price >= price:
+#                     messages.warning(request, "Offer Price should be less than the actual price.")
+#                     return redirect('product_management:add-product')
+            
+             
+#             if thumbnail:
+#                 if not thumbnail.content_type.startswith('image/'):
+#                     messages.warning(request, "Invalid file type for thumbnail. Only image files are allowed.")
+#                     return redirect('product_management:add-product')
+            
+            
+#             for image in images:
+#                 if not image.content_type.startswith('image/'):
+#                     messages.warning(request, "Invalid file type in images. Only image files are allowed.")
+#                     return redirect('product_management:add-product')
+            
+#             category = Category.objects.get(id=product_category_id) if product_category_id else None
+#             brand = Brand.objects.get(id=product_brand_id) if product_brand_id else None
+
+#             product = Products.objects.create(
+#                 product_name=product_name,
+#                 product_description=product_description,
+#                 product_category=category,
+#                 product_brand=brand,
+#                 price=price,
+#                 offer_price=offer_price,
+#                 thumbnail=thumbnail,
+#                 is_active=is_active,
+#             )
+
+#             for image in images:
+#                 Product_images.objects.create(product=product, images=image)
+
+#             messages.success(request, 'Product added successfully')
+#             return redirect('product_management:product-list')
+        
+#         except ValidationError as e:
+#             messages.error(request, f'Validation error: {str(e)}')
+        
+#         except Exception as e:
+#             messages.error(request, f'Unexpected error: {str(e)}')
+
+#     categories = Category.objects.all()
+#     brands = Brand.objects.all()
+
+#     return render(request, 'admin_side/add_product.html', {'categories': categories, 'brands': brands})
+
+
 @login_required
 def add_product(request):
     if not request.user.is_superuser:
@@ -34,6 +124,7 @@ def add_product(request):
            
             price = Decimal(price)
             
+            # If 'use_percentage' is checked, calculate 'offer_price' using 'offer_percentage'
             if use_percentage:
                 if not offer_percentage:
                     raise ValidationError("Offer percentage is required when using percentage.")
@@ -41,25 +132,27 @@ def add_product(request):
                 if offer_percentage < 1 or offer_percentage > 70:
                     raise ValidationError("Offer percentage must be between 1 and 70.")
                 offer_price = price * (1 - offer_percentage / 100)
+            
+            # If 'offer_price' is provided, validate it
             elif offer_price:
                 offer_price = Decimal(offer_price)
-            else:
-                offer_price = None
 
-            if offer_price is not None:
-                if offer_price < 0:
-                    messages.warning(request, "Offer price cannot be negative.")
-                    return redirect('product_management:add-product')
+                # Ensure that the 'offer_price' is less than the actual 'price'
                 if offer_price >= price:
-                    messages.warning(request, "Offer Price should be less than the actual price.")
-                    return redirect('product_management:add-product')
+                    raise ValidationError("Offer Price should be less than the actual price.")
+            else:
+                # If 'offer_price' is empty, set it equal to 'price'
+                offer_price = price
+
+            # Check if 'offer_price' is valid (if not already caught in the earlier checks)
+            if offer_price is not None and offer_price < 0:
+                messages.warning(request, "Offer price cannot be negative.")
+                return redirect('product_management:add-product')
             
-             
             if thumbnail:
                 if not thumbnail.content_type.startswith('image/'):
                     messages.warning(request, "Invalid file type for thumbnail. Only image files are allowed.")
                     return redirect('product_management:add-product')
-            
             
             for image in images:
                 if not image.content_type.startswith('image/'):
@@ -150,9 +243,109 @@ def restore_product(request, product_id):
 
     return redirect("product_management:product-list")
 
+# @login_required
+# def edit_product(request, product_id):
+#     print('jhasdbgkljhdsg')
+#     if not request.user.is_superuser:
+#         return redirect("admin_panel:admin_login")
+
+#     products = get_object_or_404(Products, id=product_id)
+
+#     if request.method == "POST":
+#         product_name = request.POST.get("product_name")
+#         product_description = request.POST.get("product_description")
+#         brand_id = request.POST.get("brand")
+#         category_id = request.POST.get("category")
+#         price = request.POST.get("price")
+#         use_percentage = request.POST.get("use_percentage") == "on"
+#         offer_price = request.POST.get("offer_price")
+#         offer_percentage = request.POST.get("offer_percentage")
+#         status = request.POST.get("status") == "on"
+#         thumbnail = request.FILES.get("thumbnail_image")
+
+#         # Check if required fields are missing
+#         if not product_name:
+#             messages.error(request, "Product Name cannot be empty")
+#         if not product_description:
+#             messages.error(request, "Product Description cannot be empty")
+#         if not price:
+#             messages.error(request, "Price cannot be empty")
+
+#         # If any of the fields are empty, redirect back to the edit page
+#         if not product_name or not product_description or not price:
+#             return redirect("product_management:edit-product", product_id=product_id)
+
+#         try:
+#             price = float(price)
+#             if price < 0:
+#                 raise ValueError("Price must be positive")
+
+#             if use_percentage:
+#                 if not offer_percentage:
+#                     messages.warning(request, "Offer Percentage cannot be empty when using percentage")
+#                     return redirect("product_management:edit-product", product_id=product_id)
+#                 offer_percentage = float(offer_percentage)
+#                 if offer_percentage < 1 or offer_percentage > 70:
+#                     raise ValueError("Offer Percentage must be between 1 and 70")
+#                 offer_price = price * (1 - offer_percentage / 100)
+#             else:
+#                 if not offer_price:
+#                     messages.warning(request, "Offer Price cannot be empty when not using percentage")
+#                     return redirect("product_management:edit-product", product_id=product_id)
+#                 offer_price = float(offer_price)
+#                 if offer_price < 0:
+#                     raise ValueError("Offer Price must be positive")
+#                 if offer_price >= price:
+#                     messages.warning(request, "Offer Price should be less than the actual price")
+#                     return redirect("product_management:edit-product", product_id=product_id)
+
+#         except ValueError as e:
+#             messages.warning(request, str(e))
+#             return redirect("product_management:edit-product", product_id=product_id)
+
+#         if not any(char.isalpha() for char in product_name):
+#             messages.warning(request, "Product Name should contain at least one alphabetical character")
+#             return redirect("product_management:edit-product", product_id=product_id)
+
+#         try:
+#             brand = get_object_or_404(Brand, id=brand_id)
+#             category = get_object_or_404(Category, id=category_id)
+#         except:
+#             messages.warning(request, "Brand or Category does not exist")
+#             return redirect("product_management:edit-product", product_id=product_id)
+
+#         try:
+#             with transaction.atomic():
+#                 products.product_name = product_name
+#                 products.product_description = product_description
+#                 products.product_brand = brand
+#                 products.product_category = category
+#                 products.price = price
+#                 products.offer_price = offer_price
+#                 products.is_active = status
+#                 if thumbnail:
+#                     products.thumbnail = thumbnail
+#                 products.save()
+
+#             messages.success(request, "Product Updated Successfully")
+#             return redirect("product_management:product-list")
+
+#         except Exception as e:
+#             print(f"An Error Occurred: {str(e)}")
+#             messages.error(request, f"An Error Occurred: {str(e)}")
+
+#     content = {
+#         "products": products,
+#         "images": Product_images.objects.filter(product=product_id),
+#         "branddata": Brand.objects.filter(brand_name__isnull=False),
+#         "categorydata": Category.objects.filter(category_name__isnull=False),
+#     }
+
+#     return render(request, "admin_side/edit-product.html", content)
+
+
 @login_required
 def edit_product(request, product_id):
-    print('jhasdbgkljhdsg')
     if not request.user.is_superuser:
         return redirect("admin_panel:admin_login")
 
@@ -196,15 +389,16 @@ def edit_product(request, product_id):
                     raise ValueError("Offer Percentage must be between 1 and 70")
                 offer_price = price * (1 - offer_percentage / 100)
             else:
-                if not offer_price:
-                    messages.warning(request, "Offer Price cannot be empty when not using percentage")
-                    return redirect("product_management:edit-product", product_id=product_id)
-                offer_price = float(offer_price)
-                if offer_price < 0:
-                    raise ValueError("Offer Price must be positive")
-                if offer_price >= price:
-                    messages.warning(request, "Offer Price should be less than the actual price")
-                    return redirect("product_management:edit-product", product_id=product_id)
+                if offer_price:
+                    offer_price = float(offer_price)
+                    if offer_price < 0:
+                        raise ValueError("Offer Price must be positive")
+                    if offer_price >= price:
+                        messages.warning(request, "Offer Price should be less than the actual price")
+                        return redirect("product_management:edit-product", product_id=product_id)
+                else:
+                    # If offer price is not set, default it to the regular price
+                    offer_price = price
 
         except ValueError as e:
             messages.warning(request, str(e))

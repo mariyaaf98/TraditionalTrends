@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 
-@login_required
+@login_required(login_url='/login/')
 @require_POST
 def add_to_wishlist(request, product_id):
     if not request.user.is_authenticated:
@@ -46,7 +46,7 @@ def add_to_wishlist(request, product_id):
             # Handle the error for non-AJAX requests
             return HttpResponseRedirect(request.META.get('HTTP_REFERER') or reverse('product_detail', args=[product_id]))
     
-@login_required
+@login_required(login_url='/login/')
 def remove_from_wishlist(request, wishlist_item_id):
     if request.method == 'POST':
         wishlist_item = get_object_or_404(WishlistItem, id=wishlist_item_id, user=request.user)
@@ -65,7 +65,7 @@ def remove_from_wishlist(request, wishlist_item_id):
 
 
 
-@login_required
+@login_required(login_url='/login/')
 def view_wishlist(request):
     wishlist_items = WishlistItem.objects.filter(user=request.user).select_related('variant', 'variant__product')
     context = {
