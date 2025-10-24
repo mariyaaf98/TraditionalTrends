@@ -171,12 +171,13 @@ def resend_otp(request):
         return redirect('accounts:user_register')
 
     otp = generate_otp()
-    send_mail(
-        "Your OTP Code",
-        f"Your new OTP code is {otp}",
-        settings.DEFAULT_FROM_EMAIL,
-        [user_data['email']],
-    )
+    # send_mail(
+    #     "Your OTP Code",
+    #     f"Your new OTP code is {otp}",
+    #     settings.DEFAULT_FROM_EMAIL,
+    #     [user_data['email']],
+    # )
+    print(f"OTP would be sent: {otp}")
 
     request.session['otp'] = str(otp)
     request.session['otp_creation_time'] = timezone.now().isoformat()
