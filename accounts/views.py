@@ -22,6 +22,8 @@ from django.urls import reverse
 from django.contrib.auth import update_session_auth_hash
 from django.core.mail import send_mail
 from smtplib import SMTPException
+from .tasks import send_otp_email  # Celery task
+
 
 
 # Generate a random OTP
@@ -57,61 +59,143 @@ def user_login(request):
 
 
 
+
+# using without celery
 # def user_register(request):
 #     if request.method == 'POST':
 #         form = RegisterForm(request.POST)
 #         if form.is_valid():
 #             user = form.save(commit=False)
-#             user.is_active = False 
+#             user.is_active = False  # Set user as inactive until they verify the OTP
 
 #             otp = generate_otp()
-#             send_mail(
-#                 "Your OTP Code",
-#                 f"Your OTP code is {otp}",
-#                 settings.DEFAULT_FROM_EMAIL,
-#                 [user.email],
-#             )
-#             # Store the OTP in the session
-#             request.session['otp'] = str(otp)
-#             request.session['user_data'] = form.cleaned_data
-#             request.session['otp_creation_time'] = timezone.now().isoformat()
-#             return redirect('accounts:verify_otp')
+
+#             try:
+#                 # Attempt to send the OTP email
+#                 send_mail(
+#                     "Your OTP Code",
+#                     f"Your OTP code is {otp}",
+#                     settings.DEFAULT_FROM_EMAIL,
+#                     [user.email],
+#                 )
+#                 # Store the OTP and user data in the session
+#                 request.session['otp'] = str(otp)
+#                 request.session['user_data'] = form.cleaned_data
+#                 request.session['otp_creation_time'] = timezone.now().isoformat()
+#                 return redirect('accounts:verify_otp')
+
+#             except SMTPException as e:
+#                 # Handle the SMTP error gracefully
+#                 messages.error(request, "There was an error sending the OTP. Please try again later or use a valid email address.")
+#                 print(f"SMTP error: {e}")
+                
 #     else:
 #         form = RegisterForm()
+
 #     return render(request, 'user_side/accounts/register.html', {'form': form})
 
+# def verify_otp(request):
+#     otp_creation_time = request.session.get('otp_creation_time')
+    
+#     if not otp_creation_time:
+#         messages.error(request, 'OTP not found or expired. Please try registering again.')
+#         return redirect('accounts:user_register')
+    
+#     otp_creation_time = parse(otp_creation_time)
+#     otp_expiration_time = otp_creation_time + timezone.timedelta(seconds=120)
+
+#     if request.method == "POST":
+#         entered_otp = request.POST.get('entered_otp')
+#         otp = request.session.get('otp')
+#         user_data = request.session.get('user_data')
+
+#         #if the OTP or OTP creation time is not found in the session
+#         if not otp or not otp_creation_time:  
+#             messages.error(request, 'OTP not found or expired. Please try registering again.')
+#             return redirect('accounts:user_register')
+
+#         if (timezone.now() - otp_creation_time).total_seconds() > 120:
+#             messages.error(request, 'OTP expired. Please try registering again.')
+#             return redirect('accounts:user_register')
+
+#         if entered_otp == otp:
+#             user = User.objects.create_user(
+#                 full_name=user_data['full_name'],
+#                 username=user_data['username'],
+#                 email=user_data['email'],
+#                 password=user_data['password'],
+#                 phone=user_data['phone'],
+#             )
+#             user.is_active = True
+#             user.save()
+
+#             backend = 'accounts.backends.EmailBackend'
+#             user.backend = backend
+#             login(request, user, backend=backend)
+
+#             # Clear session data
+#             request.session.pop('otp', None)
+#             request.session.pop('otp_creation_time', None)
+#             request.session.pop('user_data', None)
+#             return redirect('accounts:user_login')
+#         else:
+#             messages.error(request, 'Invalid OTP')
+    
+#     return render(request, 'user_side/accounts/otp_verify.html', {'otp_expiration_time': otp_expiration_time.isoformat()})
+
+
+# def resend_otp(request):
+#     user_data = request.session.get('user_data')
+
+#     if not user_data:
+#         messages.error(request, 'User data not found. Please try registering again.')
+#         return redirect('accounts:user_register')
+
+#     otp = generate_otp()
+#     send_mail(
+#         "Your OTP Code",
+#         f"Your new OTP code is {otp}",
+#         settings.DEFAULT_FROM_EMAIL,
+#         [user_data['email']],
+#     )
+#     print(f"OTP would be sent: {otp}")
+
+#     request.session['otp'] = str(otp)
+#     request.session['otp_creation_time'] = timezone.now().isoformat()
+
+#     messages.success(request, 'A new OTP has been sent to your email.')
+#     return redirect('accounts:verify_otp')
+
+
+
+
+
+
+
+#use with celery
 def user_register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False  # Set user as inactive until they verify the OTP
+            user.is_active = False  # inactive until OTP verified
 
             otp = generate_otp()
 
-            try:
-                # Attempt to send the OTP email
-                send_mail(
-                    "Your OTP Code",
-                    f"Your OTP code is {otp}",
-                    settings.DEFAULT_FROM_EMAIL,
-                    [user.email],
-                )
-                # Store the OTP and user data in the session
-                request.session['otp'] = str(otp)
-                request.session['user_data'] = form.cleaned_data
-                request.session['otp_creation_time'] = timezone.now().isoformat()
-                return redirect('accounts:verify_otp')
+            # Use Celery to send OTP asynchronously
+            send_otp_email.delay(user.email, otp)
 
-            except SMTPException as e:
-                # Handle the SMTP error gracefully
-                messages.error(request, "There was an error sending the OTP. Please try again later or use a valid email address.")
-                print(f"SMTP error: {e}")
-                
+            # Store OTP and user data in session
+            request.session['otp'] = str(otp)
+            request.session['user_data'] = form.cleaned_data
+            request.session['otp_creation_time'] = timezone.now().isoformat()
+
+            return redirect('accounts:verify_otp')
     else:
         form = RegisterForm()
 
     return render(request, 'user_side/accounts/register.html', {'form': form})
+
 
 def verify_otp(request):
     otp_creation_time = request.session.get('otp_creation_time')
@@ -128,7 +212,6 @@ def verify_otp(request):
         otp = request.session.get('otp')
         user_data = request.session.get('user_data')
 
-        #if the OTP or OTP creation time is not found in the session
         if not otp or not otp_creation_time:  
             messages.error(request, 'OTP not found or expired. Please try registering again.')
             return redirect('accounts:user_register')
@@ -156,6 +239,7 @@ def verify_otp(request):
             request.session.pop('otp', None)
             request.session.pop('otp_creation_time', None)
             request.session.pop('user_data', None)
+
             return redirect('accounts:user_login')
         else:
             messages.error(request, 'Invalid OTP')
@@ -171,13 +255,7 @@ def resend_otp(request):
         return redirect('accounts:user_register')
 
     otp = generate_otp()
-    # send_mail(
-    #     "Your OTP Code",
-    #     f"Your new OTP code is {otp}",
-    #     settings.DEFAULT_FROM_EMAIL,
-    #     [user_data['email']],
-    # )
-    print(f"OTP would be sent: {otp}")
+    send_otp_email.delay(user_data['email'], otp)
 
     request.session['otp'] = str(otp)
     request.session['otp_creation_time'] = timezone.now().isoformat()
