@@ -22,7 +22,8 @@ from django.urls import reverse
 from django.contrib.auth import update_session_auth_hash
 from django.core.mail import send_mail
 from smtplib import SMTPException
-from .tasks import send_otp_email  # Celery task
+from .email_utils import send_otp_email_async
+import threading
 
 
 
@@ -182,8 +183,9 @@ def user_register(request):
 
             otp = generate_otp()
 
-            # Use Celery to send OTP asynchronously
-            send_otp_email.delay(user.email, otp)
+           
+            #Send OTP asynchronously using threading
+            threading.Thread(target=send_otp_email_async, args=(user.email, otp)).start()
 
             # Store OTP and user data in session
             request.session['otp'] = str(otp)
@@ -255,7 +257,8 @@ def resend_otp(request):
         return redirect('accounts:user_register')
 
     otp = generate_otp()
-    send_otp_email.delay(user_data['email'], otp)
+    
+    threading.Thread(target=send_otp_email_async, args=(user.email, otp)).start()
 
     request.session['otp'] = str(otp)
     request.session['otp_creation_time'] = timezone.now().isoformat()
